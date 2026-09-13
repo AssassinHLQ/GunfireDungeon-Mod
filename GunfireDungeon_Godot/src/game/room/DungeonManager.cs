@@ -58,44 +58,81 @@ public partial class DungeonManager : Node2D
     public string LoadRoleId { get; set; }
 
     /// <summary>
-    /// 本局地牢的总层数, 打完第 MaxFloor 层的 BOSS 再走到出口才算通关
+    /// 楼层计划, 定义本局依次经过哪些楼层。
+    /// 顺序来自 resource/config/FloorPlan.json, 因此同一楼层可以出现多次,
+    /// 也可以插入隐藏楼层。改楼层结构只需要改那个 JSON。
     /// </summary>
-    public const int MaxFloor = 10;
+    public FloorPlan Plan { get; } = FloorPlan.Load();
 
     /// <summary>
     /// 当前所在层数, 从 1 开始
     /// </summary>
-    public int CurrentFloor { get; private set; } = 1;
+    public int CurrentFloor => Plan.CurrentNumber;
 
     /// <summary>
-    /// 每局开始时重置层数
+    /// 当前楼层定义(名称/副标题/强度系数)
+    /// </summary>
+    public FloorPlan.FloorDef CurrentFloorDef => Plan.Current;
+
+    /// <summary>
+    /// 当前楼层名, 例如「五楼 · 505」
+    /// </summary>
+    public string CurrentFloorName => Plan.CurrentName;
+
+    /// <summary>
+    /// 本局总层数(隐藏层插入后会增加)
+    /// </summary>
+    public int TotalFloors => Plan.Count;
+
+    /// <summary>
+    /// 当前是否已经是最后一层
+    /// </summary>
+    public bool IsLastFloor => Plan.IsLast;
+
+    /// <summary>
+    /// 每局开始时重置楼层
     /// </summary>
     public void ResetFloor()
     {
-        CurrentFloor = 1;
+        Plan.Reset();
     }
 
     /// <summary>
     /// 是否已经打完最后一层的 BOSS (打完最后一层出口即通关)
     /// </summary>
-    public bool IsFinalFloorCleared => CurrentFloor >= MaxFloor;
+    public bool IsFinalFloorCleared => Plan.IsLast;
 
     /// <summary>
-    /// 每层敌人血量递增系数
+    /// 解锁并插入隐藏楼层(例如负一楼)。
+    /// 已经插入过、或配置里没有隐藏层时返回 false。
     /// </summary>
-    public const float FloorHpGrowth = 0.16f;
+    public bool UnlockHiddenFloor()
+    {
+        var ok = Plan.TryInsertHidden();
+        if (ok)
+        {
+            Debug.Log($"已解锁隐藏楼层: {Plan.Hidden?.Name}, 总层数变为 {Plan.Count}");
+        }
+
+        return ok;
+    }
 
     /// <summary>
-    /// 按当前层数提升敌人强度, 层数越高敌人越肉
+    /// 按当前楼层提升敌人强度, 倍率取自楼层配置
     /// </summary>
     public void ApplyFloorDifficulty(Enemy enemy)
     {
-        if (enemy == null || CurrentFloor <= 1)
+        if (enemy == null)
         {
             return;
         }
 
-        var multiplier = 1f + (CurrentFloor - 1) * FloorHpGrowth;
+        var multiplier = Plan.CurrentHpMultiplier;
+        if (Mathf.IsEqualApprox(multiplier, 1f))
+        {
+            return;
+        }
+
         enemy.MaxHp = Mathf.RoundToInt(enemy.MaxHp * multiplier);
         enemy.Hp = enemy.MaxHp;
     }
@@ -236,15 +273,20 @@ public partial class DungeonManager : Node2D
             return;
         }
 
-        if (CurrentFloor >= MaxFloor)
+        if (Plan.IsLast)
         {
             //最后一层应该走通关流程, 由 RoomExit 处理
             return;
         }
 
         _isAdvancingFloor = true;
-        CurrentFloor++;
-        Debug.Log($"进入第 {CurrentFloor} 层");
+        if (!Plan.MoveNext())
+        {
+            _isAdvancingFloor = false;
+            return;
+        }
+
+        Debug.Log($"进入 {Plan.CurrentName}");
         UiManager.Open_Game_Loading();
         RestartDungeon(true, CurrConfig, () =>
         {
@@ -256,7 +298,7 @@ public partial class DungeonManager : Node2D
     }
 
     /// <summary>
-    /// 弹出当前层数提示
+    /// 弹出当前楼层提示
     /// </summary>
     public void ShowFloorNotification()
     {
@@ -265,9 +307,14 @@ public partial class DungeonManager : Node2D
             return;
         }
 
+        var floor = Plan.Current;
+        var subtitle = floor != null && !string.IsNullOrEmpty(floor.Subtitle)
+            ? $"\n{floor.Subtitle}"
+            : string.Empty;
+
         BottomTipsPanel.ShowTips(
             ResourcePath.resource_sprite_box_TreasureBox0001_icon_png,
-            $"进入第 {CurrentFloor} 层\n敌人变强了"
+            $"进入 {Plan.CurrentName}{subtitle}"
         );
     }
     

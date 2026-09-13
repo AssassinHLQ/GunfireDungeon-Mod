@@ -65,9 +65,10 @@ public partial class RoomUIPanel : RoomUI
         };
         _floorLabel.SetAnchorsPreset(Godot.Control.LayoutPreset.CenterTop);
         //锚点本身不受父节点偏移影响, 显式设置四周偏移避免继承旧值
-        _floorLabel.OffsetLeft = -100;
+        //楼层名比「第 N 层」长, 左右各留宽一点
+        _floorLabel.OffsetLeft = -170;
         _floorLabel.OffsetTop = 8;
-        _floorLabel.OffsetRight = 100;
+        _floorLabel.OffsetRight = 170;
         _floorLabel.OffsetBottom = 42;
         _floorLabel.AddThemeFontSizeOverride("font_size", 18);
         _floorLabel.AddThemeColorOverride("font_color", new Color("#ffe082"));
@@ -97,7 +98,8 @@ public partial class RoomUIPanel : RoomUI
         }
 
         _shownFloor = dungeonManager.CurrentFloor;
-        _floorLabel.Text = $"第 {_shownFloor} 层";
+        //显示楼层名(来自 FloorPlan.json)与进度, 同一楼层可能出现两次所以带上序号
+        _floorLabel.Text = $"{dungeonManager.CurrentFloorName}  {_shownFloor}/{dungeonManager.TotalFloors}";
         _floorLabel.Visible = true;
     }
 

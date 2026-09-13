@@ -1,0 +1,24 @@
+[gd_resource type="FontVariation" load_steps=3 format=3]
+
+; 游戏统一字体 = 主字体(方舟像素) + 回退字体(缝合像素)
+;
+; 为什么需要回退:
+;   方舟像素字体 12px 只有 24471 个字形, 缺了一批常用字
+;   (实测缺「筑 廊 恐 滚 奖 杀 雾 旋 执 警 纵 瓷 聚 概 毁 拖 鉴」等),
+;   而游戏标题《建筑学院：1999》里的「筑」正好缺失。
+;   缝合像素字体是同一作者、同为 12px 设计, 有 36558 个字形, 覆盖完整,
+;   把它作为回退字体, 缺失的字会自动用它渲染 —— 依然是像素风格, 不会变成系统字体。
+;
+; 用 base_font + fallbacks 而不是直接换字体, 是为了让主字体的排版度量完全不变,
+; 现有界面布局一个像素都不会移动。
+;
+; 授权: 两者均为 SIL OFL 1.1
+;   resource/font/ArkPixel-LICENSE.md
+;   resource/font/FusionPixel-OFL.txt
+
+[ext_resource type="FontFile" uid="uid://y5crqt1mh5i1" path="res://resource/font/ArkPixel-12px-zh_cn.ttf" id="1_base"]
+[ext_resource type="FontFile" uid="uid://dvdyxuhvwtu50" path="res://resource/font/FusionPixel-12px-zh_hans.ttf" id="2_fallback"]
+
+[resource]
+base_font = ExtResource("1_base")
+fallbacks = Array[Font]([ExtResource("2_fallback")])

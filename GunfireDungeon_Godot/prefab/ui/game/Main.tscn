@@ -36,8 +36,8 @@ custom_minimum_size = Vector2(0, 180)
 layout_mode = 2
 size_flags_vertical = 6
 theme_override_constants/outline_size = 16
-theme_override_font_sizes/font_size = 120
-text = "枪火地牢"
+theme_override_font_sizes/font_size = 110
+text = "建筑学院：1999"
 horizontal_alignment = 1
 vertical_alignment = 1
 

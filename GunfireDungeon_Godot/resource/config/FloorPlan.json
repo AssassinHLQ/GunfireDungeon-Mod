@@ -1,0 +1,77 @@
+{
+  "Title": "建筑学院：1999",
+  "Remark": "楼层计划 —— 一局游戏依次经过哪些楼层。顺序完全由本文件决定, 改这里不需要改代码。",
+  "HiddenInsertIndex": 8,
+  "Floors": [
+    {
+      "Id": "F1",
+      "Name": "一楼",
+      "Subtitle": "门厅 · 报到处的横幅还没撤",
+      "HpMultiplier": 1.0,
+      "Kind": "normal"
+    },
+    {
+      "Id": "F2",
+      "Name": "二楼",
+      "Subtitle": "专业教室 · 图板与丁字尺",
+      "HpMultiplier": 1.16,
+      "Kind": "normal"
+    },
+    {
+      "Id": "F3",
+      "Name": "三楼",
+      "Subtitle": "美术教室 · 没画完的石膏像",
+      "HpMultiplier": 1.32,
+      "Kind": "normal"
+    },
+    {
+      "Id": "F4",
+      "Name": "四楼",
+      "Subtitle": "模型室 · 空气里全是木屑味",
+      "HpMultiplier": 1.48,
+      "Kind": "normal"
+    },
+    {
+      "Id": "F5",
+      "Name": "五楼",
+      "Subtitle": "专业教室 · 505 就在这一层",
+      "HpMultiplier": 1.64,
+      "Kind": "normal"
+    },
+    {
+      "Id": "F6",
+      "Name": "六楼",
+      "Subtitle": "阶梯教室 · 空荡的座位",
+      "HpMultiplier": 1.8,
+      "Kind": "normal"
+    },
+    {
+      "Id": "F7",
+      "Name": "七楼",
+      "Subtitle": "顶层 · 恐怖分子的哨点",
+      "HpMultiplier": 2.0,
+      "Kind": "boss"
+    },
+    {
+      "Id": "F6B",
+      "Name": "六楼",
+      "Subtitle": "折返 · 楼梯间里的回声",
+      "HpMultiplier": 2.2,
+      "Kind": "normal"
+    },
+    {
+      "Id": "F505",
+      "Name": "五楼 · 505",
+      "Subtitle": "恐怖分子基地",
+      "HpMultiplier": 2.6,
+      "Kind": "final"
+    }
+  ],
+  "Hidden": {
+    "Id": "B1",
+    "Name": "负一楼",
+    "Subtitle": "地下 · 没有人提起过这里",
+    "HpMultiplier": 2.1,
+    "Kind": "normal"
+  }
+}

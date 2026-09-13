@@ -1,6 +1,6 @@
 [gd_resource type="Theme" load_steps=2 format=3 uid="uid://ds668te2rph30"]
 
-[ext_resource type="FontFile" path="res://resource/font/ArkPixel-12px-zh_cn.ttf" id="1_arkpx"]
+[ext_resource type="FontVariation" path="res://resource/font/GameFont.tres" id="1_arkpx"]
 
 [sub_resource type="StyleBoxFlat" id="2"]
 content_margin_left = 6.0

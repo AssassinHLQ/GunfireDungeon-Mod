@@ -243,7 +243,8 @@ public partial class GameApplication : Node2D, ICoroutine
     }
 
     public override void _Process(double delta)
-    {        var newDelta = (float)delta;
+    {
+        var newDelta = (float)delta;
         InputManager.Update(newDelta);
         SoundManager.Update(newDelta);
         GameSave.Tick(newDelta);

@@ -26,15 +26,15 @@ public partial class RoomExit : Area2D
             else
             {
                 var dungeonManager = gameApplication.DungeonManager;
-                if (dungeonManager.CurrentFloor < DungeonManager.MaxFloor)
+                if (!dungeonManager.IsLastFloor)
                 {
-                    //还没打完最后一层, 保留玩家状态直接进入下一层
+                    //还没到最后楼层, 保留玩家状态直接进入下一层
                     dungeonManager.AdvanceToNextFloor();
                 }
                 else
                 {
                     //最后一层, 通关
-                    Debug.Log($"第 {dungeonManager.CurrentFloor} 层完成, 通关!");
+                    Debug.Log($"{dungeonManager.CurrentFloorName} 完成, 通关!");
                     World.Current.Pause = true;
                     var openVictory = UiManager.Open_Game_Victory();
                     openVictory.Callback = () =>

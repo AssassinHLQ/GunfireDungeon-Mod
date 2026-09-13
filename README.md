@@ -73,9 +73,11 @@ Is the main branch not updated for a long time? Please switch to the [develop](h
 ---
 ### Game Definition  
 
-**Game Title:** 《枪火地牢》  
+**Game Title:** 《建筑学院：1999》  
 
-**English Title:** 《Gunfire Dungeon》  
+**Original Title:** 《枪火地牢 GunfireDungeon》 — this project is a modified version of it  
+
+**English Title:** 《Architecture School: 1999》  
 
 **Art Style:** 2D Pixel  
 
@@ -198,6 +200,8 @@ The same list is shown **in-game** via the **「修改说明」** button on the 
 
 * **Removed the bundled commercial trial bitmap fonts** (`DinkieBitmap-*Demo`, `VonwaonBitmap-*`)
 * Replaced with **[Ark Pixel Font](https://github.com/TakWolf/ark-pixel-font)** (`ArkPixel-12px-zh_cn.ttf`), licensed under **SIL OFL 1.1** — see `resource/font/ArkPixel-LICENSE.md`
+* Ark Pixel 12px only ships 24,471 glyphs and **is missing a number of common characters** (`筑 廊 恐 滚 奖` …) — including `筑` in the game's own title. **[Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font)** (`FusionPixel-12px-zh_hans.ttf`, 36,558 glyphs, also 12px, same author, **SIL OFL 1.1**) is therefore bundled as a **fallback font** — see `resource/font/FusionPixel-OFL.txt`
+* The two are combined by `resource/font/GameFont.tres` as *base font + fallback*, so the **base font's metrics are unchanged** and missing glyphs are drawn by the fallback — still pixel-perfect, never a system font
 * Pixel-font import settings tuned (antialiasing / hinting / subpixel positioning adjusted) so glyphs stay crisp at large sizes
 * Font sizes normalized to **integer multiples of the 12px base size**
 * **Main menu / pause (ESC) menu / settings menu now use new UI assets** (borders, sliders)
