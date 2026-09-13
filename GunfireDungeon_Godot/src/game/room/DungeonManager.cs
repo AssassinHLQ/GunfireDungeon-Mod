@@ -312,9 +312,14 @@ public partial class DungeonManager : Node2D
             ? $"\n{floor.Subtitle}"
             : string.Empty;
 
+        //剧情探索层明确告诉玩家这里没有敌人, 让他敢停下来搜查
+        var hint = Plan.CurrentIsExplore
+            ? "\n这里没有敌人，可以安心搜查"
+            : string.Empty;
+
         BottomTipsPanel.ShowTips(
             ResourcePath.resource_sprite_box_TreasureBox0001_icon_png,
-            $"进入 {Plan.CurrentName}{subtitle}"
+            $"进入 {Plan.CurrentName}{subtitle}{hint}"
         );
     }
     

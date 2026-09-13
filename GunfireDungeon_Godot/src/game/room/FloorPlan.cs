@@ -36,6 +36,19 @@ public class FloorPlan
         /// <summary>楼层类型: normal / boss / final</summary>
         public string Kind { get; set; } = "normal";
 
+        /// <summary>
+        /// 该层是否生成敌人。
+        /// false 用于剧情探索层 —— 例如折返时的六楼、神秘人所在的七楼。
+        /// 关掉后房间不再生成敌人, 门会直接打开, 玩家可以安心搜查线索。
+        /// </summary>
+        public bool Enemies { get; set; } = true;
+
+        /// <summary>是否是安全探索层(无怪, 以搜查线索 / 推进剧情为主)</summary>
+        public bool Explore { get; set; }
+
+        /// <summary>设计备注, 不进游戏, 只给开发者看</summary>
+        public string Note { get; set; } = "";
+
         /// <summary>是否是 boss 层(含最终层)</summary>
         public bool IsBoss => Kind is "boss" or "final";
 
@@ -250,4 +263,14 @@ public class FloorPlan
     public string CurrentName => Current != null && !string.IsNullOrEmpty(Current.Name)
         ? Current.Name
         : $"第 {CurrentNumber} 层";
+
+    /// <summary>
+    /// 当前层是否不生成敌人(剧情探索层)
+    /// </summary>
+    public bool CurrentHasNoEnemies => Current != null && !Current.Enemies;
+
+    /// <summary>
+    /// 当前层是否是安全探索层
+    /// </summary>
+    public bool CurrentIsExplore => Current != null && Current.Explore;
 }

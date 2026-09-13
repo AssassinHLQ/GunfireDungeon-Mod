@@ -158,6 +158,20 @@ public class RoomPreinstall : IDestroy
         {
             wave.Sort((a, b) => (int)(a.DelayTime * 1000 - b.DelayTime * 1000));
         }
+
+        //剧情探索层(折返的六楼、神秘人的七楼等)不生成敌人。
+        //在判定之前统一清掉敌人与 Boss 标记 —— 这样随机敌人、指定敌人、Boss 一并覆盖,
+        //房间的 HasEnemy() 随之为 false, 门会直接打开, 玩家可以安心在这里搜查线索。
+        if (CurrentFloorHasNoEnemies())
+        {
+            foreach (var wave in WaveList)
+            {
+                wave.RemoveAll(mark =>
+                    mark.ActivityType == ActivityType.Enemy ||
+                    mark.ActivityType == ActivityType.Boss);
+            }
+        }
+
         //判断是否有敌人
         CheckHasEnemy();
     }
@@ -291,6 +305,16 @@ public class RoomPreinstall : IDestroy
     public bool HasEnemy()
     {
         return _hsaEnemy;
+    }
+
+    /// <summary>
+    /// 当前楼层是否不生成敌人。
+    /// 楼层计划(resource/config/FloorPlan.json)里 Enemies=false 的楼层会被清空所有敌人标记。
+    /// </summary>
+    private static bool CurrentFloorHasNoEnemies()
+    {
+        var plan = GameApplication.Instance?.DungeonManager?.Plan;
+        return plan != null && plan.CurrentHasNoEnemies;
     }
     
     /// <summary>

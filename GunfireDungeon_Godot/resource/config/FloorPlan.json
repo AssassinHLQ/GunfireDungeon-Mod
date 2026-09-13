@@ -1,77 +1,107 @@
 {
   "Title": "建筑学院：1999",
-  "Remark": "楼层计划 —— 一局游戏依次经过哪些楼层。顺序完全由本文件决定, 改这里不需要改代码。",
+  "Remark": "楼层计划 —— 一局游戏依次经过哪些楼层。顺序、名称、敌人开关都在这里, 改这个文件不需要动代码。",
   "HiddenInsertIndex": 8,
   "Floors": [
     {
       "Id": "F1",
       "Name": "一楼",
-      "Subtitle": "门厅 · 报到处的横幅还没撤",
+      "Subtitle": "大厅 · 3D 打印室 · 模型教室 · 咖啡馆",
       "HpMultiplier": 1.0,
-      "Kind": "normal"
+      "Kind": "normal",
+      "Enemies": true,
+      "Explore": false,
+      "Note": "起点。咖啡馆适合做安全屋 / 存档点, 3D 打印室是很好的伏笔"
     },
     {
       "Id": "F2",
       "Name": "二楼",
-      "Subtitle": "专业教室 · 图板与丁字尺",
-      "HpMultiplier": 1.16,
-      "Kind": "normal"
+      "Subtitle": "风景园林基地",
+      "HpMultiplier": 1.15,
+      "Kind": "normal",
+      "Enemies": true,
+      "Explore": false,
+      "Note": "风景园林基地 —— 植物 / 沙盘 / 图纸, 画面语言和别的楼层明显不同"
     },
     {
       "Id": "F3",
       "Name": "三楼",
-      "Subtitle": "美术教室 · 没画完的石膏像",
-      "HpMultiplier": 1.32,
-      "Kind": "normal"
+      "Subtitle": "活动室 · 办公室",
+      "HpMultiplier": 1.3,
+      "Kind": "normal",
+      "Enemies": true,
+      "Explore": false,
+      "Note": "办公室适合放第一批线索(文件 / 电脑), 活动室做开阔战斗场"
     },
     {
       "Id": "F4",
       "Name": "四楼",
-      "Subtitle": "模型室 · 空气里全是木屑味",
-      "HpMultiplier": 1.48,
-      "Kind": "normal"
+      "Subtitle": "城乡规划基地",
+      "HpMultiplier": 1.45,
+      "Kind": "normal",
+      "Enemies": true,
+      "Explore": false,
+      "Note": "城乡规划基地 —— 大地图 / 城市沙盘, 可以做俯瞰全楼的地图房"
     },
     {
       "Id": "F5",
       "Name": "五楼",
-      "Subtitle": "专业教室 · 505 就在这一层",
-      "HpMultiplier": 1.64,
-      "Kind": "normal"
+      "Subtitle": "建筑学基地 · 505 的门锁着",
+      "HpMultiplier": 1.6,
+      "Kind": "normal",
+      "Enemies": true,
+      "Explore": false,
+      "Note": "第一次到达。505 锁着, 是悬念钩子。此层必须有一个通往六楼的出口, 否则玩家会被卡住"
     },
     {
       "Id": "F6",
       "Name": "六楼",
-      "Subtitle": "阶梯教室 · 空荡的座位",
+      "Subtitle": "建筑美术基地",
       "HpMultiplier": 1.8,
-      "Kind": "normal"
+      "Kind": "normal",
+      "Enemies": true,
+      "Explore": false,
+      "Note": "第一次到达, 仍有敌人"
     },
     {
       "Id": "F7",
       "Name": "七楼",
-      "Subtitle": "顶层 · 恐怖分子的哨点",
-      "HpMultiplier": 2.0,
-      "Kind": "boss"
+      "Subtitle": "神秘人基地 · 楼道里没有活人",
+      "HpMultiplier": 1.9,
+      "Kind": "normal",
+      "Enemies": false,
+      "Explore": true,
+      "Note": "全程无敌人。这里是节奏转折点: 一路打上来, 到这里突然安静。神秘人留下神器, 玩家在此取得关键道具"
     },
     {
       "Id": "F6B",
       "Name": "六楼",
-      "Subtitle": "折返 · 楼梯间里的回声",
-      "HpMultiplier": 2.2,
-      "Kind": "normal"
+      "Subtitle": "折返 · 楼道里安静得反常",
+      "HpMultiplier": 2.0,
+      "Kind": "normal",
+      "Enemies": false,
+      "Explore": true,
+      "Note": "折返。地图和第一次相同但已无敌人 —— 同一空间两种状态, 是叙事的机会。玩家在此搜查线索, 拼凑恐怖分子真相"
     },
     {
       "Id": "F505",
       "Name": "五楼 · 505",
       "Subtitle": "恐怖分子基地",
       "HpMultiplier": 2.6,
-      "Kind": "final"
+      "Kind": "final",
+      "Enemies": true,
+      "Explore": false,
+      "Note": "终章。折返五楼, 用神器破坏 505 的门锁, 最终战斗"
     }
   ],
   "Hidden": {
     "Id": "B1",
     "Name": "负一楼",
-    "Subtitle": "地下 · 没有人提起过这里",
-    "HpMultiplier": 2.1,
-    "Kind": "normal"
+    "Subtitle": "今年刚修的地下室 · 没有人用过",
+    "HpMultiplier": 2.2,
+    "Kind": "normal",
+    "Enemies": false,
+    "Explore": true,
+    "Note": "隐藏层。今年刚修好、一直没人用的地下室: 实验器材、空荡教室、没有灯。默认无敌人, 靠氛围与线索说话; 想要战斗把 Enemies 改成 true 即可"
   }
 }
