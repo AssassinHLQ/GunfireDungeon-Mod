@@ -168,7 +168,6 @@ public class ResourcePath
     public const string resource_shader_Outline2_gdshader = "res://resource/shader/Outline2.gdshader";
     public const string resource_shader_RingOfPower_gdshader = "res://resource/shader/RingOfPower.gdshader";
     public const string resource_shader_Sawtooth_gdshader = "res://resource/shader/Sawtooth.gdshader";
-    public const string resource_sound_bgm_Intro_ogg = "res://resource/sound/bgm/Intro.ogg";
     public const string resource_sound_sfx_beLoaded_BeLoaded0001_ogg = "res://resource/sound/sfx/beLoaded/BeLoaded0001.ogg";
     public const string resource_sound_sfx_beLoaded_BeLoaded0002_ogg = "res://resource/sound/sfx/beLoaded/BeLoaded0002.ogg";
     public const string resource_sound_sfx_beLoaded_BeLoaded0003_ogg = "res://resource/sound/sfx/beLoaded/BeLoaded0003.ogg";

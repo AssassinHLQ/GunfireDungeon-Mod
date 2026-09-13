@@ -24,10 +24,10 @@ public partial class MainBackground : Godot.Control
     private const float Period = 3840f;
 
     /// <summary>天空层漂移速度(像素/秒)</summary>
-    private const float SkySpeed = 16f;
+    private const float SkySpeed = 32f;
 
     /// <summary>远山层漂移速度(像素/秒), 要比天空快才有视差纵深</summary>
-    private const float RidgeSpeed = 45f;
+    private const float RidgeSpeed = 90f;
 
     private TextureRect _skyA;
     private TextureRect _skyB;

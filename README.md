@@ -26,6 +26,40 @@
 
 ---
 
+# 🚫 About download sources (please read)
+
+## The author has never published any packaged build
+
+This repository provides **source code only**. There are **no executables, no archives,
+no installers** — no Release attachments, no file-hosting links, no `.exe` of any kind.
+
+**Consequently:**
+
+- Any `.exe` / installer / "portable" / cloud-drive download claiming to be this game
+  **was NOT published by the author**
+- Such files are **outside the author's control** and may contain **trojans, crypto miners,
+  ransomware, or credential stealers**
+- The author **cannot and never has** inspected, vouched for, or endorsed any third-party build
+
+**Only obtain a ready-to-run build from:**
+
+| Source | Notes |
+|---|---|
+| **Official store pages (Steam / Epic)** | The platform handles distribution and safety review |
+| **Building from source yourself** | See [How to run](#how-to-run) below |
+
+> ### Disclaimer
+>
+> The author **provides source code only**. Any third-party build, repack, or redistribution
+> is **entirely unrelated to the author**. **The author accepts no liability for any loss
+> caused by using executables obtained from unofficial sources.** Verify sources yourself;
+> use at your own risk.
+>
+> If you find someone distributing an untrusted executable under this game's name, please
+> report it in [Issues](https://github.com/AssassinHLQ/GunfireDungeon-Mod/issues).
+
+---
+
 Is the main branch not updated for a long time? Please switch to the [develop](https://github.com/xlljc/GunfireDungeon/tree/develop) branch to view the latest code.
 
 
@@ -179,6 +213,9 @@ The same list is shown **in-game** via the **「修改说明」** button on the 
 * Background sky and clouds by **[ansimuz](https://ansimuz.com)** (`Sunny Land 2D Pixel Art Pack`), licensed under **CC0 1.0**
 * Background mountains and stone wall are **procedurally generated** by this mod, using a brick palette sampled from the base game's own `TileSet1` — see `resource/sprite/ui/mainBackground/LICENSE.md`
 * **UI sound effects by [Kenney](https://kenney.nl)** (`Interface Sounds`), licensed under **CC0 1.0** — see `resource/sound/ui/LICENSE.md`
+* **All in-game sound effects replaced with [Kenney](https://kenney.nl) CC0 audio** (`Impact Sounds`, `Sci-fi Sounds`, `RPG Audio`)
+* Reason for replacement: the upstream audio had no traceable provenance, and five `.mp3` files carried **commercial sound-library metadata** — see `resource/sound/LICENSE.md` for the licence and the full mapping table
+* ⚠️ Trade-off: **Kenney has no realistic gunshots**, so firearms now use energy-weapon (laser) sounds
 
 ### 4. Bug Fixes
 
