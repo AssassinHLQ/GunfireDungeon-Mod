@@ -1,13 +1,30 @@
 [**English**](./README.md)  | [**中文简体**](./README-zh.md)
 
-> ## ⚠️ This is a Modified Version / 本仓库为修改版
->
-> This repository is a **modified version** of [**xlljc/GunfireDungeon**](https://github.com/xlljc/GunfireDungeon).
-> The original project and this modified version are **both released under the [AGPL v3](LICENSE)** license. All original copyright belongs to the original author.
+---
+
+# ⚠️ READ ME FIRST / 请先读这里
+
+### This is a MODIFIED VERSION — NOT the original project
+
+**本仓库是魔改版，不是原版。想找原版请去 [xlljc/GunfireDungeon](https://github.com/xlljc/GunfireDungeon)。**
+
+| | Original / 原版 | This repo / 本仓库 |
+|---|---|---|
+| **Repository** | [xlljc/GunfireDungeon](https://github.com/xlljc/GunfireDungeon) | [AssassinHLQ/**GunfireDungeon-Mod**](https://github.com/AssassinHLQ/GunfireDungeon-Mod) |
+| **Author** | 小李xlxl | Modified by klhuyjnvbnvbnb |
+| **Status** | Upstream, official / 原作者的官方版本 | **Fork + mod / 在原作者基础上魔改** |
+| **Dungeon floors** | Single layer loop / 单层 | **10 floors, advances on exit / 10 层循环** |
+| **Difficulty** | Fixed / 固定 | **Scales with floor / 随层数递增** |
+| **Key rebinding** | No / 无 | **Yes, 17 actions / 17 个可改键** |
+| **Pixel font** | Bundled commercial trial fonts | **Ark Pixel Font (SIL OFL 1.1)** |
+
+> **Both are released under [AGPL v3](LICENSE).** All original copyright belongs to the original author.
 >
 > - **Original author:** 小李xlxl — https://space.bilibili.com/259437820
 > - **Modifier:** klhuyjnvbnvbnb (Bilibili) / [AssassinHLQ](https://github.com/AssassinHLQ) (GitHub)
-> - **See [Modifications](#modifications) below for the full list of changes.**
+> - **Full list of changes:** [Modifications](#modifications) below, or the **「修改说明」** button on the in-game main menu.
+
+---
 
 Is the main branch not updated for a long time? Please switch to the [develop](https://github.com/xlljc/GunfireDungeon/tree/develop) branch to view the latest code.
 
@@ -15,7 +32,7 @@ Is the main branch not updated for a long time? Please switch to the [develop](h
 
 ## A Dungeon Shooter Game Developed with Godot  
 
-**Godot Version:** `4.4 mono`  
+**Godot Version:** `4.7.1 mono` (upgraded from upstream `4.4 mono`)  
 
 **.Net Version:** `9.0`  
 
@@ -65,31 +82,51 @@ Room Preset Editing
 ![png](GunfireDungeon_Document/文档资源/preview3.png)  
 
 ---
-### Launching the Project  
+### Running the Project / 如何运行
 
-The directory structure of the git repository is as follows:  
-> ├ GunfireDungeon_Document (Directory for update logs and related files) 
+This repository is **self-contained** — you only need this repo, no need to download the original project.
+
+> ⚠️ **Requires `Godot 4.7.1 .NET (Mono)`**, not the standard build. The C# target framework is `net9.0`.
+
+1. Install **Godot 4.7.1 .NET** — [godotengine.org/download](https://godotengine.org/download) (pick the **.NET** version)
+   - ⚠️ The standard (non-.NET) build **will not work** — this project is C#.
+2. Install **.NET SDK 9.0 or newer** — [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/9.0)
+3. Open `GunfireDungeon_Godot/project.godot` with Godot 4.7.1 .NET.
+4. On first open, the editor imports assets and compiles the C# project (this takes a minute).
+   - If a prompt about enabling plugins appears, enable them and restart.
+   - **Enable these plugins:** `ds_inspector`, `ds_ui`, `game_plugin`, `node_presetting`
+5. Press **F5** to run.
+
+**Troubleshooting**
+
+| Symptom | Cause / Fix |
+|---|---|
+| `Failed to create an autoload, script '.../InitUiManager.cs' is not compiling` | The C# assembly has not been built yet. Let the editor finish compiling, or run `dotnet build GunfireDungeon_Godot/GunfireDungeon.csproj` once, then reopen. |
+| `Index p_index = 2 is out of bounds` + `Cannot call method 'add_child' on a null value` | Harmless pre-existing upstream editor warning from the `node_presetting` plugin. Does not affect the game. |
+| Project asks to upgrade the format | Already on Godot 4.7 format — no upgrade needed. |
+
+---
+
+### Project Layout / 目录结构
+
+> ├ GunfireDungeon_Document (update logs & related files / 开发日志与相关文件)
 >
-> └ GunfireDungeon_Godot (Godot project directory)  
+> └ GunfireDungeon_Godot (Godot project directory / Godot 工程目录)
 
-Ensure `.NET 9` and `Godot Mono 4.4` are installed.  
+**Godot download link:** [https://godotengine.org/download](https://godotengine.org/download)  
 
-Godot download link: [https://godotengine.org/download](GunfireDungeon_Document/文档资源/setting.png)  
-
-.NET 9 download link: [https://dotnet.microsoft.com/zh-cn/download/dotnet/9.0](GunfireDungeon_Document/文档资源/setting.png)  
-
-Open `GunfireDungeon_Godot/project.godot` using Godot Mono.  
-
-On first launch, enable these two plugins:  
-
-![setting.png](GunfireDungeon_Document/文档资源/setting.png)  
+**.NET download link:** [https://dotnet.microsoft.com/download/dotnet/9.0](https://dotnet.microsoft.com/download/dotnet/9.0)  
 
 ---
 ### Other  
 
 **Development Log:** [Development Log.md](GunfireDungeon_Document/开发日志.md)  
 
-**Bilibili:** [https://space.bilibili.com/259437820](GunfireDungeon_Document/文档资源/setting.png)  
+**Original author (Bilibili):** https://space.bilibili.com/259437820  
+
+**Modifier (Bilibili):** https://space.bilibili.com/1463614316  
+
+**Modifier (GitHub):** https://github.com/AssassinHLQ  
 
 **Project reference plugin:** 
 

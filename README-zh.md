@@ -1,13 +1,30 @@
 [**English**](./README.md)  | [**中文简体**](./README-zh.md)
 
-> ## ⚠️ 本仓库为修改版
->
-> 本仓库是 [**xlljc/GunfireDungeon**](https://github.com/xlljc/GunfireDungeon) 的**修改版**。
-> 原项目与本修改版**均以 [AGPL v3](LICENSE) 协议发布**，原项目版权归原作者所有。
+---
+
+# ⚠️ 先读这里
+
+### 本仓库是魔改版，不是原版
+
+**想找原版请去 [xlljc/GunfireDungeon](https://github.com/xlljc/GunfireDungeon)。**
+
+| | 原版 | 本仓库 |
+|---|---|---|
+| **仓库** | [xlljc/GunfireDungeon](https://github.com/xlljc/GunfireDungeon) | [AssassinHLQ/**GunfireDungeon-Mod**](https://github.com/AssassinHLQ/GunfireDungeon-Mod) |
+| **作者** | 小李xlxl | 由 klhuyjnvbnvbnb 修改 |
+| **性质** | 原作者官方版本 | **在原作者基础上魔改** |
+| **地牢层数** | 单层 | **10 层循环，到出口进下一层** |
+| **难度** | 固定 | **随层数递增** |
+| **键位设置** | 无 | **有，17 个动作可改键** |
+| **像素字体** | 内附商业试用版字体 | **方舟像素字体（SIL OFL 1.1）** |
+
+> **两者均以 [AGPL v3](LICENSE) 协议发布**，原项目版权归原作者所有。
 >
 > - **原作者：** 小李xlxl — https://space.bilibili.com/259437820
 > - **修改者：** klhuyjnvbnvbnb（哔哩哔哩）/ [AssassinHLQ](https://github.com/AssassinHLQ)（GitHub）
-> - **完整改动列表见下方 [修改说明](#修改说明)。**
+> - **完整改动列表：** 见下方 [修改说明](#修改说明)，或游戏内主菜单的「**修改说明**」按钮。
+
+---
 
 主分支长时间不更新？请切换到[develop](https://github.com/xlljc/GunfireDungeon/tree/develop)分支查看最新代码
 
@@ -15,7 +32,7 @@
 
 ## 一款由Godot开发的地牢射击类型的游戏
 
-**Godot版本：** `4.4 mono`
+**Godot版本：** `4.7.1 mono`（由上游 `4.4 mono` 升级而来）
 
 **.Net版本：** `9.0`
 
@@ -65,37 +82,50 @@
 ![png](GunfireDungeon_Document/文档资源/preview3.png)
 
 ---
-### 启动项目
+### 如何运行
 
-git仓库的目录结构如下
+本仓库**自包含** —— 只需要下载这个仓库，不需要再去下载原作者的仓库。
+
+> ⚠️ 必须使用 **`Godot 4.7.1 .NET（Mono）版`**，**标准版无法运行**（本项目是 C# 工程，目标框架 `net9.0`）。
+
+1. 安装 **Godot 4.7.1 .NET 版** —— [godotengine.org/download](https://godotengine.org/download)（注意要选 **.NET** 那个）
+2. 安装 **.NET SDK 9.0 或更新版本** —— [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/9.0)
+3. 用 Godot 4.7.1 .NET 打开 `GunfireDungeon_Godot/project.godot`
+4. 首次打开时编辑器会自动导入资源并编译 C# 工程（大约需要一两分钟）
+   - 如果弹出启用插件的提示，启用后重启
+   - **需要启用的插件：** `ds_inspector`、`ds_ui`、`game_plugin`、`node_presetting`
+5. 按 **F5** 运行
+
+**常见问题**
+
+| 现象 | 原因与解决办法 |
+|---|---|
+| `Failed to create an autoload, script '.../InitUiManager.cs' is not compiling` | C# 还没编译。等编辑器编译完，或先执行一次 `dotnet build GunfireDungeon_Godot/GunfireDungeon.csproj`，再重新打开。 |
+| `Index p_index = 2 is out of bounds` + `Cannot call method 'add_child' on a null value` | 上游自带的编辑器警告，来自 `node_presetting` 插件，**不影响游戏运行**。 |
+| 提示升级工程格式 | 本工程已是 Godot 4.7 格式，无需升级。 |
+
+---
+
+### 目录结构
+
 > ├ GunfireDungeon_Document (更新日志相关的目录) 
 >
 > └ GunfireDungeon_Godot (Godot工程目录)
 
+**godot下载地址：** [https://godotengine.org/download](https://godotengine.org/download)
 
-
-请确保安装了`.net9`和`godot mono4.4`
-
-godot下载地址：[https：//godotengine.org/download](GunfireDungeon_Document/文档资源/setting.png)
-
-.net9下载地址：[https：//dotnet.microsoft.com/zh-cn/download/dotnet/9.0](GunfireDungeon_Document/文档资源/setting.png)
-
-
-
-使用GodotMono版打开`GunfireDungeon_Godot/project.godot`
-
-并且第一次打开请启用这两个插件：
-
-![setting.png](GunfireDungeon_Document/文档资源/setting.png)
-
-
+**.net9下载地址：** [https://dotnet.microsoft.com/zh-cn/download/dotnet/9.0](https://dotnet.microsoft.com/zh-cn/download/dotnet/9.0)
 
 ---
 ### 其他
 
 **开发日志：** [开发日志.md](GunfireDungeon_Document/开发日志.md) 
 
-**哔哩哔哩：** https://space.bilibili.com/259437820
+**原作者哔哩哔哩：** https://space.bilibili.com/259437820
+
+**修改者哔哩哔哩：** https://space.bilibili.com/1463614316
+
+**修改者 GitHub：** https://github.com/AssassinHLQ
 
 **项目引用插件：**
 
