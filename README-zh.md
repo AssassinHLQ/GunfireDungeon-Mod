@@ -1,5 +1,14 @@
 [**English**](./README.md)  | [**中文简体**](./README-zh.md)
 
+> ## ⚠️ 本仓库为修改版
+>
+> 本仓库是 [**xlljc/GunfireDungeon**](https://github.com/xlljc/GunfireDungeon) 的**修改版**。
+> 原项目与本修改版**均以 [AGPL v3](LICENSE) 协议发布**，原项目版权归原作者所有。
+>
+> - **原作者：** 小李xlxl — https://space.bilibili.com/259437820
+> - **修改者：** klhuyjnvbnvbnb（哔哩哔哩）/ [AssassinHLQ](https://github.com/AssassinHLQ)（GitHub）
+> - **完整改动列表见下方 [修改说明](#修改说明)。**
+
 主分支长时间不更新？请切换到[develop](https://github.com/xlljc/GunfireDungeon/tree/develop)分支查看最新代码
 
 
@@ -92,3 +101,51 @@ godot下载地址：[https：//godotengine.org/download](GunfireDungeon_Document
 
 * Ds_Ui：https://github.com/xlljc/Ds_Ui
 * godot-node-presetting：https://github.com/DeerLuuu/godot-node-presetting
+
+---
+
+## 修改说明
+
+本节列出本修改版相对原项目的全部改动，用于满足 **AGPL v3 第 5 条**「显著标注修改」的要求。
+
+同样的内容在**游戏内**也有 —— 主菜单的「**修改说明**」按钮。
+
+### 一、流程与玩法
+
+* 新增**楼层循环系统**，地牢共 **10 层**
+* 到达出口**进入下一层**，不再直接通关
+* 通关条件改为**打通第 10 层**
+* **跨层保留**玩家血量、护盾、武器、道具
+* **敌人血量按层数递增**，每层提升 16%
+* 进入新层时弹出提示
+* 顶部新增**当前层数显示**
+
+### 二、界面与显示
+
+* 游戏改为**全屏显示**，等比缩放
+* **主菜单字号放大至三倍**
+* **设置面板字号放大至四倍**
+* 新增**键位设置**，可自定义 17 个操作按键
+* 键位保存在存档中，重新启动后也会保留
+* 支持一键**恢复默认键位**
+
+### 三、字体
+
+* **移除原项目内附带的商业试用版点阵字体**（`DinkieBitmap-*Demo`、`VonwaonBitmap-*`）
+* 替换为 **[方舟像素字体](https://github.com/TakWolf/ark-pixel-font)**（`ArkPixel-12px-zh_cn.ttf`），采用 **SIL OFL 1.1** 协议 —— 授权文件见 `resource/font/ArkPixel-LICENSE.md`
+* 调整像素字体导入参数（抗锯齿 / hinting / 次像素定位），保证放大后字形锐利
+* 字号统一调整为**基准字号 12 的整数倍**
+
+### 四、问题修复
+
+* 修复设置面板超出屏幕、内容溢出到面板外的问题
+* 修复物品图册中部分条目缺少图标导致的报错
+
+### 五、其他
+
+* 清理无用的导入缓存与失效常量
+
+---
+
+> 本说明仅为改动记录。**原项目版权归原作者所有。**
+

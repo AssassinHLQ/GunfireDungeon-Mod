@@ -32,7 +32,7 @@ grow_vertical = 2
 [node name="Title" type="Label" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 6
-theme_override_font_sizes/font_size = 120
+theme_override_font_sizes/font_size = 360
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -42,31 +42,31 @@ size_flags_vertical = 3
 alignment = 1
 
 [node name="Start" type="Button" parent="VBoxContainer/ButtonList"]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 theme = ExtResource("2_bbd6i")
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 96
 text = "开始游戏"
 
 [node name="Tools" type="Button" parent="VBoxContainer/ButtonList"]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 theme = ExtResource("2_bbd6i")
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 96
 text = "地图编辑器"
 
 [node name="Setting" type="Button" parent="VBoxContainer/ButtonList"]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 theme = ExtResource("2_bbd6i")
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 96
 text = "设置"
 
 [node name="Exit" type="Button" parent="VBoxContainer/ButtonList"]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 theme = ExtResource("2_bbd6i")
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 96
 text = "退出"
 
 [node name="Version" type="Label" parent="."]
@@ -76,12 +76,13 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -195.0
-offset_top = -53.0
+offset_left = -300.0
+offset_top = -100.0
 offset_right = -10.0
-offset_bottom = -1.0
+offset_bottom = -40.0
 grow_horizontal = 0
 grow_vertical = 0
+theme_override_font_sizes/font_size = 48
 text = "v0.01"
 horizontal_alignment = 2
 
@@ -91,10 +92,11 @@ anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 23.0
-offset_top = -100.0
-offset_right = 215.0
-offset_bottom = -68.0
+offset_top = -252.0
+offset_right = 560.0
+offset_bottom = -180.0
 grow_vertical = 0
+theme_override_font_sizes/font_size = 48
 text = "bilibili:小李xlxl"
 uri = "https://space.bilibili.com/259437820"
 
@@ -104,9 +106,23 @@ anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 23.0
-offset_top = -55.0
-offset_right = 183.0
-offset_bottom = -23.0
+offset_top = -172.0
+offset_right = 470.0
+offset_bottom = -100.0
 grow_vertical = 0
+theme_override_font_sizes/font_size = 48
 text = "GitHub源码"
 uri = "https://github.com/xlljc/GunfireDungeon"
+
+[node name="ChangelogButton" type="LinkButton" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 23.0
+offset_top = -92.0
+offset_right = 300.0
+offset_bottom = -20.0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 48
+text = "修改说明"

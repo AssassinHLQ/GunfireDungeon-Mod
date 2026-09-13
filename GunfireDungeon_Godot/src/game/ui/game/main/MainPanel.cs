@@ -9,6 +9,10 @@ namespace UI.game.Main;
 /// </summary>
 public partial class MainPanel : Main
 {
+    /// <summary>
+    /// 修改说明浮层
+    /// </summary>
+    private ChangelogOverlay _changelog;
 
     public override void OnCreateUi()
     {
@@ -16,6 +20,16 @@ public partial class MainPanel : Main
         S_Tools.Instance.Pressed += OnToolsClick;
         S_Setting.Instance.Pressed += OnSettingClick;
         S_Exit.Instance.Pressed += OnExitClick;
+
+        //「修改说明」按钮与浮层
+        //注意: Main 里有同名嵌套类 LinkButton, 泛型必须写 Godot.LinkButton, 否则解析到嵌套类会取不到节点
+        var changelogButton = GetNodeOrNull<Godot.LinkButton>("ChangelogButton");
+        if (changelogButton != null)
+        {
+            _changelog = ChangelogOverlay.Create();
+            AddChild(_changelog);
+            changelogButton.Pressed += () => _changelog.ShowOverlay();
+        }
 
 #if !TOOLS
         S_Tools.Instance.Visible = false;

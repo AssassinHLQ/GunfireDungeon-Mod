@@ -60,7 +60,7 @@ public static class ResourceManager
         {
             if (_defaultFont16Px == null)
             {
-                _defaultFont16Px = Load<Font>(ResourcePath.resource_font_VonwaonBitmap16px_ttf);
+                _defaultFont16Px = Load<Font>(ResourcePath.resource_font_ArkPixel12pxzh_cn_ttf);
             }
 
             return _defaultFont16Px;
@@ -77,7 +77,7 @@ public static class ResourceManager
         {
             if (_defaultFont12Px == null)
             {
-                _defaultFont12Px = Load<Font>(ResourcePath.resource_font_VonwaonBitmap12px_ttf);
+                _defaultFont12Px = Load<Font>(ResourcePath.resource_font_ArkPixel12pxzh_cn_ttf);
             }
 
             return _defaultFont12Px;

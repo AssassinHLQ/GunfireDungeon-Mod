@@ -5,7 +5,6 @@
 [ext_resource type="PackedScene" uid="uid://lo71pmoaul0j" path="res://prefab/ui/component/game/PartPackSlot.tscn" id="3_v4de6"]
 [ext_resource type="Shader" uid="uid://bukuvnjyi8ggb" path="res://resource/shader/Outline.gdshader" id="4_3klww"]
 [ext_resource type="Texture2D" uid="uid://7g1k5v212i6j" path="res://resource/sprite/weapon/weapon0005/Weapon0005.png" id="4_861nw"]
-[ext_resource type="FontFile" uid="uid://dd5aeidrx6qvu" path="res://resource/font/VonwaonBitmap-16px.ttf" id="5_pne8q"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_3klww"]
 resource_local_to_scene = true
@@ -116,13 +115,11 @@ theme_override_constants/separation = 10
 
 [node name="WeaponMana" type="Label" parent="VBoxContainer/WeaponBg/VBoxContainer/WeaponItem/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_pne8q")
 theme_override_font_sizes/font_size = 32
 text = "法力值：99/99"
 
 [node name="WeaponBuffMana" type="Label" parent="VBoxContainer/WeaponBg/VBoxContainer/WeaponItem/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_pne8q")
 theme_override_font_sizes/font_size = 32
 text = "缓冲区：99/99"
 
@@ -150,6 +147,5 @@ offset_left = 23.0
 offset_top = 31.0
 offset_right = 143.0
 offset_bottom = 71.0
-theme_override_fonts/font = ExtResource("5_pne8q")
 theme_override_font_sizes/font_size = 32
 text = "开火"

@@ -1,10 +1,11 @@
-﻿
+
 using System;
 using System.Collections;
 using System.Linq;
 using Config;
 using DsUi;
 using Godot;
+using UI.game.BottomTips;
 
 /// <summary>
 /// 地牢管理器
@@ -55,10 +56,55 @@ public partial class DungeonManager : Node2D
     /// 加载角色ID
     /// </summary>
     public string LoadRoleId { get; set; }
+
+    /// <summary>
+    /// 本局地牢的总层数, 打完第 MaxFloor 层的 BOSS 再走到出口才算通关
+    /// </summary>
+    public const int MaxFloor = 10;
+
+    /// <summary>
+    /// 当前所在层数, 从 1 开始
+    /// </summary>
+    public int CurrentFloor { get; private set; } = 1;
+
+    /// <summary>
+    /// 每局开始时重置层数
+    /// </summary>
+    public void ResetFloor()
+    {
+        CurrentFloor = 1;
+    }
+
+    /// <summary>
+    /// 是否已经打完最后一层的 BOSS (打完最后一层出口即通关)
+    /// </summary>
+    public bool IsFinalFloorCleared => CurrentFloor >= MaxFloor;
+
+    /// <summary>
+    /// 每层敌人血量递增系数
+    /// </summary>
+    public const float FloorHpGrowth = 0.16f;
+
+    /// <summary>
+    /// 按当前层数提升敌人强度, 层数越高敌人越肉
+    /// </summary>
+    public void ApplyFloorDifficulty(Enemy enemy)
+    {
+        if (enemy == null || CurrentFloor <= 1)
+        {
+            return;
+        }
+
+        var multiplier = 1f + (CurrentFloor - 1) * FloorHpGrowth;
+        enemy.MaxHp = Mathf.RoundToInt(enemy.MaxHp * multiplier);
+        enemy.Hp = enemy.MaxHp;
+    }
     
     private UiBase _prevUi;
     private DungeonTileMap _dungeonTileMap;
     private DungeonGenerator _dungeonGenerator;
+    //防止重复触发进入下一层
+    private bool _isAdvancingFloor;
     
     //用于检查房间敌人的计时器
     private float _checkEnemyTimer = 0;
@@ -178,6 +224,51 @@ public partial class DungeonManager : Node2D
     {
         IsInDungeon = false;
         GameApplication.Instance.StartCoroutine(RunExitDungeonCoroutine(keepPlayer, finish));
+    }
+
+    /// <summary>
+    /// 保留玩家、武器和道具, 进入下一层
+    /// </summary>
+    public void AdvanceToNextFloor()
+    {
+        if (_isAdvancingFloor || !IsInDungeon || CurrConfig == null)
+        {
+            return;
+        }
+
+        if (CurrentFloor >= MaxFloor)
+        {
+            //最后一层应该走通关流程, 由 RoomExit 处理
+            return;
+        }
+
+        _isAdvancingFloor = true;
+        CurrentFloor++;
+        Debug.Log($"进入第 {CurrentFloor} 层");
+        UiManager.Open_Game_Loading();
+        RestartDungeon(true, CurrConfig, () =>
+        {
+            UiManager.Destroy_Game_Loading();
+            _isAdvancingFloor = false;
+            //进入新层后弹出提示
+            ShowFloorNotification();
+        });
+    }
+
+    /// <summary>
+    /// 弹出当前层数提示
+    /// </summary>
+    public void ShowFloorNotification()
+    {
+        if (!IsInDungeon)
+        {
+            return;
+        }
+
+        BottomTipsPanel.ShowTips(
+            ResourcePath.resource_sprite_box_TreasureBox0001_icon_png,
+            $"进入第 {CurrentFloor} 层\n敌人变强了"
+        );
     }
     
     //-------------------------------------------------------------------------------------

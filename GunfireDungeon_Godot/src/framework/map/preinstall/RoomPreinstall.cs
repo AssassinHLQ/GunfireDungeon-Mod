@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -445,6 +445,8 @@ public class RoomPreinstall : IDestroy
 
                     if (activityObject is Enemy enemy)
                     {
+                        //按当前层数提升敌人强度
+                        GameApplication.Instance.DungeonManager?.ApplyFloorDifficulty(enemy);
                         //出生调用
                         enemy.OnBornFromMark();
                     }

@@ -439,6 +439,8 @@ public partial class GameApplication : Node2D, ICoroutine
     {
         GameSave = GameSave.Load();
         GameSave.Init(app);
+        //应用玩家自定义的键位
+        KeyBindingManager.ApplyAll();
     }
 
     /// <summary>

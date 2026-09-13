@@ -1,5 +1,6 @@
-﻿
+
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -12,7 +13,7 @@ public partial class GameSave
     /// 是否全屏
     /// </summary>
     [JsonInclude]
-    public bool FullScreen = false;
+    public bool FullScreen = true;
     
     /// <summary>
     /// 是否垂直同步
@@ -55,6 +56,12 @@ public partial class GameSave
     /// </summary>
     [JsonInclude]
     public float JoystickAimAssistStrength = 0.5f;
+
+    /// <summary>
+    /// 自定义键位, 键为输入动作名称, 值为物理键码
+    /// </summary>
+    [JsonInclude]
+    public Dictionary<string, long> KeyBindings = new();
     
     private float _timer;
 

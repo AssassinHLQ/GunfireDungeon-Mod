@@ -1,4 +1,4 @@
-﻿using DsUi;
+using DsUi;
 using Godot;
 
 /// <summary>
@@ -26,6 +26,7 @@ public partial class DungeonEntrance : Area2D
             else
             {
                 UiManager.Open_Game_Loading();
+                GameApplication.Instance.DungeonManager.ResetFloor(); //每局从第 1 层开始
                 GameApplication.Instance.DungeonManager.ExitHall(true, () =>
                 {
                     GameApplication.Instance.DungeonManager.LoadDungeon(config, () =>

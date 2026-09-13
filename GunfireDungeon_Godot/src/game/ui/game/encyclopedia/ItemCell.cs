@@ -14,12 +14,17 @@ public class ItemCell : UiCell<Encyclopedia.ObjectButton, ExcelConfig.ActivityBa
 
     public override void OnSetData(ExcelConfig.ActivityBase data)
     {
-        CellNode.L_PreviewImage.Instance.Texture = ResourceManager.LoadTexture2D(data.Icon);
+        // 部分配置(子弹/弹壳/门/伤害数字等)没有图标资源, 直接加载空路径会报错
+        CellNode.L_PreviewImage.Instance.Texture = string.IsNullOrEmpty(data.Icon)
+            ? null
+            : ResourceManager.LoadTexture2D(data.Icon);
     }
 
     public override IEnumerator OnSetDataCoroutine(ExcelConfig.ActivityBase data)
     {
-        CellNode.L_PreviewImage.Instance.Texture = ResourceManager.LoadTexture2D(data.Icon);
+        CellNode.L_PreviewImage.Instance.Texture = string.IsNullOrEmpty(data.Icon)
+            ? null
+            : ResourceManager.LoadTexture2D(data.Icon);
         yield break;
     }
 

@@ -25,9 +25,16 @@ public partial class RoomExit : Area2D
             }
             else
             {
-                var nextName = gameApplication.GetNextDungeonGroup(gameApplication.DungeonManager.CurrConfig.GroupName);
-                if (string.IsNullOrEmpty(nextName)) //没有下一层, 表示已经通关
+                var dungeonManager = gameApplication.DungeonManager;
+                if (dungeonManager.CurrentFloor < DungeonManager.MaxFloor)
                 {
+                    //还没打完最后一层, 保留玩家状态直接进入下一层
+                    dungeonManager.AdvanceToNextFloor();
+                }
+                else
+                {
+                    //最后一层, 通关
+                    Debug.Log($"第 {dungeonManager.CurrentFloor} 层完成, 通关!");
                     World.Current.Pause = true;
                     var openVictory = UiManager.Open_Game_Victory();
                     openVictory.Callback = () =>
@@ -44,16 +51,6 @@ public partial class RoomExit : Area2D
                             });
                         });
                     };
-                }
-                else //有下一层
-                {
-                    var config = gameApplication.GetDungeonConfig(nextName, gameApplication.DungeonManager.CurrConfig.DungeonLayer + 1);
-                    
-                    UiManager.Open_Game_Loading();
-                    GameApplication.Instance.DungeonManager.RestartDungeon(true, config, () =>
-                    {
-                        UiManager.Destroy_Game_Loading();
-                    });
                 }
             }
         }

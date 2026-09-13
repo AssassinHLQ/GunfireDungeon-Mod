@@ -30,6 +30,13 @@ public partial class RoomUIPanel : RoomUI
     public int OcclusionCount { get; set; }
     
     private EventFactory<EventEnum> _factory;
+
+    /// <summary>
+    /// 顶部显示的当前层数
+    /// </summary>
+    private Label _floorLabel;
+    //上一次显示的层数, 用于避免重复刷新
+    private int _shownFloor = -1;
     
     public override void OnCreateUi()
     {
@@ -37,9 +44,61 @@ public partial class RoomUIPanel : RoomUI
         RoomMap = OpenNestedUi<RoomMapPanel>(UiManager.UiName.Game_RoomMap);
         PartPack = OpenNestedUi<PartPackUIPanel>(UiManager.UiName.Game_PartPackUI);
         PartPack.HideUi();
+
+        CreateFloorLabel();
         
         MouseEntered += () => InputManager.SetMouseUiBlockage(false);
         MouseExited += () => InputManager.SetMouseUiBlockage(true);
+    }
+
+    /// <summary>
+    /// 创建顶部层数文本
+    /// </summary>
+    private void CreateFloorLabel()
+    {
+        _floorLabel = new Label
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            MouseFilter = Godot.Control.MouseFilterEnum.Ignore,
+            Visible = false
+        };
+        _floorLabel.SetAnchorsPreset(Godot.Control.LayoutPreset.CenterTop);
+        //锚点本身不受父节点偏移影响, 显式设置四周偏移避免继承旧值
+        _floorLabel.OffsetLeft = -100;
+        _floorLabel.OffsetTop = 8;
+        _floorLabel.OffsetRight = 100;
+        _floorLabel.OffsetBottom = 42;
+        _floorLabel.AddThemeFontSizeOverride("font_size", 18);
+        _floorLabel.AddThemeColorOverride("font_color", new Color("#ffe082"));
+        _floorLabel.AddThemeColorOverride("font_outline_color", new Color(0, 0, 0, 0.85f));
+        _floorLabel.AddThemeConstantOverride("outline_size", 4);
+        S_Control.Instance.AddChild(_floorLabel);
+
+        RefreshFloorLabel();
+    }
+
+    /// <summary>
+    /// 刷新层数显示, 大厅里不显示
+    /// </summary>
+    public void RefreshFloorLabel()
+    {
+        if (_floorLabel == null)
+        {
+            return;
+        }
+
+        var dungeonManager = GameApplication.Instance.DungeonManager;
+        if (World.Current is Hall || dungeonManager == null || !dungeonManager.IsInDungeon)
+        {
+            _floorLabel.Visible = false;
+            _shownFloor = -1;
+            return;
+        }
+
+        _shownFloor = dungeonManager.CurrentFloor;
+        _floorLabel.Text = $"第 {_shownFloor} 层";
+        _floorLabel.Visible = true;
     }
 
     public override void OnShowUi()
@@ -56,6 +115,8 @@ public partial class RoomUIPanel : RoomUI
         {
             RoomMap.ShowUi();
         }
+
+        RefreshFloorLabel();
     }
 
     public override void OnHideUi()
@@ -71,6 +132,13 @@ public partial class RoomUIPanel : RoomUI
 
     public override void Process(float delta)
     {
+        //层数变化时自动刷新顶部显示
+        var dungeonManager = GameApplication.Instance.DungeonManager;
+        if (dungeonManager != null && dungeonManager.IsInDungeon && dungeonManager.CurrentFloor != _shownFloor)
+        {
+            RefreshFloorLabel();
+        }
+
         if (InputManager.PartPackage)
         {
             if (PartPack.IsOpen)

@@ -149,11 +149,7 @@ public class ResourcePath
     public const string resource_config_Sound_json = "res://resource/config/Sound.json";
     public const string resource_config_WeaponBase_json = "res://resource/config/WeaponBase.json";
     public const string resource_curve_Curve1_tres = "res://resource/curve/Curve1.tres";
-    public const string resource_font_DinkieBitmap7pxDemo_ttf = "res://resource/font/DinkieBitmap-7pxDemo.ttf";
-    public const string resource_font_DinkieBitmap9pxDemo_ttf = "res://resource/font/DinkieBitmap-9pxDemo.ttf";
-    public const string resource_font_DinkieBitmap9pxItalicDemo_ttf = "res://resource/font/DinkieBitmap-9pxItalicDemo.ttf";
-    public const string resource_font_VonwaonBitmap12px_ttf = "res://resource/font/VonwaonBitmap-12px.ttf";
-    public const string resource_font_VonwaonBitmap16px_ttf = "res://resource/font/VonwaonBitmap-16px.ttf";
+    public const string resource_font_ArkPixel12pxzh_cn_ttf = "res://resource/font/ArkPixel-12px-zh_cn.ttf";
     public const string resource_material_Blend_tres = "res://resource/material/Blend.tres";
     public const string resource_material_Grid_tres = "res://resource/material/Grid.tres";
     public const string resource_material_Liquid_tres = "res://resource/material/Liquid.tres";

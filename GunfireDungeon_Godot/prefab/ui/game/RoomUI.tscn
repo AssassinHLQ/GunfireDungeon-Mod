@@ -4,7 +4,6 @@
 [ext_resource type="Script" uid="uid://bkgrfjj3221jl" path="res://src/game/ui/game/roomUI/InteractiveTipBarHandler.cs" id="2_27wi7"]
 [ext_resource type="Texture2D" uid="uid://c6bvy3gvqmaw0" path="res://resource/sprite/ui/roomUI/icon_bullet.png" id="2_ruc0p"]
 [ext_resource type="Texture2D" uid="uid://ctqjf7oi4rg5a" path="res://resource/sprite/ui/keyboard/e.png" id="3_h7n2a"]
-[ext_resource type="FontFile" uid="uid://dd5aeidrx6qvu" path="res://resource/font/VonwaonBitmap-16px.ttf" id="4_h406q"]
 [ext_resource type="Texture2D" uid="uid://brcgd0hdvwfao" path="res://resource/sprite/ui/roomUI/ReloadBar.png" id="4_hy44s"]
 [ext_resource type="Texture2D" uid="uid://dxb00j736r5ma" path="res://resource/sprite/ui/roomUI/ReloadBarBlock.png" id="5_w3lq2"]
 [ext_resource type="Script" uid="uid://ct0t3hvud0qgi" path="res://src/game/ui/game/roomUI/ReloadBarHandler.cs" id="7_081mo"]
@@ -124,7 +123,6 @@ offset_bottom = 55.0
 grow_horizontal = 2
 grow_vertical = 0
 scale = Vector2(0.25, 0.25)
-theme_override_fonts/font = ExtResource("4_h406q")
 text = "物体名称"
 label_settings = SubResource("LabelSettings_toas6")
 horizontal_alignment = 1
@@ -292,7 +290,6 @@ offset_top = -4.0
 offset_right = 285.0
 offset_bottom = 4.0
 grow_vertical = 2
-theme_override_fonts/font = ExtResource("4_h406q")
 theme_override_font_sizes/font_size = 32
 text = "0"
 
