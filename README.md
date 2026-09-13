@@ -172,10 +172,13 @@ The same list is shown **in-game** via the **「修改说明」** button on the 
 * Text now has a **dark outline** so it stays readable over the brighter background
 * **Encyclopedia item names and descriptions enlarged**; long descriptions wrap automatically
 * **The pause (ESC) menu gained a stone panel backing**, matching the main menu and settings menu
+* **New UI sound effects**: button click, mouse hover, checkbox toggle, slider release
+* UI sounds play on the SFX bus, so the in-game "SFX volume" slider controls them
 * **Key rebinding now supports mouse buttons** (left / right / middle / side); press **ESC to cancel** a rebind, and the right mouse button can be bound normally
 * **"Restore default keys" now takes effect immediately**, no restart required
 * Background sky and clouds by **[ansimuz](https://ansimuz.com)** (`Sunny Land 2D Pixel Art Pack`), licensed under **CC0 1.0**
 * Background mountains and stone wall are **procedurally generated** by this mod, using a brick palette sampled from the base game's own `TileSet1` — see `resource/sprite/ui/mainBackground/LICENSE.md`
+* **UI sound effects by [Kenney](https://kenney.nl)** (`Interface Sounds`), licensed under **CC0 1.0** — see `resource/sound/ui/LICENSE.md`
 
 ### 4. Bug Fixes
 

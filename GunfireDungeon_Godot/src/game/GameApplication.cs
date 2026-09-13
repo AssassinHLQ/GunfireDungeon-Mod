@@ -203,6 +203,9 @@ public partial class GameApplication : Node2D, ICoroutine
         RenderingServer.SetDefaultClearColor(new Color(0, 0, 0, 1));
         //随机化种子
         GD.Randomize();
+        //界面音效: 挂在节点添加事件上, 之后创建的所有按钮都会自动带音效
+        //必须放在创建任何界面之前
+        UiSound.Install(GetTree());
         //固定帧率
         Engine.MaxFps = TargetFps;
         //Engine.TimeScale = 0.2f;
@@ -240,8 +243,7 @@ public partial class GameApplication : Node2D, ICoroutine
     }
 
     public override void _Process(double delta)
-    {
-        var newDelta = (float)delta;
+    {        var newDelta = (float)delta;
         InputManager.Update(newDelta);
         SoundManager.Update(newDelta);
         GameSave.Tick(newDelta);
