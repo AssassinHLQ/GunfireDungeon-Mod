@@ -159,12 +159,14 @@
 * 键位保存在存档中，重新启动后也会保留
 * 支持一键**恢复默认键位**
 
-### 三、字体
+### 三、字体与界面素材
 
 * **移除原项目内附带的商业试用版点阵字体**（`DinkieBitmap-*Demo`、`VonwaonBitmap-*`）
 * 替换为 **[方舟像素字体](https://github.com/TakWolf/ark-pixel-font)**（`ArkPixel-12px-zh_cn.ttf`），采用 **SIL OFL 1.1** 协议 —— 授权文件见 `resource/font/ArkPixel-LICENSE.md`
 * 调整像素字体导入参数（抗锯齿 / hinting / 次像素定位），保证放大后字形锐利
 * 字号统一调整为**基准字号 12 的整数倍**
+* **主菜单 / ESC 菜单 / 设置菜单改用新的界面素材**（边框、滑块）
+* 界面素材来自 **[Kenney](https://kenney.nl)**（`Fantasy UI Borders`、`UI Pack`），采用 **CC0 1.0** 协议 —— 授权文件见 `resource/sprite/ui/fantasyBorder/LICENSE.md`
 
 ### 四、问题修复
 

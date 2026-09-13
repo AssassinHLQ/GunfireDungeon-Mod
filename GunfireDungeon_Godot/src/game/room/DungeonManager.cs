@@ -1195,7 +1195,7 @@ public partial class DungeonManager : Node2D
             case DungeonRoomType.Inlet: return "起始房间";
             case DungeonRoomType.Outlet: return "结束房间";
             case DungeonRoomType.Boss: return "Boss房间";
-            case DungeonRoomType.Reward: return "奖励房间";
+            case DungeonRoomType.Reward: return "奖励房";
             case DungeonRoomType.Shop: return "商店房间";
             case DungeonRoomType.Event: return "事件房间";
         }

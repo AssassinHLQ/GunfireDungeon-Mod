@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://bnwweusrc44xy"]
+[gd_scene load_steps=4 format=3 uid="uid://bnwweusrc44xy"]
 
 [ext_resource type="Script" uid="uid://b7nhbvdhafses" path="res://src/game/ui/game/setting/SettingPanel.cs" id="1_ff0oi"]
 [ext_resource type="Theme" uid="uid://ds668te2rph30" path="res://resource/theme/mainTheme.tres" id="4_bwst8"]
+[ext_resource type="Theme" uid="uid://drb1ajgvcih7p" path="res://resource/theme/theme1.tres" id="5_menu"]
 
 [node name="Setting" type="Control"]
 layout_mode = 3
@@ -10,6 +11,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("5_menu")
 script = ExtResource("1_ff0oi")
 Layer = 2
 
@@ -30,7 +32,7 @@ anchor_bottom = 1.0
 offset_left = 60.0
 offset_top = 30.0
 offset_right = -60.0
-offset_bottom = -30.0
+offset_bottom = -130.0
 grow_horizontal = 2
 grow_vertical = 2
 horizontal_scroll_mode = 0
@@ -106,7 +108,7 @@ text = "背景音量"
 vertical_alignment = 1
 
 [node name="BGM" type="HSlider" parent="ScrollContainer/SettingMenu/BoxContainer3"]
-custom_minimum_size = Vector2(700, 0)
+custom_minimum_size = Vector2(700, 44)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -127,7 +129,7 @@ text = "音效音量"
 vertical_alignment = 1
 
 [node name="SFX" type="HSlider" parent="ScrollContainer/SettingMenu/BoxContainer4"]
-custom_minimum_size = Vector2(700, 0)
+custom_minimum_size = Vector2(700, 44)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -148,7 +150,7 @@ text = "鼠标跟随进度"
 vertical_alignment = 1
 
 [node name="FollowsMouseAmount" type="HSlider" parent="ScrollContainer/SettingMenu/BoxContainer5"]
-custom_minimum_size = Vector2(700, 0)
+custom_minimum_size = Vector2(700, 44)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -184,7 +186,7 @@ text = "手柄辅助瞄准强度"
 vertical_alignment = 1
 
 [node name="AimStrength" type="HSlider" parent="ScrollContainer/SettingMenu/BoxContainer8"]
-custom_minimum_size = Vector2(700, 0)
+custom_minimum_size = Vector2(700, 44)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -195,5 +197,6 @@ value = 0.5
 [node name="Back" type="Button" parent="ScrollContainer/SettingMenu"]
 layout_mode = 2
 size_flags_horizontal = 4
-theme = ExtResource("4_bwst8")
+theme_type_variation = &"SettingButton"
+custom_minimum_size = Vector2(300, 96)
 text = "返回"

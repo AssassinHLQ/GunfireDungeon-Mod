@@ -41,7 +41,7 @@ public static class KeyBindingManager
         new(InputAction.Reload, "换弹"),
         new(InputAction.Interactive, "互动"),
         new(InputAction.MeleeAttack, "近战攻击"),
-        new(InputAction.Roll, "翻滚"),
+        new(InputAction.Roll, "闪避"),
         new(InputAction.ExchangeWeapon, "切换武器"),
         new(InputAction.ThrowWeapon, "投掷武器"),
         new(InputAction.UseActiveProp, "使用道具"),

@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://cd7hl6b2mn5c8"]
+[gd_scene load_steps=4 format=3 uid="uid://cd7hl6b2mn5c8"]
 
 [ext_resource type="Script" uid="uid://bml5toxxfihud" path="res://src/game/ui/game/main/MainPanel.cs" id="1_s44xr"]
 [ext_resource type="Theme" uid="uid://drb1ajgvcih7p" path="res://resource/theme/theme1.tres" id="2_bbd6i"]
+[ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/divider_double.png" id="3_div"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -28,45 +29,65 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 20
 
 [node name="Title" type="Label" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 180)
 layout_mode = 2
 size_flags_vertical = 6
-theme_override_font_sizes/font_size = 360
+theme_override_font_sizes/font_size = 120
+text = "枪火地牢"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ButtonList" type="VBoxContainer" parent="VBoxContainer"]
+[node name="Divider" type="NinePatchRect" parent="VBoxContainer"]
+custom_minimum_size = Vector2(920, 30)
 layout_mode = 2
-size_flags_vertical = 3
+size_flags_horizontal = 4
+texture = ExtResource("3_div")
+patch_margin_left = 40
+patch_margin_top = 0
+patch_margin_right = 40
+patch_margin_bottom = 0
+
+[node name="ButtonList" type="VBoxContainer" parent="VBoxContainer"]
+custom_minimum_size = Vector2(560, 510)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 26
 alignment = 1
 
 [node name="Start" type="Button" parent="VBoxContainer/ButtonList"]
-custom_minimum_size = Vector2(0, 150)
+custom_minimum_size = Vector2(0, 90)
+size_flags_vertical = 0
 layout_mode = 2
 theme = ExtResource("2_bbd6i")
-theme_override_font_sizes/font_size = 96
+theme_override_font_sizes/font_size = 64
 text = "开始游戏"
 
 [node name="Tools" type="Button" parent="VBoxContainer/ButtonList"]
-custom_minimum_size = Vector2(0, 150)
+custom_minimum_size = Vector2(0, 90)
+size_flags_vertical = 0
 layout_mode = 2
 theme = ExtResource("2_bbd6i")
-theme_override_font_sizes/font_size = 96
+theme_override_font_sizes/font_size = 64
 text = "地图编辑器"
 
 [node name="Setting" type="Button" parent="VBoxContainer/ButtonList"]
-custom_minimum_size = Vector2(0, 150)
+custom_minimum_size = Vector2(0, 90)
+size_flags_vertical = 0
 layout_mode = 2
 theme = ExtResource("2_bbd6i")
-theme_override_font_sizes/font_size = 96
+theme_override_font_sizes/font_size = 64
 text = "设置"
 
 [node name="Exit" type="Button" parent="VBoxContainer/ButtonList"]
-custom_minimum_size = Vector2(0, 150)
+custom_minimum_size = Vector2(0, 90)
+size_flags_vertical = 0
 layout_mode = 2
 theme = ExtResource("2_bbd6i")
-theme_override_font_sizes/font_size = 96
+theme_override_font_sizes/font_size = 64
 text = "退出"
 
 [node name="Version" type="Label" parent="."]

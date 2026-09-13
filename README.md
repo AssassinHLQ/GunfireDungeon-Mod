@@ -160,12 +160,14 @@ The same list is shown **in-game** via the **「修改说明」** button on the 
 * Key bindings are saved to the save file and persist across restarts
 * Added a one-click **"restore default key bindings"** button
 
-### 3. Fonts
+### 3. Fonts & UI Assets
 
 * **Removed the bundled commercial trial bitmap fonts** (`DinkieBitmap-*Demo`, `VonwaonBitmap-*`)
 * Replaced with **[Ark Pixel Font](https://github.com/TakWolf/ark-pixel-font)** (`ArkPixel-12px-zh_cn.ttf`), licensed under **SIL OFL 1.1** — see `resource/font/ArkPixel-LICENSE.md`
 * Pixel-font import settings tuned (antialiasing / hinting / subpixel positioning adjusted) so glyphs stay crisp at large sizes
 * Font sizes normalized to **integer multiples of the 12px base size**
+* **Main menu / pause (ESC) menu / settings menu now use new UI assets** (borders, sliders)
+* UI assets by **[Kenney](https://kenney.nl)** (`Fantasy UI Borders`, `UI Pack`), licensed under **CC0 1.0** — see `resource/sprite/ui/fantasyBorder/LICENSE.md`
 
 ### 4. Bug Fixes
 
