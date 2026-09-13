@@ -29,11 +29,19 @@ HI = np.array((60, 55, 76), np.float32)
 TRIM = np.array((88, 82, 110), np.float32)
 
 # (x0, x1, 拱顶y, 起拱y, 窗底y)
-# 窗底刻意保持在 800 以下, 避开左下角社交链接 (y>=828) 与右下角版本号
-ARCHES = [(150, 640, 205, 385, 800), (1280, 1770, 252, 425, 780)]
+# 三扇拱窗, 尺寸完全一致, 均匀分布(间距 120, 两侧留 135)
+# 窗底守在 795, 窗台到 821, 避开左下角社交链接(y>=828)
+_ARCH_W = 470
+_ARCH_GAP = 120
+_ARCH_MARGIN = (W - _ARCH_W * 3 - _ARCH_GAP * 2) // 2
+ARCHES = [(_ARCH_MARGIN + i * (_ARCH_W + _ARCH_GAP),) for i in range(3)]
+ARCHES = [(x0, x0 + _ARCH_W, 190, 425, 795) for (x0,) in ARCHES]
 
 
 def periodic_fbm(w, h, base=5, octaves=6):
+    """左右真正无缝的多倍频噪声, 返回 0..1
+       做法: 生成一个小块后 2x2 平铺再放大, 从左上角裁出刚好一个周期,
+       这样裁剪结果在左右边界上是连续的(之前从中心裁会破坏周期性, 在墙上留下竖线)"""
     out = np.zeros((h, w), np.float32)
     amp, tot = 1.0, 0.0
     for o in range(octaves):
@@ -43,7 +51,7 @@ def periodic_fbm(w, h, base=5, octaves=6):
         big = np.tile(blk, (2, 2))
         img = Image.fromarray((big * 255).astype(np.uint8)).resize((w * 2, h * 2), Image.BICUBIC)
         a = np.asarray(img, np.float32) / 255.0
-        out += amp * a[h // 2:h // 2 + h, w // 2:w // 2 + w]
+        out += amp * a[:h, :w]
         tot += amp
         amp *= 0.52
     out /= tot
@@ -91,7 +99,10 @@ def masonry(w, h, bw=64, bh=27):
 
 def build_sky():
     src = Image.open(SKY_SRC).convert("RGB").crop((0, 0, 384, SKY_CROP))
-    tile = src.resize((1920, SKY_H), Image.NEAREST)
+    # 用双三次插值放大: 源素材是像素画, 最近邻放大 5 倍会让云块变成大直角,
+    # 而且 5 倍像素远粗于游戏本体的 1:1 像素, 反而突兀。
+    # 天空是远景, 平滑一点更像"远处的天", 也和程序化的远山/石墙质感一致。
+    tile = src.resize((1920, SKY_H), Image.BICUBIC)
     canvas = Image.new("RGB", (3840, SKY_H))
     canvas.paste(tile, (0, 0))
     canvas.paste(tile.transpose(Image.FLIP_LEFT_RIGHT), (1920, 0))
@@ -99,7 +110,7 @@ def build_sky():
     a = np.asarray(canvas).astype(np.float32) / 255.0
     lum = a.mean(axis=2, keepdims=True)
     # 黄昏: 保留一点饱和度, 偏紫蓝
-    a = (lum * 0.20 + a * 0.80) * np.array([0.74, 0.64, 1.05]) * 0.96
+    a = (lum * 0.20 + a * 0.80) * np.array([0.74, 0.64, 1.05]) * 0.88
     vg = np.linspace(0.60, 1.06, SKY_H)
     a = np.clip(a * vg[:, None, None], 0, 1)
 

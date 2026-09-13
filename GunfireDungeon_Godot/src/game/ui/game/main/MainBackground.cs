@@ -23,8 +23,11 @@ public partial class MainBackground : Godot.Control
     /// <summary>滚动周期 = 贴图宽度</summary>
     private const float Period = 3840f;
 
-    private const float SkySpeed = 2.5f;    // 像素/秒
-    private const float RidgeSpeed = 7f;    // 像素/秒
+    /// <summary>天空层漂移速度(像素/秒)</summary>
+    private const float SkySpeed = 16f;
+
+    /// <summary>远山层漂移速度(像素/秒), 要比天空快才有视差纵深</summary>
+    private const float RidgeSpeed = 45f;
 
     private TextureRect _skyA;
     private TextureRect _skyB;

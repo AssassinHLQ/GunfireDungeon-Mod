@@ -168,7 +168,12 @@ The same list is shown **in-game** via the **「修改说明」** button on the 
 * Font sizes normalized to **integer multiples of the 12px base size**
 * **Main menu / pause (ESC) menu / settings menu now use new UI assets** (borders, sliders)
 * UI assets by **[Kenney](https://kenney.nl)** (`Fantasy UI Borders`, `UI Pack`), licensed under **CC0 1.0** — see `resource/sprite/ui/fantasyBorder/LICENSE.md`
-* **New animated parallax background for the main menu**: a dungeon stone hall with two arched windows looking out onto a dusk sky and distant mountains; three parallax layers (sky slowest, mountains faster, stone wall static)
+* **New animated parallax background for the main menu**: a dungeon stone hall with three equally-sized arched openings looking out onto a dusk sky and distant mountains; three parallax layers (sky slowest, mountains faster, stone wall static)
+* Text now has a **dark outline** so it stays readable over the brighter background
+* **Encyclopedia item names and descriptions enlarged**; long descriptions wrap automatically
+* **The pause (ESC) menu gained a stone panel backing**, matching the main menu and settings menu
+* **Key rebinding now supports mouse buttons** (left / right / middle / side); press **ESC to cancel** a rebind, and the right mouse button can be bound normally
+* **"Restore default keys" now takes effect immediately**, no restart required
 * Background sky and clouds by **[ansimuz](https://ansimuz.com)** (`Sunny Land 2D Pixel Art Pack`), licensed under **CC0 1.0**
 * Background mountains and stone wall are **procedurally generated** by this mod, using a brick palette sampled from the base game's own `TileSet1` — see `resource/sprite/ui/mainBackground/LICENSE.md`
 
@@ -177,6 +182,9 @@ The same list is shown **in-game** via the **「修改说明」** button on the 
 * Fixed the settings panel overflowing the screen and spilling content outside its frame
 * Fixed errors caused by encyclopedia entries that have no icon configured
 * Fixed individual CJK characters missing from the pixel font (shown as tofu boxes); room type names normalized to the `XX房间` format
+* Fixed mouse-bound actions (Fire, Roll) being displayed as "not set"
+* Fixed mouse clicks doing nothing while rebinding a key
+* Fixed pressing ESC to cancel a rebind instead binding ESC to that action (if already mis-bound, press "Restore default keys" once to recover)
 
 ### 5. Cleanup
 

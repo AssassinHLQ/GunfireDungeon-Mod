@@ -213,7 +213,7 @@ patch_margin_right = 4
 patch_margin_bottom = 4
 
 [node name="VBoxContainer3" type="VBoxContainer" parent="NinePatchRect/MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(452, 2.08165e-12)
+custom_minimum_size = Vector2(620, 2.08165e-12)
 layout_mode = 2
 
 [node name="NinePatchRect" type="NinePatchRect" parent="NinePatchRect/MarginContainer/HBoxContainer/VBoxContainer3"]
@@ -240,6 +240,7 @@ theme_override_constants/separation = 16
 
 [node name="ItemName" type="Label" parent="NinePatchRect/MarginContainer/HBoxContainer/VBoxContainer3/NinePatchRect/ItemInfoBg"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 48
 text = "名称"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -256,22 +257,25 @@ patch_margin_bottom = 56
 [node name="ItemTexture" type="TextureRect" parent="NinePatchRect/MarginContainer/HBoxContainer/VBoxContainer3/NinePatchRect/ItemInfoBg/NinePatchRect"]
 material = SubResource("ShaderMaterial_qdxtu")
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = 20.0
-offset_right = -287.0
-offset_bottom = -215.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -100.0
+offset_right = 150.0
+offset_bottom = 100.0
 grow_horizontal = 2
 grow_vertical = 2
-scale = Vector2(4, 4)
-size_flags_vertical = 3
-stretch_mode = 3
+expand_mode = 1
+stretch_mode = 5
 
 [node name="ItemDes" type="RichTextLabel" parent="NinePatchRect/MarginContainer/HBoxContainer/VBoxContainer3/NinePatchRect/ItemInfoBg"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/line_separation = 8
+theme_override_font_sizes/normal_font_size = 36
 text = "文本描述"
 
 [node name="CloseButton" type="TextureButton" parent="NinePatchRect"]

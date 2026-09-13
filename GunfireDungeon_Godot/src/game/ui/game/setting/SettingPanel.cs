@@ -175,7 +175,7 @@ public partial class SettingPanel : Setting
 
             var button = new Button
             {
-                Text = KeyBindingManager.GetKeyText(KeyBindingManager.GetKey(entry.Action)),
+                Text = KeyBindingManager.GetBindText(entry.Action),
                 CustomMinimumSize = new Vector2(300, 0)
             };
             var captured = entry;
@@ -233,7 +233,7 @@ public partial class SettingPanel : Setting
             var key = entry.Action.ToString();
             if (_keyButtons.TryGetValue(key, out var button) && GodotObject.IsInstanceValid(button))
             {
-                button.Text = KeyBindingManager.GetKeyText(KeyBindingManager.GetKey(entry.Action));
+                button.Text = KeyBindingManager.GetBindText(entry.Action);
             }
         }
     }
@@ -248,27 +248,38 @@ public partial class SettingPanel : Setting
             return;
         }
 
-        //按鼠标右键取消改键
-        if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right })
-        {
-            _waitingEntry = null;
-            RefreshKeyButtons();
-            return;
-        }
-
+        //键盘: ESC 取消改键, 其它键作为新键位
+        //注意不能用鼠标右键取消, 因为右键本身就是要被绑定的键(例如冲刺默认就是右键)
         if (@event is InputEventKey { Pressed: true, Echo: false } keyEvent)
         {
             var keycode = keyEvent.PhysicalKeycode != Key.None
                 ? keyEvent.PhysicalKeycode
                 : keyEvent.Keycode;
 
-            if (keycode != Key.None)
+            if (keycode == Key.Escape)
+            {
+                _waitingEntry = null;
+            }
+            else if (keycode != Key.None)
             {
                 KeyBindingManager.SetKey(_waitingEntry.Action, keycode);
+                _waitingEntry = null;
             }
 
+            RefreshKeyButtons();
+            //吃掉这次输入, 避免同一个事件又被界面处理一遍
+            GetViewport()?.SetInputAsHandled();
+            return;
+        }
+
+        //鼠标: 直接作为新键位(开火默认就是鼠标左键)
+        if (@event is InputEventMouseButton { Pressed: true } mouseEvent
+            && mouseEvent.ButtonIndex != MouseButton.None)
+        {
+            KeyBindingManager.SetMouseKey(_waitingEntry.Action, mouseEvent.ButtonIndex);
             _waitingEntry = null;
             RefreshKeyButtons();
+            GetViewport()?.SetInputAsHandled();
         }
     }
     
@@ -301,7 +312,7 @@ public partial class SettingPanel : Setting
                 var key = _waitingEntry.Action.ToString();
                 if (_keyButtons.TryGetValue(key, out var button) && GodotObject.IsInstanceValid(button))
                 {
-                    button.Text = _blinkOn ? "请按新键..." : "（或右键取消）";
+                    button.Text = _blinkOn ? "请按新键..." : "（或 ESC 取消）";
                 }
             }
             return;
