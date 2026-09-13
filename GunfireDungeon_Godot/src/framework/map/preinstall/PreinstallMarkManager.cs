@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections.Generic;
 using Config;
 
@@ -133,7 +133,7 @@ public static class PreinstallMarkManager
         }
         else if (type == SpecialMarkType.Treasure)
         {
-            return "奖励箱子标记";
+            return "宝箱标记";
         }
 
         return string.Empty;

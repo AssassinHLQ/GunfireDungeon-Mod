@@ -16,6 +16,19 @@ public partial class MainPanel : Main
 
     public override void OnCreateUi()
     {
+        //视差背景(石墙大厅 + 拱窗外的黄昏天空), 必须排在最底层
+        var background = new MainBackground { Name = "MainBackground" };
+        AddChild(background);
+        MoveChild(background, 0);
+
+        //原本那块纯色底板已经被背景取代, 隐藏掉
+        //注意: 泛型要写全 Godot.ColorRect, 避免解析到 Main 里的同名嵌套类
+        var colorRect = GetNodeOrNull<Godot.ColorRect>("ColorRect");
+        if (colorRect != null)
+        {
+            colorRect.Visible = false;
+        }
+
         S_Start.Instance.Pressed += OnStartGameClick;
         S_Tools.Instance.Pressed += OnToolsClick;
         S_Setting.Instance.Pressed += OnSettingClick;

@@ -3,8 +3,8 @@ using System.Text.Json;
 
 [EffectFragment(
     "TotalAmmo", 
-    "修改武器总弹药量, ",
-    Arg1 = "(int|null)弹药变化的具体值, 如果不传则表示补满弹药"
+    "修改武器总子弹量, ",
+    Arg1 = "(int|null)子弹变化的具体值, 如果不传则表示补满子弹"
 )]
 public class Eff_TotalAmmo : EffectFragment
 {

@@ -10,7 +10,7 @@
 ;   PauseButton  -> ESC 菜单 (panel-border-004)
 ;   SettingButton-> 设置菜单 (panel-border-024)
 
-[ext_resource type="Texture2D" uid="uid://dqfrgjedlxi1x" path="res://resource/sprite/ui/fantasyBorder/btn_main.png" id="1_main"]
+[ext_resource type="Texture2D" uid="uid://c86n03o5xyjno" path="res://resource/sprite/ui/fantasyBorder/btn_main.png" id="1_main"]
 [ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/btn_pause.png" id="2_pause"]
 [ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/checkbox_off.png" id="6_cboff"]
 [ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/checkbox_on.png" id="7_cbon"]

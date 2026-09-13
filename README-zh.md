@@ -167,11 +167,15 @@
 * 字号统一调整为**基准字号 12 的整数倍**
 * **主菜单 / ESC 菜单 / 设置菜单改用新的界面素材**（边框、滑块）
 * 界面素材来自 **[Kenney](https://kenney.nl)**（`Fantasy UI Borders`、`UI Pack`），采用 **CC0 1.0** 协议 —— 授权文件见 `resource/sprite/ui/fantasyBorder/LICENSE.md`
+* **主菜单新增动态视差背景**：地牢石墙大厅与两扇拱窗，窗外黄昏天空与远山缓慢移动；分三层视差（天空最慢、远山其次、石墙静止）
+* 背景的天空与云来自 **[ansimuz](https://ansimuz.com)**（`Sunny Land 2D Pixel Art Pack`），采用 **CC0 1.0** 协议
+* 背景的远山与石墙为本修改版**程序化生成**，砖块配色取自原版自带的 `TileSet1` —— 授权说明见 `resource/sprite/ui/mainBackground/LICENSE.md`
 
 ### 四、问题修复
 
 * 修复设置面板超出屏幕、内容溢出到面板外的问题
 * 修复物品图册中部分条目缺少图标导致的报错
+* 修复个别汉字在像素字体中缺字、显示为方框的问题；统一房间类型名称格式为「XX房间」
 
 ### 五、其他
 

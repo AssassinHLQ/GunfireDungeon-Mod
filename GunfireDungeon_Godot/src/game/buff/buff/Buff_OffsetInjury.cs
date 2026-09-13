@@ -3,8 +3,8 @@ using System.Text.Json;
 
 [BuffFragment(
     "OffsetInjury",
-    "受伤时有概率抵消伤害的 buff",
-    Arg1 = "(float)抵消伤害概率百分比"
+    "受伤时有几率抵消伤害的 buff",
+    Arg1 = "(float)抵消伤害几率百分比"
 )]
 public class Buff_OffsetInjury : BuffFragment
 {
