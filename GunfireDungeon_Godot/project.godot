@@ -8,17 +8,21 @@
 
 config_version=5
 
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
 [application]
 
 config/name="枪火地牢"
 run/main_scene="uid://lbe753cb8heb"
-config/features=PackedStringArray("4.5", "C#")
+config/features=PackedStringArray("4.7", "C#")
 config/icon="res://icon.png"
 
 [autoload]
 
-DsInspector="*res://addons/ds_inspector/DsInspector.gd"
-InitUiManager="*res://addons/ds_ui/InitUiManager.cs"
+DsInspector="*uid://b60bcsdtfw1ne"
+InitUiManager="*uid://bwpyu4cm1iuvi"
 
 [debug]
 

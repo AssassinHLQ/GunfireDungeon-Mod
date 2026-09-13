@@ -1,0 +1,165 @@
+
+using System;
+using Godot;
+
+/// <summary>
+/// 敌人，可以携带武器
+/// </summary>
+public partial class Enemy : AiRole
+{
+    public override void OnInit()
+    {
+        base.OnInit();
+        Camp = CampEnum.Camp2;
+    }
+
+    protected override RoleState OnCreateRoleState()
+    {
+        var roleState = base.OnCreateRoleState();
+
+        var aiRoleAttr = roleState.RoleBase.AiAttr;
+        if (aiRoleAttr == null)
+        {
+            throw new Exception("敌人 " + roleState.RoleBase.Id + " 未配置AI属性");
+        }
+
+        ViewRange = aiRoleAttr.ViewRange;
+        DefaultViewRange = aiRoleAttr.ViewRange;
+        TailAfterViewRange = aiRoleAttr.TailAfterViewRange;
+        AttackInterval = aiRoleAttr.AttackInterval;
+        ViewAngleRange = aiRoleAttr.ViewAngleRange;
+        
+        roleState.Gold = Mathf.Max(0, Utils.Random.RandomConfigRange(aiRoleAttr.Gold));
+        return roleState;
+    }
+
+    protected override void OnHit(ActivityObject target, DamageCalcResult damageCalcResult, float angle)
+    {
+        base.OnHit(target, damageCalcResult, angle);
+
+        if (Hp > 0) //受伤
+        {
+            SoundManager.PlaySoundByConfig("enemy_hurt", Position);
+        }
+        else if (Hp <= 0) //死亡
+        {
+            SoundManager.PlaySoundByConfig("enemy_die", Position);
+        }
+    }
+
+    protected override void OnDie()
+    {
+        Color color;
+        if (!string.IsNullOrEmpty(RoleState.RoleBase.AiAttr.BloodColor))
+        {
+            color = Color.FromHtml(RoleState.RoleBase.AiAttr.BloodColor);
+        }
+        else
+        {
+            color = new Color(1, 1, 1, 0.5f);
+        }
+        
+        var effPos = Position + new Vector2(0, -Altitude);
+        //血液特效
+        var blood = ObjectManager.GetPoolItem<AutoDestroyParticles>(ResourcePath.prefab_effect_enemy_EnemyBlood0001_tscn);
+        blood.Position = effPos - new Vector2(0, 12);
+        blood.AddToActivityRoot(RoomLayerEnum.NormalLayer);
+        blood.PlayEffect();
+        
+        var realVelocity = GetRealVelocity();
+        var velocity = (realVelocity * 1.5f).LimitLength(80);
+        //创建敌人碎片
+        if (RoleState.RoleBase.AiAttr.BodyFragment != null)
+        {
+            var count = Utils.Random.RandomRangeInt(3, 6);
+            for (var i = 0; i < count; i++)
+            {
+                var debris = Create(RoleState.RoleBase.AiAttr.BodyFragment);
+                debris.PutDown(effPos, RoomLayerEnum.NormalLayer);
+                debris.MoveController.AddForce(velocity);
+                
+                // 设置颜色
+                if (debris is ICorpsesFragment corpsesFragment)
+                {
+                    corpsesFragment.SetBloodColor(color);
+                }
+            }
+        }
+        
+        //派发敌人死亡信号
+        EventManager.EmitEvent(EventEnum.OnEnemyDie, this);
+
+        var obj = ResourceManager.LoadAndInstantiate<EnemyBlood0002>(
+            Utils.Random.RandomChoose(
+                ResourcePath.prefab_effect_enemy_EnemyBlood0002_tscn,
+                ResourcePath.prefab_effect_enemy_EnemyBlood0003_tscn,
+                ResourcePath.prefab_effect_enemy_EnemyBlood0004_tscn
+            )
+        );
+        obj.AddToActivityRoot(RoomLayerEnum.NormalLayer);
+        obj.InitRoom(AffiliationArea.RoomInfo);
+        obj.Position = Position;
+        obj.Rotation = PrevHitAngle;
+        obj.ZIndex = AffiliationArea.RoomInfo.StaticImageCanvas.ZIndex;
+        obj.Modulate = color;
+
+        // if (Utils.Random.RandomBoolean(0.04f)) //掉落心之容器
+        // {
+        //     var activityObject = Create(Ids.Id_prop0002);
+        //     activityObject.Throw(Position, 8, 35, Vector2.Zero, 0);
+        // }
+        // else if (Utils.Random.RandomBoolean(0.015f)) //掉落护盾
+        // {
+        //     var activityObject = Create(Ids.Id_prop0003);
+        //     activityObject.Throw(Position, 8, 35, Vector2.Zero, 0);
+        // }
+        
+        base.OnDie();
+    }
+
+    protected override void Process(float delta)
+    {
+        base.Process(delta);
+        if (IsDie)
+        {
+            return;
+        }
+        
+        UpdateFace();
+
+        if (RoleState.CanPickUpWeapon)
+        {
+            //拾起武器操作
+            DoPickUpWeapon();
+        }
+    }
+
+    public override bool IsAllWeaponTotalAmmoEmpty()
+    {
+        if (!RoleState.CanPickUpWeapon)
+        {
+            return false;
+        }
+        return base.IsAllWeaponTotalAmmoEmpty();
+    }
+
+    /// <summary>
+    /// 从标记出生时调用, 预加载波不会调用
+    /// </summary>
+    public virtual void OnBornFromMark()
+    {
+        //罚站 0.7 秒
+        StateController.Enable = false;
+        this.CallDelay(0.7f, () => StateController.Enable = true);
+    }
+    
+    public override float GetFirePointAltitude()
+    {
+        return -FirePoint.Position.Y;
+    }
+    
+    public override Vector2 GetFirePoint()
+    {
+        return FirePoint.GlobalPosition;
+    }
+}

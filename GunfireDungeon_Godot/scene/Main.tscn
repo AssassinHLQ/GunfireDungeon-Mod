@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://lbe753cb8heb"]
+[gd_scene format=3 uid="uid://lbe753cb8heb"]
 
 [ext_resource type="Script" uid="uid://cclfq7lk4vn6l" path="res://src/game/GameApplication.cs" id="1_mh1cq"]
 [ext_resource type="Script" uid="uid://bm8tiu4mhyrg1" path="res://src/game/camera/GameCamera.cs" id="2_2j367"]
@@ -8,7 +8,7 @@
 shader = ExtResource("2_fxoum")
 shader_parameter/offset = Vector2(0, 0)
 
-[node name="Main" type="Node2D" node_paths=PackedStringArray("SceneRoot", "GlobalNodeRoot", "SubViewport", "SubViewportContainer", "ViewCanvas", "NoPerfectPixelRoot")]
+[node name="Main" type="Node2D" unique_id=809409910 node_paths=PackedStringArray("SceneRoot", "GlobalNodeRoot", "SubViewport", "SubViewportContainer", "ViewCanvas", "NoPerfectPixelRoot")]
 script = ExtResource("1_mh1cq")
 SceneRoot = NodePath("ViewCanvas/SubViewportContainer/SubViewport/SceneRoot")
 GlobalNodeRoot = NodePath("GlobalNodeRoot")
@@ -18,12 +18,12 @@ ViewCanvas = NodePath("ViewCanvas")
 NoPerfectPixelRoot = NodePath("NoPerfectPixelRoot")
 metadata/_edit_vertical_guides_ = []
 
-[node name="NoPerfectPixelRoot" type="Node" parent="."]
+[node name="NoPerfectPixelRoot" type="Node" parent="." unique_id=25734551]
 
-[node name="ViewCanvas" type="CanvasLayer" parent="."]
+[node name="ViewCanvas" type="CanvasLayer" parent="." unique_id=1748506778]
 layer = -1
 
-[node name="SubViewportContainer" type="SubViewportContainer" parent="ViewCanvas"]
+[node name="SubViewportContainer" type="SubViewportContainer" parent="ViewCanvas" unique_id=1922487377]
 material = SubResource("ShaderMaterial_pjtkw")
 anchors_preset = 15
 anchor_right = 1.0
@@ -34,7 +34,7 @@ grow_horizontal = 2
 grow_vertical = 2
 scale = Vector2(4, 4)
 
-[node name="SubViewport" type="SubViewport" parent="ViewCanvas/SubViewportContainer"]
+[node name="SubViewport" type="SubViewport" parent="ViewCanvas/SubViewportContainer" unique_id=314999147]
 disable_3d = true
 handle_input_locally = false
 snap_2d_transforms_to_pixel = true
@@ -44,11 +44,11 @@ canvas_item_default_texture_filter = 0
 size = Vector2i(320, 180)
 render_target_update_mode = 4
 
-[node name="SceneRoot" type="Node2D" parent="ViewCanvas/SubViewportContainer/SubViewport"]
+[node name="SceneRoot" type="Node2D" parent="ViewCanvas/SubViewportContainer/SubViewport" unique_id=1819345506]
 
-[node name="Camera2D" type="Camera2D" parent="ViewCanvas/SubViewportContainer/SubViewport"]
+[node name="Camera2D" type="Camera2D" parent="ViewCanvas/SubViewportContainer/SubViewport" unique_id=6069376]
 process_callback = 0
 editor_draw_drag_margin = true
 script = ExtResource("2_2j367")
 
-[node name="GlobalNodeRoot" type="Node2D" parent="."]
+[node name="GlobalNodeRoot" type="Node2D" parent="." unique_id=1523897352]
