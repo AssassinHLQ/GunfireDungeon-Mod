@@ -71,7 +71,7 @@ public partial class WeaponRoulettePanel : WeaponRoulette
         //按下地图按键
         if (InputManager.PartPackage && !_isMagnifyRoulette) //打开轮盘
         {
-            if (UiManager.GetUiInstanceCount(UiManager.UiName.Game_PauseMenu) == 0 && !InputManager.Map)
+            if (UiManager.GetUiInstanceCount(UiManager.UiName.Game_PauseMenu) == 0 && !InputManager.MapOpened)
             {
                 ExpandRoulette();
             }

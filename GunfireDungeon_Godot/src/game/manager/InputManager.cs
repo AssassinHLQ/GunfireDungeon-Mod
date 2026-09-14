@@ -86,9 +86,21 @@ public static class InputManager
     public static bool Roll { get; private set; }
     
     /// <summary>
-    /// 是否按下打开地图按钮, 键鼠: 键盘Ctrl，手柄：LT键
+    /// 是否按下打开地图按钮, 键鼠: 键盘Shift，手柄：LT键
     /// </summary>
     public static bool Map { get; private set; }
+
+    /// <summary>
+    /// 地图键本帧刚按下(单帧脉冲)。
+    /// 地图改成"按一下展开、再按一下收起"的开关, 用这个脉冲来切换状态。
+    /// </summary>
+    public static bool MapJustPressed { get; private set; }
+
+    /// <summary>
+    /// 地图当前是否处于展开状态, 由地图面板维护。
+    /// 别的界面(如武器轮盘)用它判断"地图正开着", 而不是去猜按键有没有按住。
+    /// </summary>
+    public static bool MapOpened { get; set; }
     
     /// <summary>
     /// 菜单键, 键鼠: esc，手柄：菜单键
@@ -211,6 +223,7 @@ public static class InputManager
         }
 
         Map = Input.IsActionPressed(InputAction.Map);
+        MapJustPressed = Input.IsActionJustPressed(InputAction.Map);
         Menu = Input.IsActionJustPressed(InputAction.Menu);
         PartPackage = Input.IsActionJustPressed(InputAction.PartPackage);
         

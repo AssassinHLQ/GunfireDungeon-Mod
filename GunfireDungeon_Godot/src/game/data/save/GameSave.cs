@@ -65,6 +65,13 @@ public partial class GameSave
     public bool AutoTarget = true;
 
     /// <summary>
+    /// 自动换弹: 弹夹打空后自动装填, 不需要再按一次换弹键。
+    /// 与武器自身的 AutoReload 属性取或 —— 武器配了就是开的, 没配则听这个开关。
+    /// </summary>
+    [JsonInclude]
+    public bool AutoReload = true;
+
+    /// <summary>
     /// 自定义键位, 键为输入动作名称, 值为物理键码
     /// </summary>
     [JsonInclude]

@@ -729,8 +729,8 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
                         BeLoaded();
                     }
                     
-                    //子弹换弹
-                    if (CurrAmmo <= 0 && Attribute.AutoReload)
+                    //子弹换弹: 武器自身配了 AutoReload, 或者设置里开了全局自动换弹
+                    if (CurrAmmo <= 0 && (Attribute.AutoReload || GlobalAutoReload))
                     {
                         Reload();
                     }
@@ -1050,6 +1050,12 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
             }
         }
     }
+
+    /// <summary>
+    /// 设置里的全局自动换弹开关。
+    /// 与原版武器配置里的 AutoReload 取或 —— 原来只有个别武器会配, 现在玩家可以统一打开。
+    /// </summary>
+    private static bool GlobalAutoReload => GameApplication.Instance?.GameSave?.AutoReload ?? false;
 
     /// <summary>
     /// 返回是否按下扳机

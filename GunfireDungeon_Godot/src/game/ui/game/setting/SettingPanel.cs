@@ -89,6 +89,18 @@ public partial class SettingPanel : Setting
             };
         }
 
+        //----------------------- 自动换弹 -----------------------------
+        // 该值的读取在 Weapon.GlobalAutoReload 里, 打开后立即生效。
+        var autoReloadBox = S_SettingMenu.Instance.GetNodeOrNull<Godot.CheckBox>("BoxContainer10/AutoReload");
+        if (autoReloadBox != null)
+        {
+            autoReloadBox.ButtonPressed = save.AutoReload;
+            autoReloadBox.Pressed += () =>
+            {
+                save.AutoReload = autoReloadBox.ButtonPressed;
+            };
+        }
+
         //----------------------- 手柄设置 -----------------------------
 
         S_LockAiming.Instance.ButtonPressed = save.JoystickAimAssist;

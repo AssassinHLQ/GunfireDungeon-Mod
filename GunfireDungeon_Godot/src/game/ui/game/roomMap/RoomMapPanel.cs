@@ -27,8 +27,6 @@ public partial class RoomMapPanel : RoomMap
     //放大地图后悬停的房间
     private RoomInfo _hoverRoom;
     private Color _originOutlineColor;
-    //是否展开地图
-    private bool _pressMapFlag = false;
     private Tween _transmissionTween;
 
     private bool _isMousePressed = false;
@@ -50,6 +48,9 @@ public partial class RoomMapPanel : RoomMap
 
     public override void OnDestroyUi()
     {
+        //地图面板销毁时清掉"地图开着"的状态, 免得别的界面以为地图还开着
+        InputManager.MapOpened = false;
+
         if (_transmissionTween != null)
         {
             _transmissionTween.Dispose();
@@ -62,25 +63,27 @@ public partial class RoomMapPanel : RoomMap
         
         if (_transmissionTween == null) //不在传送过程中
         {
-            if (!InputManager.Map)
+            //改成开关: 按一下展开, 再按一下收起。
+            //原来是 Input.IsActionPressed 的"按住才显示", 键鼠玩家得一直按着 Shift, 很别扭。
+            if (InputManager.MapJustPressed)
             {
-                _pressMapFlag = false;
-            }
-            //按下地图按键
-            if (InputManager.Map && !_isMagnifyMap && !_pressMapFlag) //展开小地图
-            {
-                if (UiManager.GetUiInstanceCount(UiManager.UiName.Game_PauseMenu) == 0 && !InputManager.PartPackage)
+                if (!_isMagnifyMap) //展开小地图
                 {
-                    ExpandMap();
-                    if (InputManager.IsJoystickInput)
+                    if (UiManager.GetUiInstanceCount(UiManager.UiName.Game_PauseMenu) == 0 && !InputManager.PartPackage)
                     {
-                        this.CallDelay(0f, DoCheckMarkPosInRoom);
+                        ExpandMap();
+                        InputManager.MapOpened = true;
+                        if (InputManager.IsJoystickInput)
+                        {
+                            this.CallDelay(0f, DoCheckMarkPosInRoom);
+                        }
                     }
                 }
-            }
-            else if (!InputManager.Map && _isMagnifyMap) //还原小地图
-            {
-                ShrinkMap();
+                else //收起小地图
+                {
+                    ShrinkMap();
+                    InputManager.MapOpened = false;
+                }
             }
         }
         
@@ -180,8 +183,11 @@ public partial class RoomMapPanel : RoomMap
             }
             
             var area = player.AffiliationArea;
-            //传送
-            if (_pressMapFlag && _hoverRoom != null &&
+            //传送(手柄: 地图展开时把光标移到房间上, 按确认传送)
+            //说明: 原来这里用的是另一个字段 _pressMapFlag, 它和 _isMagnifyMap 记的是同一个状态,
+            //但 ShrinkMap() 只清 _isMagnifyMap、从不清它, 于是第一次开过地图后它就永远是 true,
+            //导致这个传送功能一直处于可触发状态。现在统一用 _isMagnifyMap。
+            if (_isMagnifyMap && _hoverRoom != null &&
                 area != null && !area.RoomInfo.IsSeclusion)
             {
                 if (InputManager.IsJoystickInput) // 手柄操作
@@ -257,7 +263,6 @@ public partial class RoomMapPanel : RoomMap
     public void ExpandMap()
     {
         World.Current.Pause = true;
-        _pressMapFlag = true;
         _isMagnifyMap = true;
         MagnifyMap();
     }
@@ -349,7 +354,7 @@ public partial class RoomMapPanel : RoomMap
 
             roomInfo.PreviewSprite.MouseEntered += () =>
             {
-                if (!_pressMapFlag)
+                if (!_isMagnifyMap)
                 {
                     return;
                 }
@@ -357,7 +362,7 @@ public partial class RoomMapPanel : RoomMap
             };
             roomInfo.PreviewSprite.MouseExited += () =>
             {
-                if (!_pressMapFlag)
+                if (!_isMagnifyMap)
                 {
                     return;
                 }

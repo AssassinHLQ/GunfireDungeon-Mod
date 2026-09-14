@@ -1,7 +1,7 @@
 [
   {
     "Id": "0003",
-    "Remark": "\u624B\u67AA",
+    "Remark": "手枪",
     "__Activity": "weapon0003",
     "Weight": 20,
     "IsMelee": false,
@@ -22,7 +22,7 @@
     },
     "ShowReloadBar": true,
     "AutoReload": false,
-    "ReloadTime": 1.4,
+    "ReloadTime": 0.7,
     "AloneReload": false,
     "AloneReloadCount": 1,
     "AloneReloadBeginIntervalTime": 0,
@@ -75,7 +75,7 @@
   },
   {
     "Id": "0003_ai",
-    "Remark": "\u624B\u67AA",
+    "Remark": "手枪",
     "__Activity": "",
     "Weight": 20,
     "IsMelee": false,
@@ -140,7 +140,7 @@
   },
   {
     "Id": "0001",
-    "Remark": "\u6B65\u67AA",
+    "Remark": "步枪",
     "__Activity": "weapon0001",
     "Weight": 40,
     "IsMelee": false,
@@ -161,7 +161,7 @@
     },
     "ShowReloadBar": true,
     "AutoReload": false,
-    "ReloadTime": 2,
+    "ReloadTime": 1.0,
     "AloneReload": false,
     "AloneReloadCount": 1,
     "AloneReloadBeginIntervalTime": 0,
@@ -214,7 +214,7 @@
   },
   {
     "Id": "0001_ai",
-    "Remark": "\u6B65\u67AA",
+    "Remark": "步枪",
     "__Activity": "",
     "Weight": 40,
     "IsMelee": false,
@@ -279,7 +279,7 @@
   },
   {
     "Id": "0002",
-    "Remark": "\u9730\u5F39\u67AA",
+    "Remark": "霰弹枪",
     "__Activity": "weapon0002",
     "Weight": 40,
     "IsMelee": false,
@@ -302,7 +302,7 @@
     },
     "ShowReloadBar": true,
     "AutoReload": false,
-    "ReloadTime": 0.26,
+    "ReloadTime": 0.13,
     "AloneReload": true,
     "AloneReloadCount": 1,
     "AloneReloadBeginIntervalTime": 0.5,
@@ -355,7 +355,7 @@
   },
   {
     "Id": "0002_ai",
-    "Remark": "\u9730\u5F39\u67AA",
+    "Remark": "霰弹枪",
     "__Activity": "",
     "Weight": 40,
     "IsMelee": false,

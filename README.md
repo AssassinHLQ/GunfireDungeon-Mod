@@ -18,6 +18,9 @@
 | **Difficulty** | Fixed / 固定 | **Scales with floor / 随层数递增** |
 | **Key rebinding** | No / 无 | **Yes, 17 actions / 17 个可改键** |
 | **Auto-targeting** | No / 无 | **Yes, locks the nearest enemy / 有，自动锁定最近的敌人** |
+| **Auto-reload** | No / 无 | **Yes, reloads when the magazine is empty / 有，弹夹打空后自动装填** |
+| **Reload speed** | Baseline | **Reload time halved / 换弹时间缩短一半** |
+| **Blood decals** | Permanent / 永久残留 | **Darken and fade away over time / 会慢慢变黑、最后消失** |
 | **Pixel font** | Bundled trial fonts | **Ark Pixel Font + Fusion Pixel Font (both SIL OFL 1.1)** |
 
 > **Both are released under [AGPL v3](LICENSE).** All original copyright belongs to the original author.
