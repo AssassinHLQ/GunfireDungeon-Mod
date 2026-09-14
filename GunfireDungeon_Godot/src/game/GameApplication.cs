@@ -234,6 +234,8 @@ public partial class GameApplication : Node2D, ICoroutine
         MapProjectManager.Init();
         EditorTileSetManager.Init();
         BottomTipsPanel.Init();
+        // 房间清空 / 楼层切换 / BOSS 预警与血条
+        GameNotificationOverlay.Init(this);
 
         this.CallDelay(0, () =>
         {

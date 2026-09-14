@@ -18,6 +18,21 @@ public partial class Boss : AiRole
 
     private int state = 0;
 
+    /// <summary>
+    /// BOSS 血条上显示的名字。
+    /// 子类可以覆盖它（比如大橘）。
+    /// 取的是 ActivityBase 里的 Name（RoleBase 本身没有 Name 字段），
+    /// 取不到就退回 "BOSS"。
+    /// </summary>
+    public virtual string BossDisplayName
+    {
+        get
+        {
+            var name = RoleState?.RoleBase?.Activity?.Name;
+            return string.IsNullOrWhiteSpace(name) ? "BOSS" : name;
+        }
+    }
+
     public override void OnInit()
     {
         base.OnInit();
