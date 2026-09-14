@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=2 format=3 uid="uid://ds668te2rph30"]
+[gd_resource type="Theme" format=3 uid="uid://ds668te2rph30"]
 
 [ext_resource type="FontVariation" path="res://resource/font/GameFont.tres" id="1_arkpx"]
 
@@ -394,7 +394,7 @@ Button/colors/icon_color_pressed = Color(0.117647, 0.431373, 0.905882, 1)
 Button/colors/icon_hover_color = Color(0.117647, 0.431373, 0.905882, 1)
 Button/constants/hseparation = 2
 Button/font_sizes/font_size = 16
-Button/fonts/font = null
+Button/fonts/font = ExtResource("1_arkpx")
 Button/styles/focus = SubResource("2")
 Button/styles/hover = SubResource("3")
 Button/styles/normal = SubResource("4")
@@ -483,7 +483,7 @@ Label/constants/line_spacing = 3
 Label/constants/shadow_as_outline = 0
 Label/constants/shadow_offset_x = 1
 Label/constants/shadow_offset_y = 1
-Label/fonts/font = null
+Label/fonts/font = ExtResource("1_arkpx")
 Label/styles/normal = SubResource("54")
 LineEdit/styles/focus = SubResource("StyleBoxFlat_em2wh")
 LineEdit/styles/normal = SubResource("StyleBoxFlat_0jpwx")

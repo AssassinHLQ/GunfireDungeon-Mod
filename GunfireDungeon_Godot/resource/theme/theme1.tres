@@ -17,6 +17,7 @@
 [ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/btn_setting.png" id="3_set"]
 [ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/slider_thumb.png" id="4_thumb"]
 [ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/slider_track.png" id="5_track"]
+[ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/slider_grabber.png" id="8_grab"]
 
 [sub_resource type="StyleBoxTexture" id="BtnNormal"]
 texture = ExtResource("1_main")
@@ -155,8 +156,8 @@ content_margin_right = 36.0
 content_margin_bottom = 14.0
 
 [sub_resource type="StyleBoxFlat" id="SldLine"]
-content_margin_top = 10.0
-content_margin_bottom = 10.0
+content_margin_top = 2.0
+content_margin_bottom = 2.0
 bg_color = Color(0.72, 0.74, 0.8, 0.85)
 corner_radius_top_left = 2
 corner_radius_top_right = 2
@@ -222,9 +223,9 @@ Label/constants/outline_size = 6
 HSlider/styles/slider = SubResource("SldLine")
 HSlider/styles/grabber_area = SubResource("SldLine")
 HSlider/styles/grabber_area_highlight = SubResource("SldLine")
-HSlider/icons/grabber = null
-HSlider/icons/grabber_highlight = null
-HSlider/icons/grabber_disabled = null
+HSlider/icons/grabber = ExtResource("8_grab")
+HSlider/icons/grabber_highlight = ExtResource("8_grab")
+HSlider/icons/grabber_disabled = ExtResource("8_grab")
 PauseButton/base_type = &"Button"
 PauseButton/font_sizes/font_size = 36
 PauseButton/styles/normal = SubResource("BtnNormalPause")
@@ -243,7 +244,7 @@ SettingButton/styles/disabled = SubResource("BtnNormalSet")
 ; 这里把背景样式全部置空(只显示图标), 并用自制的正方形像素图标替换引擎默认图标。
 ; 关键: Godot 的 CheckBox 图标边长 = 其 font_size。若沿用 Button 的 32,
 ; 图标只有 16px 就会显成长方形。所以必须显式给 CheckBox 设自己的字号。
-CheckBox/font_sizes/font_size = 24
+CheckBox/font_sizes/font_size = 48
 CheckBox/styles/normal = SubResource("CbEmpty")
 CheckBox/styles/hover = SubResource("CbEmpty")
 CheckBox/styles/pressed = SubResource("CbEmpty")

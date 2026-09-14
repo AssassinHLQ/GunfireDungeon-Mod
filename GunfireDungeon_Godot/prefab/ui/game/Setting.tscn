@@ -108,7 +108,7 @@ text = "背景音量"
 vertical_alignment = 1
 
 [node name="BGM" type="HSlider" parent="ScrollContainer/SettingMenu/BoxContainer3"]
-custom_minimum_size = Vector2(700, 44)
+custom_minimum_size = Vector2(700, 24)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -129,7 +129,7 @@ text = "音效音量"
 vertical_alignment = 1
 
 [node name="SFX" type="HSlider" parent="ScrollContainer/SettingMenu/BoxContainer4"]
-custom_minimum_size = Vector2(700, 44)
+custom_minimum_size = Vector2(700, 24)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -150,7 +150,7 @@ text = "鼠标跟随进度"
 vertical_alignment = 1
 
 [node name="FollowsMouseAmount" type="HSlider" parent="ScrollContainer/SettingMenu/BoxContainer5"]
-custom_minimum_size = Vector2(700, 44)
+custom_minimum_size = Vector2(700, 24)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -186,7 +186,7 @@ text = "手柄辅助瞄准强度"
 vertical_alignment = 1
 
 [node name="AimStrength" type="HSlider" parent="ScrollContainer/SettingMenu/BoxContainer8"]
-custom_minimum_size = Vector2(700, 44)
+custom_minimum_size = Vector2(700, 24)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
