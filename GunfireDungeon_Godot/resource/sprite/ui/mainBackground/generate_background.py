@@ -50,6 +50,47 @@ _ARCH_MARGIN = (W - _ARCH_W * 3 - _ARCH_GAP * 2) // 2
 ARCHES = [(_ARCH_MARGIN + i * (_ARCH_W + _ARCH_GAP),) for i in range(3)]
 ARCHES = [(x0, x0 + _ARCH_W, 190, 425, 795) for (x0,) in ARCHES]
 
+# 源图天空是一张只有 9 种纯色的像素画, 结构:
+#   行   0 ~ 111  天空 + 云   天空(71,243,255)最暗, 云 140->179->214 越来越亮
+#   行 112 ~ 126  地平线光带
+#   行 128 ~ 216  海面(3 种蓝)
+# 做法: 直接把这 9 种源色【逐一替换】成黄昏配色。
+# 比"整体染色"好在两点:
+#   1. 像素边缘完全不变, 不会糊成一团
+#   2. 云始终保持比天空亮(整体染色很容易把这个明暗关系弄反)
+# 另外源图自己就编码了"越靠下的云越亮"(最亮色集中在 26~111 行),
+# 所以把最亮的云色映射成暖玫瑰色, 夕阳染云的效果会自动出现。
+SKY_PALETTE = {
+    (71, 243, 255): (38, 34, 62),      # 天空 -> 深靛紫
+    (140, 247, 255): (74, 66, 104),    # 云·浅 -> 紫灰
+    (179, 239, 252): (110, 92, 122),   # 云·中 -> 亮紫灰
+    (214, 243, 255): (176, 138, 132),  # 云·亮 -> 被夕阳染暖
+    # 地平线光带 -> 暖橙。它下方 128~156 行是源图用来模拟"水面波光"的点状抖动。
+    # 在青色下那是波光, 但换成暖色后就成了刺眼的橙色虚线 —— 试过"排亮度阶梯",
+    # 反而因为中间色被提亮、与深色海面落差更大而更明显。
+    # 最终解法: 把海面 4 色【合并成同一个暗色】, 抖动两端同色就等于没有抖动。
+    # 地平线光带与暗海面之间是一条干净的横线 —— 那正是地平线, 本来就该是硬的。
+    (136, 252, 227): (188, 134, 112),  # 地平线光带(唯一的暖色)
+    (45, 214, 252): (50, 41, 58),
+    (46, 214, 252): (50, 41, 58),
+    (46, 189, 255): (44, 37, 56),
+    (47, 189, 255): (44, 37, 56),
+}
+
+
+def remap_palette(img, mapping):
+    """按精确 RGB 逐色替换。源图只有 9 色, 所以这一步既快又不会产生中间色。"""
+    a = np.asarray(img).copy()
+    hit = np.zeros(a.shape[:2], bool)
+    for src, dst in mapping.items():
+        m = (a[:, :, 0] == src[0]) & (a[:, :, 1] == src[1]) & (a[:, :, 2] == src[2])
+        a[m] = dst
+        hit |= m
+    miss = int((~hit).sum())
+    if miss:
+        print(f"    提示: 有 {miss} 个像素没匹配到调色板 ({miss/a.shape[0]/a.shape[1]*100:.2f}%)")
+    return Image.fromarray(a)
+
 
 def periodic_fbm(w, h, base=5, octaves=6, rng_=None):
     """左右真正无缝的多倍频噪声, 返回 0..1
@@ -102,44 +143,42 @@ def soft_glow_alpha(mask, grow=6, blur=8, strength=0.5, inside=False):
 # ==================== 天空 / 远山 ====================
 
 def build_sky():
-    src = Image.open(SKY_SRC).convert("RGB").crop((0, 0, 384, SKY_CROP))
-    # 用双三次插值放大: 源素材是像素画, 最近邻放大 5 倍会让云块变成大直角,
+    """用整张源图铺满 1080 高, 统一比例缩放, 不做事后拉伸。
+
+    源图 384x240, 裁 216 行按 5 倍统一缩放正好 1920x1080, 一个像素都不用编。
+    旧做法只裁上面 112 行放大到 560px 再"延伸"到 1080 ——
+    那凭空补出来的 520px 就是"底部拖了很长一截"的来源。
+    """
+    scale = W // 384                # 1920 / 384 = 5
+    crop_h = H // scale             # 1080 / 5  = 216
+    src = Image.open(SKY_SRC).convert("RGB").crop((0, 0, 384, crop_h))
+
+    # 压平地平线光带。
+    # 源图行 112~122 是"隔行 + 断续"的抖动图案(原本模拟水面波光), 换成暖色后
+    # 就变成一条刺眼的橙色虚线。地平线本来就该是一条干净硬边, 所以整条填平。
+    arr = np.asarray(src).copy()
+    arr[110:126, :] = (136, 252, 227)          # 源调色板里的地平线光带色
+    src = Image.fromarray(arr)
+
+    # 先换色, 再放大 —— 顺序很重要, 反了会把调色板边界插值成脏色
+    src = remap_palette(src, SKY_PALETTE)
+
+    # 双三次放大: 源素材是像素画, 最近邻放大 5 倍会让云块变成大直角,
     # 而且 5 倍像素远粗于游戏本体的 1:1 像素, 反而突兀。
-    # 天空是远景, 平滑一点更像"远处的天", 也和程序化的远山/石墙质感一致。
-    tile = src.resize((1920, SKY_H), Image.BICUBIC)
-    canvas = Image.new("RGB", (3840, SKY_H))
+    tile = src.resize((W, H), Image.BICUBIC)
+
+    canvas = Image.new("RGB", (W * 2, H))
     canvas.paste(tile, (0, 0))
-    canvas.paste(tile.transpose(Image.FLIP_LEFT_RIGHT), (1920, 0))
+    canvas.paste(tile.transpose(Image.FLIP_LEFT_RIGHT), (W, 0))
 
     a = np.asarray(canvas).astype(np.float32) / 255.0
-    lum = a.mean(axis=2, keepdims=True)
-    # 黄昏: 保留一点饱和度, 偏紫蓝
-    a = (lum * 0.20 + a * 0.80) * np.array([0.74, 0.64, 1.05]) * 0.88
-    vg = np.linspace(0.60, 1.06, SKY_H)
-    a = np.clip(a * vg[:, None, None], 0, 1)
 
-    warm = np.clip((np.arange(SKY_H) - SKY_H * 0.58) / (SKY_H * 0.42), 0, 1) ** 1.8
-    a = a * (1 - 0.38 * warm[:, None, None]) + \
-        np.array([0.62, 0.40, 0.46], np.float32)[None, None, :] * (0.38 * warm[:, None, None])
+    # 底部再压一点暗, 做空气透视(海面本来就深, 这里只是让远处更退)
+    y01 = (np.arange(H, dtype=np.float32) / (H - 1))[:, None, None]
+    below = np.clip((y01 - 0.55) / 0.45, 0, 1) ** 0.9
+    a = a * (1.0 - 0.18 * below)
 
-    # 向下延伸到 1080 高。
-    # 不能只复制最后一行: 那样整片区域只有纵向变暗、横向完全不变,
-    # 看起来就是"被拉成一条直线、往下全是竖条纹"。
-    # 改为向远处的雾霭色过渡, 并叠一层周期性起伏, 让它有横向变化。
-    n = H - SKY_H
-    top = a[-1]                                             # 天空最后一行
-    haze = np.array([0.34, 0.29, 0.44], np.float32)          # 远处雾霭(偏紫, 比地平线暗)
-    t = np.linspace(0.0, 1.0, n)[:, None, None] ** 0.8
-    ext = top[None, :, :] * (1 - t) + haze[None, None, :] * t
-
-    # 横向起伏: 周期与天空一致(3840), 保证循环时接得上。
-    # 注意振幅要从 0 渐入 —— 否则接缝那一行就有满幅波动, 会在 y=SKY_H 处留一道硬边
-    wave = periodic_fbm(3840, n, base=5, octaves=5, rng_=np.random.default_rng(5150))
-    ramp = np.clip(np.arange(n, dtype=np.float32) / 60.0, 0.0, 1.0)[:, None, None]
-    ext = ext * (1.0 + (wave[..., None] - 0.5) * 0.26 * ramp)
-
-    full = np.concatenate([a, np.clip(ext, 0, 1)], axis=0)
-    return Image.fromarray(np.clip(full * 255, 0, 255).astype(np.uint8))
+    return Image.fromarray(np.clip(a * 255, 0, 255).astype(np.uint8))
 
 
 def build_ridge():
@@ -458,18 +497,20 @@ def build_wall():
     sel = (aa > 1) & ~opening
     rgba[sel, :3] = np.clip(rgba[sel, :3] + ga[sel] * 0.45, 0, 255)
 
-    # 起拱线脚: 真实拱券在起拱处有一道水平线脚, 是拱与窗身的交界(参考建筑剖面图)
+    # 起拱线脚(柱头): 只在窗口【两侧】各一块, 不横跨开口。
+    # 之前是一整条从 x0-46 拉到 x1+46, 把窗外景色切成上下两半,
+    # 看上去就是窗中间多了一道横杠 —— 建筑上柱头本来也只是两侧的承托构件。
     for x0, x1, ytop, yspring, ybot in ARCHES:
         my0, my1 = yspring - 6, yspring + 20
-        mx0, mx1 = x0 - 46, x1 + 46
-        mm = (yy >= my0) & (yy <= my1) & (xx >= mx0) & (xx <= mx1)
-        rgba[mm, :3] = np.clip(TRIM[None, :] * (1.00 + tex[mm][:, None] * 0.30), 0, 255)
-        rgba[mm, 3] = 255
-        # 线脚上下各压一道线, 让它读得出是一个凸出的构件
-        for ly, k in ((my0, 1.32), (my1 - 3, 0.58)):
-            lm = (yy >= ly) & (yy <= ly + 2) & (xx >= mx0) & (xx <= mx1)
-            rgba[lm, :3] = np.clip(TRIM[None, :] * k, 0, 255)
-            rgba[lm, 3] = 255
+        for sx0, sx1 in ((x0 - 46, x0), (x1, x1 + 46)):
+            mm = (yy >= my0) & (yy <= my1) & (xx >= sx0) & (xx < sx1)
+            rgba[mm, :3] = np.clip(TRIM[None, :] * (1.00 + tex[mm][:, None] * 0.30), 0, 255)
+            rgba[mm, 3] = 255
+            # 上下各压一道线, 让它读得出是一个凸出的构件
+            for ly, k in ((my0, 1.32), (my1 - 3, 0.58)):
+                lm = (yy >= ly) & (yy <= ly + 2) & (xx >= sx0) & (xx < sx1)
+                rgba[lm, :3] = np.clip(TRIM[None, :] * k, 0, 255)
+                rgba[lm, 3] = 255
 
     # 窗台石
     for x0, x1, ytop, yspring, ybot in ARCHES:

@@ -26,8 +26,11 @@ public partial class MainBackground : Godot.Control
     /// <summary>天空层漂移速度(像素/秒)</summary>
     private const float SkySpeed = 32f;
 
-    /// <summary>远山层漂移速度(像素/秒), 要比天空快才有视差纵深</summary>
-    private const float RidgeSpeed = 90f;
+    /// <summary>
+    /// 远山层漂移速度(像素/秒), 要比天空快才有视差纵深。
+    /// 原为 90, 用户反馈"远山移动太快了" —— 降到 42, 与天空的 32 拉开适度差距。
+    /// </summary>
+    private const float RidgeSpeed = 42f;
 
     private TextureRect _skyA;
     private TextureRect _skyB;

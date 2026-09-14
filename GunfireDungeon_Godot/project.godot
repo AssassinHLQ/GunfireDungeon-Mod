@@ -17,6 +17,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 config/name="建筑学院：1999"
 run/main_scene="uid://lbe753cb8heb"
 config/features=PackedStringArray("4.7", "C#")
+boot_splash/image="uid://7wr4wvchxt5o"
 config/icon="res://icon.png"
 
 [autoload]
