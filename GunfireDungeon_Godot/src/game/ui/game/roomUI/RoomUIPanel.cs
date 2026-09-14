@@ -66,11 +66,11 @@ public partial class RoomUIPanel : RoomUI
         _floorLabel.SetAnchorsPreset(Godot.Control.LayoutPreset.CenterTop);
         //锚点本身不受父节点偏移影响, 显式设置四周偏移避免继承旧值
         //楼层名比「第 N 层」长, 左右各留宽一点
-        _floorLabel.OffsetLeft = -170;
-        _floorLabel.OffsetTop = 8;
-        _floorLabel.OffsetRight = 170;
-        _floorLabel.OffsetBottom = 42;
-        _floorLabel.AddThemeFontSizeOverride("font_size", 18);
+        _floorLabel.OffsetLeft = -260;
+        _floorLabel.OffsetTop = 12;
+        _floorLabel.OffsetRight = 260;
+        _floorLabel.OffsetBottom = 72;
+        _floorLabel.AddThemeFontSizeOverride("font_size", 48);
         _floorLabel.AddThemeColorOverride("font_color", new Color("#ffe082"));
         _floorLabel.AddThemeColorOverride("font_outline_color", new Color(0, 0, 0, 0.85f));
         _floorLabel.AddThemeConstantOverride("outline_size", 4);

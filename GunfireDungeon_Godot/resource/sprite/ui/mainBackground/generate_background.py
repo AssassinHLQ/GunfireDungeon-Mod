@@ -1,4 +1,20 @@
 """
+主菜单视差背景生成器 (自包含, 不依赖其他文件)
+
+产出:
+  bg_sky.png    3840x1080  黄昏天空与云  (CC0: ansimuz / Sunny Land, 已调色)
+  bg_ridge.png  3840x1080  远山剪影      (程序化)
+  bg_wall.png   1920x1080  砖墙 + 三扇拱窗 (程序化, 窗内透明)
+
+砖墙的做法:
+  · 每行高度随机、每块砖宽度随机、每块砖的颜色/明暗/色相都不同, 还带缺角与污渍
+    —— 真实砖墙上没有两块一样的砖
+  · 拱窗由楔形券石沿半径放射排列砌成(真实砖拱的砌法), 不是一条光滑曲线
+  · 券石比普通砖亮一档, 块与块之间有可见的放射状灰缝
+
+需要 Pillow 与 NumPy。天空那一步依赖外部 CC0 素材, 见同目录 LICENSE.md。
+"""
+"""
 主菜单视差背景 —— 拱窗版
 
 构图: 地牢石墙大厅, 左右各一扇拱窗, 窗外是黄昏天空与远山
@@ -23,9 +39,6 @@ SKY_H = SKY_CROP * 5
 rng = np.random.default_rng(90210)
 
 MORTAR = np.array((19, 17, 26), np.float32)
-BRICK = np.array((44, 40, 56), np.float32)
-BRICK2 = np.array((35, 32, 46), np.float32)
-HI = np.array((60, 55, 76), np.float32)
 TRIM = np.array((88, 82, 110), np.float32)
 
 # (x0, x1, 拱顶y, 起拱y, 窗底y)
@@ -82,20 +95,9 @@ def soft_glow_alpha(mask, grow=6, blur=8, strength=0.5, inside=False):
     return np.clip(np.clip(g, 0, 1) * base * strength, 0, 1)
 
 
-def masonry(w, h, bw=64, bh=27):
-    xs, ys = np.arange(w)[None, :], np.arange(h)[:, None]
-    row = ys // bh
-    off = (row % 2) * (bw // 2)
-    bx, by = (xs + off) % bw, ys % bh
-    col = (xs + off) // bw
-    hsh = ((col * 73856093) ^ (row * 19349663)) % 1000 / 1000.0
-    face = BRICK[None, None, :] * (1 + (hsh - 0.5)[..., None] * 0.40) + \
-           BRICK2[None, None, :] * (0.5 - (hsh - 0.5)[..., None] * 0.40)
-    out = np.tile(MORTAR[None, None, :], (h, w, 1))
-    out = np.where(((bx > 1) & (by > 1))[..., None], face, out)
-    out = np.where(((by == 2) & (bx > 1))[..., None], HI[None, None, :], out)
-    return out
 
+
+# ==================== 天空 / 远山 ====================
 
 def build_sky():
     src = Image.open(SKY_SRC).convert("RGB").crop((0, 0, 384, SKY_CROP))
@@ -241,16 +243,259 @@ def build_wall():
     return Image.fromarray(np.clip(rgba, 0, 255).astype(np.uint8))
 
 
+
+
+# ==================== 砖墙 / 拱窗 ====================
+
+brng = np.random.default_rng(20260214)
+
+# 砖块配色: 以游戏原版 TileSet1 的紫灰为主, 混入少量偏暖/偏冷的砖
+BRICK_PALETTE = [
+    np.array((38, 34, 48), np.float32),   # 深紫灰
+    np.array((46, 42, 58), np.float32),   # 中紫灰
+    np.array((54, 49, 66), np.float32),   # 亮紫灰
+    np.array((52, 44, 53), np.float32),   # 偏暖
+    np.array((41, 41, 57), np.float32),   # 偏冷
+]
+# 券石: 比普通砖亮一档, 并且本身也有深浅差别
+VOUSSOIR_PALETTE = [
+    np.array((62, 56, 80), np.float32),
+    np.array((76, 70, 96), np.float32),
+    np.array((88, 82, 110), np.float32),
+    np.array((56, 51, 72), np.float32),
+]
+MORTAR = np.array((20, 18, 26), np.float32)
+
+GAP = 3             # 灰缝宽度
+ROW_H = (22, 34)    # 每行砖高度范围
+BRICK_W = (44, 92)  # 每块砖宽度范围
+RING = 40           # 券石厚度
+VOUSSOIR_COUNT = 22 # 每扇拱的券石块数
+
+
+# ---------------- 砖块布局 ----------------
+def brick_layout(w, h):
+    rows, y = [], 0
+    while y < h:
+        rh = int(brng.integers(ROW_H[0], ROW_H[1]))
+        row = []
+        x = -int(brng.integers(0, BRICK_W[1]))
+        while x < w:
+            bwid = int(brng.integers(BRICK_W[0], BRICK_W[1]))
+            row.append((x, bwid))
+            x += bwid + GAP
+        rows.append((y, rh, row))
+        y += rh + GAP
+    return rows
+
+
+def blit_x(canvas, y0, x0, patch):
+    hh, ww = canvas.shape[:2]
+    ph, pw = patch.shape[:2]
+    if y0 >= hh or y0 + ph <= 0:
+        return
+    y0c, y1c = max(0, y0), min(hh, y0 + ph)
+    sy = y0c - y0
+    hgt = y1c - y0c
+    xm = x0 % ww
+    if xm + pw <= ww:
+        canvas[y0c:y1c, xm:xm + pw] = patch[sy:sy + hgt]
+    else:
+        cut = ww - xm
+        canvas[y0c:y1c, xm:ww] = patch[sy:sy + hgt, :cut]
+        canvas[y0c:y1c, 0:pw - cut] = patch[sy:sy + hgt, cut:]
+
+
+def brick_color():
+    """每块砖一个颜色: 在调色板里随机插值, 再叠整体明暗与色相漂移"""
+    t = brng.random()
+    i = int(t * (len(BRICK_PALETTE) - 1))
+    f = t * (len(BRICK_PALETTE) - 1) - i
+    base = BRICK_PALETTE[i] * (1 - f) + BRICK_PALETTE[min(i + 1, len(BRICK_PALETTE) - 1)] * f
+    base = base * float(brng.uniform(0.78, 1.22))
+    base = base * (1.0 + (brng.random(3).astype(np.float32) - 0.5) * 0.20)
+    return base
+
+
+def make_brick_patch(rh, bwid, base, grain=0.16, damage=True):
+    grad = np.linspace(1.12, 0.84, rh).astype(np.float32)[:, None, None]
+    patch = np.ones((rh, bwid, 3), np.float32) * base[None, None, :] * grad
+    patch *= (1.0 + (brng.random((rh, bwid, 1)).astype(np.float32) - 0.5) * grain)
+    if not damage:
+        return patch
+    r = brng.random()
+    if r < 0.22:                                   # 缺角
+        cw = int(brng.integers(3, max(4, bwid // 4)))
+        ch = int(brng.integers(2, max(3, rh // 3)))
+        if brng.random() < 0.5:
+            patch[:ch, :cw] *= 0.55
+        else:
+            patch[-ch:, -cw:] *= 0.55
+    elif r < 0.38:                                 # 污渍
+        sw = int(brng.integers(max(4, bwid // 3), max(5, bwid)))
+        sh = int(brng.integers(3, max(4, rh)))
+        ox = int(brng.integers(0, max(1, bwid - sw)))
+        oy = int(brng.integers(0, max(1, rh - sh)))
+        patch[oy:oy + sh, ox:ox + sw] *= float(brng.uniform(0.72, 0.88))
+    elif r < 0.50:                                 # 掉色
+        sw = int(brng.integers(max(4, bwid // 4), max(5, bwid // 2)))
+        sh = int(brng.integers(2, max(3, rh // 2)))
+        ox = int(brng.integers(0, max(1, bwid - sw)))
+        oy = int(brng.integers(0, max(1, rh - sh)))
+        patch[oy:oy + sh, ox:ox + sw] *= float(brng.uniform(1.14, 1.34))
+    return patch
+
+
+# ---------------- 拱窗几何 ----------------
+def build_arch_geometry():
+    """拱窗参数。ARCHES 里 拱顶到起拱线的距离 正好等于半宽, 所以是标准半圆"""
+    geo = []
+    for x0, x1, ytop, yspring, ybot in ARCHES:
+        cx = (x0 + x1) / 2.0
+        r_in = (x1 - x0) / 2.0
+        geo.append((cx, float(yspring), r_in, r_in + RING, float(x0), float(x1), float(ybot)))
+    return geo
+
+
+def arch_masks(geo, yy, xx):
+    """返回 (开口遮罩, 券石分块编号)
+       券石按圆心角等分成 VOUSSOIR_COUNT 块, 沿半径放射 —— 和真实砖拱一致"""
+    opening = np.zeros((H, W), bool)
+    block = np.full((H, W), -1, np.int32)
+    for k, (cx, cy, r_in, r_out, x0, x1, ybot) in enumerate(geo):
+        dx = xx - cx
+        dy = cy - yy                      # 向上为正
+        r = np.sqrt(dx * dx + dy * dy)
+        upper = dy >= 0
+        # 开口: 上半圆内 + 起拱线以下的矩形窗身
+        opening |= (r < r_in) & upper & (xx >= x0) & (xx <= x1)
+        opening |= (yy >= cy) & (yy <= ybot) & (xx >= x0) & (xx <= x1)
+        # 券石环带: 上半圆
+        band = (r >= r_in) & (r < r_out) & upper
+        ang = np.arctan2(dy, dx)
+        idx = np.clip((ang / np.pi * VOUSSOIR_COUNT).astype(np.int32), 0, VOUSSOIR_COUNT - 1)
+        newv = band & (block < 0)
+        block = np.where(newv, idx + k * 1000, block)
+    return opening, block
+
+
+def build_wall():
+    rgba = np.zeros((H, W, 4), np.float32)
+    tex = periodic_fbm(W, H, base=8, octaves=6)
+    yy = np.arange(H)[:, None]
+    xx = np.arange(W)[None, :]
+
+    geo = build_arch_geometry()
+    opening, block = arch_masks(geo, yy, xx)
+
+    # 逐块画砖(先画满整面墙, 之后再挖窗洞)
+    stone = np.zeros((H, W, 3), np.float32)
+    for y, rh, row in brick_layout(W, H):
+        for x, bwid in row:
+            blit_x(stone, y, x, make_brick_patch(rh, bwid, brick_color()))
+
+    wall_rgb = np.tile(MORTAR[None, None, :], (H, W, 1))
+    drawn = stone.sum(axis=2) > 0
+    wall_rgb[drawn] = stone[drawn]
+    wall_rgb = wall_rgb * (0.86 + tex[..., None] * 0.30)
+
+    # ---- 券石: 盖在砖墙之上, 每块一个颜色, 块间留出放射状灰缝 ----
+    band = block >= 0
+    for bid in np.unique(block[band]):
+        m = block == bid
+        t = ((int(bid) * 2654435761) % 997) / 997.0
+        i = int(t * (len(VOUSSOIR_PALETTE) - 1))
+        f = t * (len(VOUSSOIR_PALETTE) - 1) - i
+        col = VOUSSOIR_PALETTE[i] * (1 - f) + VOUSSOIR_PALETTE[min(i + 1, len(VOUSSOIR_PALETTE) - 1)] * f
+        col = col * float(0.86 + ((int(bid) * 40503) % 100) / 100.0 * 0.28)
+        wall_rgb[m] = col
+
+    # 放射状灰缝 (块编号变化处)
+    jv = band.copy()
+    jv[1:] &= (block[1:] != block[:-1])
+    jh = band.copy()
+    jh[:, 1:] &= (block[:, 1:] != block[:, :-1])
+    joint = jv | jh
+    wall_rgb[joint] = np.clip(wall_rgb[joint] * 0.45, 0, 255)
+
+    # 券石: 内沿(拱腹, 靠下)受光更亮, 外沿(拱背, 靠上)暗, 这样拱券才有厚度
+    # 注意 dy = cy - yy, 所以 y 越小 r 越大 —— 环带的上边是外沿、下边是内沿
+    extrados = band & ~np.roll(band, 1, axis=0)     # 上边 = 外沿
+    intrados = band & ~np.roll(band, -1, axis=0)    # 下边 = 内沿
+    wall_rgb[intrados] = np.clip(wall_rgb[intrados] * 1.32, 0, 255)
+    wall_rgb[extrados] = np.clip(wall_rgb[extrados] * 0.68, 0, 255)
+
+    # 窗内透明
+    rgba[~opening, :3] = np.clip(wall_rgb[~opening], 0, 255)
+    rgba[~opening, 3] = 255
+
+    # 窗光洒在墙上
+    g = soft_glow_alpha(opening, grow=14, blur=24, strength=0.26, inside=True)
+    ga = g[..., None] * np.array((120, 118, 160), np.float32)[None, None, :]
+    aa = np.clip(ga.max(axis=2), 0, 255)
+    sel = (aa > 1) & ~opening
+    rgba[sel, :3] = np.clip(rgba[sel, :3] + ga[sel] * 0.45, 0, 255)
+
+    # 窗台石
+    for x0, x1, ytop, yspring, ybot in ARCHES:
+        sy0, sy1 = ybot, ybot + 26
+        sx0, sx1 = x0 - 34, x1 + 34
+        sm = (yy >= sy0) & (yy <= sy1) & (xx >= sx0) & (xx <= sx1)
+        rgba[sm, :3] = np.clip(TRIM[None, :] * (0.92 + tex[sm][:, None] * 0.5), 0, 255)
+        rgba[sm, 3] = 255
+        cap = (yy >= sy0) & (yy <= sy0 + 3) & (xx >= sx0) & (xx <= sx1)
+        rgba[cap, :3] = np.clip(TRIM[None, :] * 1.30, 0, 255)
+
+    # 底部地面
+    floor_y = 1006 + (tex.mean(axis=0) - 0.5) * 8.0
+    fl = yy[:, 0][:, None] >= floor_y[None, :]
+    rgba[fl, :3] = np.clip(wall_rgb[fl] * 0.80, 0, 255)
+    rgba[fl, 3] = 255
+    lip = (yy[:, 0][:, None] >= floor_y[None, :] - 5) & (yy[:, 0][:, None] <= floor_y[None, :] + 3)
+    rgba[lip, :3] = np.clip(TRIM[None, :] * 1.18, 0, 255)
+    rgba[lip, 3] = 255
+
+    # 顶部檐口
+    full = np.ones((H, W), bool)
+    cor = ((yy >= 74) & (yy <= 96)) & full
+    rgba[cor, :3] = np.clip(TRIM[None, :] * (0.95 + tex[cor][:, None] * 0.45), 0, 255)
+    rgba[cor, 3] = 255
+    lip2 = ((yy >= 97) & (yy <= 102)) & full
+    rgba[lip2, :3] = np.clip(wall_rgb[lip2] * 0.42, 0, 255)
+    rgba[lip2, 3] = 255
+    up = (yy <= 20) & full
+    rgba[up, :3] = np.clip(wall_rgb[up] * 0.62, 0, 255)
+    rgba[up, 3] = 255
+
+    # 四角压暗
+    vig_x = np.clip(np.abs(xx - W / 2) / (W / 2), 0, 1) ** 3
+    vig_y = np.clip(np.abs(yy - H / 2) / (H / 2), 0, 1) ** 3
+    v = np.clip(1.0 - 0.38 * (vig_x + vig_y), 0.55, 1.0)
+    m = rgba[..., 3] > 0
+    rgba[m, :3] = np.clip(rgba[m, :3] * v[m][:, None], 0, 255)
+
+    inner = soft_glow_alpha(opening, grow=2, blur=2, strength=0.16, inside=False)
+    ii = inner > 0.06
+    rgba[ii, :3] = np.clip(rgba[ii, :3] + inner[ii][:, None] * np.array((150, 150, 190), np.float32), 0, 255)
+
+    return Image.fromarray(np.clip(rgba, 0, 255).astype(np.uint8))
+
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    sky, ridge, wall = build_sky(), build_ridge(), build_wall()
+
+    sky = build_sky()
     sky.save(os.path.join(OUT, "bg_sky.png"))
 
     # 远山镜像拼成 3840 宽, 与天空周期一致, 便于在 Godot 里统一循环
+    ridge = build_ridge()
     r2 = Image.new("RGBA", (3840, H))
     r2.paste(ridge, (0, 0))
     r2.paste(ridge.transpose(Image.FLIP_LEFT_RIGHT), (1920, 0))
     r2.save(os.path.join(OUT, "bg_ridge.png"))
+
+    wall = build_wall()
     wall.save(os.path.join(OUT, "bg_wall.png"))
 
     mock = Image.new("RGB", (W, H), (8, 8, 12))
@@ -259,6 +504,6 @@ if __name__ == "__main__":
     mock.paste(wall, (0, 0), wall)
     mock.save(os.path.join(OUT, "mock_menu.png"))
 
-    for f in ("bg_sky.png", "bg_ridge.png", "bg_wall.png", "mock_menu.png"):
+    for f in ("bg_sky.png", "bg_ridge.png", "bg_wall.png"):
         p = os.path.join(OUT, f)
-        print(f"{f:16} {str(Image.open(p).size):14} {os.path.getsize(p)/1024:6.0f} KB")
+        print(f"{f:16} {Image.open(p).size}  {os.path.getsize(p)/1024:.0f} KB")
