@@ -149,9 +149,13 @@ def build_sky():
     旧做法只裁上面 112 行放大到 560px 再"延伸"到 1080 ——
     那凭空补出来的 520px 就是"底部拖了很长一截"的来源。
     """
-    scale = W // 384                # 1920 / 384 = 5
-    crop_h = H // scale             # 1080 / 5  = 216
-    src = Image.open(SKY_SRC).convert("RGB").crop((0, 0, 384, crop_h))
+    # 裁剪行数决定地平线落在哪一行:
+    #   裁 216 行 = 横向 5 倍的等比缩放, 地平线在 y≈590
+    #   裁 180 行 -> 纵向拉到 6 倍, 地平线下移到 y≈708 —— 窗口里露出更多云
+    # 用户反馈"要看见更多的云", 所以裁少一点、纵向多拉一点。
+    # 云是无定形的东西, 1.2 倍的纵向拉伸肉眼看不出来。
+    CROP_ROWS = 180
+    src = Image.open(SKY_SRC).convert("RGB").crop((0, 0, 384, CROP_ROWS))
 
     # 压平地平线光带。
     # 源图行 112~122 是"隔行 + 断续"的抖动图案(原本模拟水面波光), 换成暖色后
@@ -512,6 +516,32 @@ def build_wall():
                 rgba[lm, :3] = np.clip(TRIM[None, :] * k, 0, 255)
                 rgba[lm, 3] = 255
 
+    # 窗口两侧的壁柱: 灰紫色竖柱。
+    # 之前只在起拱线处放了一小块柱头, 整根柱子是缺失的 —— 用户要的是沿窗边
+    # 通到窗台的一整根灰紫色长柱(建筑上叫壁柱/pilaster)。
+    # 画在窗台石之前, 这样柱脚会被窗台压住, 交接关系才对。
+    for x0, x1, ytop, yspring, ybot in ARCHES:
+        for px0, px1, inner_left in (
+            (x0 - 48, x0, False),      # 左侧柱, 内缘在右边
+            (x1, x1 + 48, True),       # 右侧柱, 内缘在左边
+        ):
+            pm = (yy >= yspring - 6) & (yy <= ybot) & (xx >= px0) & (xx < px1)
+            rgba[pm, :3] = np.clip(TRIM[None, :] * (0.90 + tex[pm][:, None] * 0.36), 0, 255)
+            rgba[pm, 3] = 255
+
+            # 石块分层: 每 44px 一道横向石缝, 让它读得出是砌起来的柱子而不是一根色条
+            drum = ((yy - (yspring - 6)) % 44) < 2
+            dj = pm & drum
+            rgba[dj, :3] = np.clip(rgba[dj, :3] * 0.72, 0, 255)
+
+            # 内缘(靠窗一侧)提亮、外缘压暗 -> 柱子凸出于墙面
+            lit_col = (px1 - 4, px1) if inner_left else (px0, px0 + 4)
+            lm = pm & (xx >= lit_col[0]) & (xx < lit_col[1])
+            rgba[lm, :3] = np.clip(TRIM[None, :] * 1.34, 0, 255)
+            sh_col = (px0, px0 + 3) if inner_left else (px1 - 3, px1)
+            sm2 = pm & (xx >= sh_col[0]) & (xx < sh_col[1])
+            rgba[sm2, :3] = np.clip(TRIM[None, :] * 0.58, 0, 255)
+
     # 窗台石
     for x0, x1, ytop, yspring, ybot in ARCHES:
         sy0, sy1 = ybot, ybot + 26
@@ -522,12 +552,16 @@ def build_wall():
         cap = (yy >= sy0) & (yy <= sy0 + 3) & (xx >= sx0) & (xx <= sx1)
         rgba[cap, :3] = np.clip(TRIM[None, :] * 1.30, 0, 255)
 
-    # 底部地面
-    floor_y = 1006 + (tex.mean(axis=0) - 0.5) * 8.0
-    fl = yy[:, 0][:, None] >= floor_y[None, :]
+    # 底部地面 / 基座
+    # 注意: floor_y 必须是常量。
+    # 之前写成 1006 + (tex.mean(axis=0) - 0.5) * 8.0 —— 按列加噪声,
+    # 于是这条地脚线逐列上下抖动 ±4px, 屏幕上看着就是"像素抖动"。
+    floor_y = 1006.0
+    full_mask = np.ones((H, W), bool)
+    fl = (yy >= floor_y) & full_mask
     rgba[fl, :3] = np.clip(wall_rgb[fl] * 0.80, 0, 255)
     rgba[fl, 3] = 255
-    lip = (yy[:, 0][:, None] >= floor_y[None, :] - 5) & (yy[:, 0][:, None] <= floor_y[None, :] + 3)
+    lip = (yy >= floor_y - 4) & (yy <= floor_y + 2) & full_mask
     rgba[lip, :3] = np.clip(TRIM[None, :] * 1.18, 0, 255)
     rgba[lip, 3] = 255
 
