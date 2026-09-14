@@ -30,11 +30,11 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 20
+alignment = 1
 
 [node name="Title" type="Label" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 180)
+custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
-size_flags_vertical = 6
 theme_override_constants/outline_size = 16
 theme_override_font_sizes/font_size = 110
 text = "建筑学院：1999"
@@ -52,7 +52,7 @@ patch_margin_right = 40
 patch_margin_bottom = 0
 
 [node name="ButtonList" type="VBoxContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(560, 510)
+custom_minimum_size = Vector2(560, 460)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4

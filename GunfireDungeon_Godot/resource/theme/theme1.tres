@@ -61,7 +61,7 @@ texture_margin_left = 16.0
 texture_margin_top = 16.0
 texture_margin_right = 16.0
 texture_margin_bottom = 16.0
-modulate_color = Color(0.4, 0.72, 1, 1)
+modulate_color = Color(1, 0.93, 0.74, 1)
 content_margin_left = 36.0
 content_margin_top = 14.0
 content_margin_right = 36.0
@@ -113,7 +113,7 @@ texture_margin_left = 16.0
 texture_margin_top = 16.0
 texture_margin_right = 16.0
 texture_margin_bottom = 16.0
-modulate_color = Color(0.4, 0.72, 1, 1)
+modulate_color = Color(1, 0.93, 0.74, 1)
 content_margin_left = 36.0
 content_margin_top = 14.0
 content_margin_right = 36.0
@@ -149,7 +149,7 @@ texture_margin_left = 16.0
 texture_margin_top = 16.0
 texture_margin_right = 16.0
 texture_margin_bottom = 16.0
-modulate_color = Color(0.4, 0.72, 1, 1)
+modulate_color = Color(1, 0.93, 0.74, 1)
 content_margin_left = 36.0
 content_margin_top = 14.0
 content_margin_right = 36.0
@@ -205,9 +205,9 @@ border_color = Color(0.7, 0.88, 1, 1)
 [resource]
 Button/colors/font_color = Color(0.85098, 0.85098, 0.866667, 1)
 Button/colors/font_color_disabled = Color(1, 1, 1, 0.3)
-Button/colors/font_color_focus = Color(0.65, 0.85, 1, 1)
+Button/colors/font_color_focus = Color(1, 0.93, 0.74, 1)
 Button/colors/font_color_hover = Color(1, 1, 1, 1)
-Button/colors/font_color_pressed = Color(0.65, 0.85, 1, 1)
+Button/colors/font_color_pressed = Color(1, 0.93, 0.74, 1)
 ; 主菜单背景是黄昏天空, 比较亮, 给文字加深色描边保证可读
 Button/colors/font_outline_color = Color(0, 0, 0, 0.85)
 Button/constants/outline_size = 8
@@ -234,11 +234,12 @@ PauseButton/styles/pressed = SubResource("BtnHoverPause")
 PauseButton/styles/focus = SubResource("BtnFocusPause")
 PauseButton/styles/disabled = SubResource("BtnNormalPause")
 SettingButton/base_type = &"Button"
-SettingButton/styles/normal = SubResource("BtnNormalSet")
-SettingButton/styles/hover = SubResource("BtnHoverSet")
-SettingButton/styles/pressed = SubResource("BtnHoverSet")
-SettingButton/styles/focus = SubResource("BtnFocusSet")
-SettingButton/styles/disabled = SubResource("BtnNormalSet")
+; 设置面板的「返回」也用 004, 和 ESC 菜单统一
+SettingButton/styles/normal = SubResource("BtnNormalPause")
+SettingButton/styles/hover = SubResource("BtnHoverPause")
+SettingButton/styles/pressed = SubResource("BtnHoverPause")
+SettingButton/styles/focus = SubResource("BtnFocusPause")
+SettingButton/styles/disabled = SubResource("BtnNormalPause")
 
 ; CheckBox 继承 Button 的样式链, 不显式覆盖就会被 96px 花边边框撑爆。
 ; 这里把背景样式全部置空(只显示图标), 并用自制的正方形像素图标替换引擎默认图标。

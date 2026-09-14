@@ -51,16 +51,18 @@ ARCHES = [(_ARCH_MARGIN + i * (_ARCH_W + _ARCH_GAP),) for i in range(3)]
 ARCHES = [(x0, x0 + _ARCH_W, 190, 425, 795) for (x0,) in ARCHES]
 
 
-def periodic_fbm(w, h, base=5, octaves=6):
+def periodic_fbm(w, h, base=5, octaves=6, rng_=None):
     """左右真正无缝的多倍频噪声, 返回 0..1
        做法: 生成一个小块后 2x2 平铺再放大, 从左上角裁出刚好一个周期,
-       这样裁剪结果在左右边界上是连续的(之前从中心裁会破坏周期性, 在墙上留下竖线)"""
+       这样裁剪结果在左右边界上是连续的(之前从中心裁会破坏周期性, 在墙上留下竖线)
+       rng_ 可传入独立的随机源, 避免影响主序列"""
+    r = rng if rng_ is None else rng_
     out = np.zeros((h, w), np.float32)
     amp, tot = 1.0, 0.0
     for o in range(octaves):
         cx = base * (2 ** o)
         cy = max(2, int(cx * h / w))
-        blk = rng.random((cy, cx)).astype(np.float32)
+        blk = r.random((cy, cx)).astype(np.float32)
         big = np.tile(blk, (2, 2))
         img = Image.fromarray((big * 255).astype(np.uint8)).resize((w * 2, h * 2), Image.BICUBIC)
         a = np.asarray(img, np.float32) / 255.0
@@ -120,8 +122,24 @@ def build_sky():
     a = a * (1 - 0.38 * warm[:, None, None]) + \
         np.array([0.62, 0.40, 0.46], np.float32)[None, None, :] * (0.38 * warm[:, None, None])
 
-    ext = np.repeat(a[-1:], H - SKY_H, axis=0) * np.linspace(1.0, 0.5, H - SKY_H)[:, None, None]
-    return Image.fromarray(np.clip(np.concatenate([a, ext], 0) * 255, 0, 255).astype(np.uint8))
+    # 向下延伸到 1080 高。
+    # 不能只复制最后一行: 那样整片区域只有纵向变暗、横向完全不变,
+    # 看起来就是"被拉成一条直线、往下全是竖条纹"。
+    # 改为向远处的雾霭色过渡, 并叠一层周期性起伏, 让它有横向变化。
+    n = H - SKY_H
+    top = a[-1]                                             # 天空最后一行
+    haze = np.array([0.34, 0.29, 0.44], np.float32)          # 远处雾霭(偏紫, 比地平线暗)
+    t = np.linspace(0.0, 1.0, n)[:, None, None] ** 0.8
+    ext = top[None, :, :] * (1 - t) + haze[None, None, :] * t
+
+    # 横向起伏: 周期与天空一致(3840), 保证循环时接得上。
+    # 注意振幅要从 0 渐入 —— 否则接缝那一行就有满幅波动, 会在 y=SKY_H 处留一道硬边
+    wave = periodic_fbm(3840, n, base=5, octaves=5, rng_=np.random.default_rng(5150))
+    ramp = np.clip(np.arange(n, dtype=np.float32) / 60.0, 0.0, 1.0)[:, None, None]
+    ext = ext * (1.0 + (wave[..., None] - 0.5) * 0.26 * ramp)
+
+    full = np.concatenate([a, np.clip(ext, 0, 1)], axis=0)
+    return Image.fromarray(np.clip(full * 255, 0, 255).astype(np.uint8))
 
 
 def build_ridge():
@@ -408,6 +426,9 @@ def build_wall():
         f = t * (len(VOUSSOIR_PALETTE) - 1) - i
         col = VOUSSOIR_PALETTE[i] * (1 - f) + VOUSSOIR_PALETTE[min(i + 1, len(VOUSSOIR_PALETTE) - 1)] * f
         col = col * float(0.86 + ((int(bid) * 40503) % 100) / 100.0 * 0.28)
+        # 拱顶石: 正中的那块做得更亮, 是拱券的视觉中心
+        if int(bid) % 1000 == VOUSSOIR_COUNT // 2:
+            col = col * 1.32
         wall_rgb[m] = col
 
     # 放射状灰缝 (块编号变化处)
@@ -416,14 +437,15 @@ def build_wall():
     jh = band.copy()
     jh[:, 1:] &= (block[:, 1:] != block[:, :-1])
     joint = jv | jh
-    wall_rgb[joint] = np.clip(wall_rgb[joint] * 0.45, 0, 255)
+    wall_rgb[joint] = np.clip(wall_rgb[joint] * 0.42, 0, 255)
 
-    # 券石: 内沿(拱腹, 靠下)受光更亮, 外沿(拱背, 靠上)暗, 这样拱券才有厚度
-    # 注意 dy = cy - yy, 所以 y 越小 r 越大 —— 环带的上边是外沿、下边是内沿
-    extrados = band & ~np.roll(band, 1, axis=0)     # 上边 = 外沿
-    intrados = band & ~np.roll(band, -1, axis=0)    # 下边 = 内沿
-    wall_rgb[intrados] = np.clip(wall_rgb[intrados] * 1.32, 0, 255)
-    wall_rgb[extrados] = np.clip(wall_rgb[extrados] * 0.68, 0, 255)
+    # 拱券的内外两道弧线都勾清楚(参考建筑剖面图的做法), 拱腹再往内提亮一道, 有厚度
+    extrados = band & ~np.roll(band, 1, axis=0)      # 上边 = 外沿(拱背)
+    intrados = band & ~np.roll(band, -1, axis=0)     # 下边 = 内沿(拱腹)
+    wall_rgb[extrados] = np.clip(wall_rgb[extrados] * 0.52, 0, 255)
+    wall_rgb[intrados] = np.clip(wall_rgb[intrados] * 0.48, 0, 255)
+    lit = band & np.roll(band, -4, axis=0) & ~np.roll(band, -1, axis=0)
+    wall_rgb[lit] = np.clip(wall_rgb[lit] * 1.24, 0, 255)
 
     # 窗内透明
     rgba[~opening, :3] = np.clip(wall_rgb[~opening], 0, 255)
@@ -435,6 +457,19 @@ def build_wall():
     aa = np.clip(ga.max(axis=2), 0, 255)
     sel = (aa > 1) & ~opening
     rgba[sel, :3] = np.clip(rgba[sel, :3] + ga[sel] * 0.45, 0, 255)
+
+    # 起拱线脚: 真实拱券在起拱处有一道水平线脚, 是拱与窗身的交界(参考建筑剖面图)
+    for x0, x1, ytop, yspring, ybot in ARCHES:
+        my0, my1 = yspring - 6, yspring + 20
+        mx0, mx1 = x0 - 46, x1 + 46
+        mm = (yy >= my0) & (yy <= my1) & (xx >= mx0) & (xx <= mx1)
+        rgba[mm, :3] = np.clip(TRIM[None, :] * (1.00 + tex[mm][:, None] * 0.30), 0, 255)
+        rgba[mm, 3] = 255
+        # 线脚上下各压一道线, 让它读得出是一个凸出的构件
+        for ly, k in ((my0, 1.32), (my1 - 3, 0.58)):
+            lm = (yy >= ly) & (yy <= ly + 2) & (xx >= mx0) & (xx <= mx1)
+            rgba[lm, :3] = np.clip(TRIM[None, :] * k, 0, 255)
+            rgba[lm, 3] = 255
 
     # 窗台石
     for x0, x1, ytop, yspring, ybot in ARCHES:
