@@ -11,11 +11,13 @@
 | | 原版 | 本仓库 |
 |---|---|---|
 | **仓库** | [xlljc/GunfireDungeon](https://github.com/xlljc/GunfireDungeon) | [AssassinHLQ/**GunfireDungeon-Mod**](https://github.com/AssassinHLQ/GunfireDungeon-Mod) |
-| **作者** | 小李xlxl | 由 klhuyjnvbnvbnb 修改 |
+| **标题** | 枪火地牢 | **《建筑学院：1999》** |
+| **作者** | [小李xlxl](https://space.bilibili.com/259437820) | 由 [klhuyjnvbnvbnb](https://space.bilibili.com/1463614316) 修改 |
 | **性质** | 原作者官方版本 | **在原作者基础上魔改** |
-| **地牢层数** | 单层 | **10 层循环，到出口进下一层** |
+| **地牢层数** | 单层 | **9 层 + 1 隐藏层循环，到出口进下一层** |
 | **难度** | 固定 | **随层数递增** |
 | **键位设置** | 无 | **有，17 个动作可改键** |
+| **自动索敌** | 无 | **有，自动锁定最近的敌人并瞄准，省去手动瞄准** |
 | **像素字体** | 内附试用版字体 | **方舟像素字体 + 缝合像素字体（均 SIL OFL 1.1）** |
 
 > **两者均以 [AGPL v3](LICENSE) 协议发布**，原项目版权归原作者所有。

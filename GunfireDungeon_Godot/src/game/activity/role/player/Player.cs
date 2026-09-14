@@ -237,6 +237,20 @@ public partial class Player : Role
     private Vector2 CalcMousePosition(Vector2 gPos)
     {
         var app = GameApplication.Instance;
+
+        // 自动索敌: 开启后自动锁定最近的敌人并瞄准它, 不需要手动移动鼠标或摇杆。
+        // 放在最前面, 这样无论玩家用什么操作方式都会生效 —— 对触屏与手柄玩家友好。
+        // 附近没有敌人时自动落回下面的手动瞄准。
+        if (app.GameSave.AutoTarget && World != null)
+        {
+            var autoTarget = ResolveAutoTarget();
+            if (autoTarget != null)
+            {
+                _aimLockRole = autoTarget;
+                return _aimLockRole.GetCenterPosition();
+            }
+        }
+
         Vector2 mousePos;
         if (_aimLockRole != null && (!app.GameSave.JoystickAimAssist || _aimLockRole.IsDie || _aimLockRole.IsDestroyed))
         {
@@ -376,6 +390,26 @@ public partial class Player : Role
     }
     
     
+    /// <summary>
+    /// 自动索敌: 选出当前要锁定的敌人。
+    /// <para/>
+    /// 目标死亡、被销毁或超出范围时重新找最近的;
+    /// 否则只在出现明显更近的敌人时才换目标 —— 留 50px 余量,
+    /// 避免两个敌人距离接近时目标来回跳。
+    /// </summary>
+    private Role ResolveAutoTarget()
+    {
+        if (_aimLockRole != null &&
+            !_aimLockRole.IsDie &&
+            !_aimLockRole.IsDestroyed &&
+            Position.DistanceTo(_aimLockRole.Position) <= GameConfig.AutoTargetMaxDistance)
+        {
+            return TryFindCloserEnemy(_aimLockRole, 50f) ?? _aimLockRole;
+        }
+
+        return GetNearestEnemy(GameConfig.AutoTargetMaxDistance);
+    }
+
     /// <summary>
     /// 获取辅助瞄准的敌人
     /// </summary>

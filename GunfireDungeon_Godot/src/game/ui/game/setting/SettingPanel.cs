@@ -75,6 +75,20 @@ public partial class SettingPanel : Setting
             GameApplication.Instance.SetPerfectPixel(save.PerfectPixel);
         };
         
+        //----------------------- 自动索敌 -----------------------------
+        // 说明: ds_ui 的 S_XXX 包装类是扫描场景自动生成的, 这个复选框是后加的节点,
+        // 所以直接用节点路径取, 不等生成器重跑。
+        // 该值的读取在 Player.CalcMousePosition 里, 打开后立即生效, 不需要额外应用。
+        var autoTargetBox = S_SettingMenu.Instance.GetNodeOrNull<Godot.CheckBox>("BoxContainer9/AutoTarget");
+        if (autoTargetBox != null)
+        {
+            autoTargetBox.ButtonPressed = save.AutoTarget;
+            autoTargetBox.Pressed += () =>
+            {
+                save.AutoTarget = autoTargetBox.ButtonPressed;
+            };
+        }
+
         //----------------------- 手柄设置 -----------------------------
 
         S_LockAiming.Instance.ButtonPressed = save.JoystickAimAssist;

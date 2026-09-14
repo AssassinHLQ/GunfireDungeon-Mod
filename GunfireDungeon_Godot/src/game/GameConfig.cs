@@ -22,6 +22,12 @@ public static class GameConfig
     /// 摇杆锁定瞄准最大距离
     /// </summary>
     public static int MaxJoystickLockingDistance = 300;
+
+    /// <summary>
+    /// 自动索敌的最大距离。比摇杆锁定远得多 —— 自动索敌是"交给游戏瞄",
+    /// 只用 300 会导致稍微远一点的敌人就瞄不到, 打起来要一直走位。
+    /// </summary>
+    public static int AutoTargetMaxDistance = 800;
     
     // ----------------------- 常量 -----------------------
 

@@ -58,6 +58,13 @@ public partial class GameSave
     public float JoystickAimAssistStrength = 0.5f;
 
     /// <summary>
+    /// 自动索敌: 开启后自动锁定最近的敌人并瞄准它, 不需要手动移动鼠标/摇杆瞄准。
+    /// 对触屏与手柄玩家友好。
+    /// </summary>
+    [JsonInclude]
+    public bool AutoTarget = true;
+
+    /// <summary>
     /// 自定义键位, 键为输入动作名称, 值为物理键码
     /// </summary>
     [JsonInclude]

@@ -11,11 +11,13 @@
 | | Original / 原版 | This repo / 本仓库 |
 |---|---|---|
 | **Repository** | [xlljc/GunfireDungeon](https://github.com/xlljc/GunfireDungeon) | [AssassinHLQ/**GunfireDungeon-Mod**](https://github.com/AssassinHLQ/GunfireDungeon-Mod) |
-| **Author** | 小李xlxl | Modified by klhuyjnvbnvbnb |
+| **Title** | GunfireDungeon / 枪火地牢 | **"建筑学院：1999" (Architecture School: 1999)** |
+| **Author** | [小李xlxl](https://space.bilibili.com/259437820) | Modified by [klhuyjnvbnvbnb](https://space.bilibili.com/1463614316) |
 | **Status** | Upstream, official / 原作者的官方版本 | **Fork + mod / 在原作者基础上魔改** |
-| **Dungeon floors** | Single layer loop / 单层 | **10 floors, advances on exit / 10 层循环** |
+| **Dungeon floors** | Single layer loop / 单层 | **9 floors + 1 hidden floor / 9 层 + 1 隐藏层** |
 | **Difficulty** | Fixed / 固定 | **Scales with floor / 随层数递增** |
 | **Key rebinding** | No / 无 | **Yes, 17 actions / 17 个可改键** |
+| **Auto-targeting** | No / 无 | **Yes, locks the nearest enemy / 有，自动锁定最近的敌人** |
 | **Pixel font** | Bundled trial fonts | **Ark Pixel Font + Fusion Pixel Font (both SIL OFL 1.1)** |
 
 > **Both are released under [AGPL v3](LICENSE).** All original copyright belongs to the original author.
