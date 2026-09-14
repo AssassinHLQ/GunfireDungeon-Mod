@@ -2,7 +2,7 @@
 
 ---
 
-# ⚠️ READ ME FIRST / 请先读这里
+# READ ME FIRST / 请先读这里
 
 ### This is a MODIFIED VERSION — NOT the original project
 
@@ -16,17 +16,17 @@
 | **Dungeon floors** | Single layer loop / 单层 | **10 floors, advances on exit / 10 层循环** |
 | **Difficulty** | Fixed / 固定 | **Scales with floor / 随层数递增** |
 | **Key rebinding** | No / 无 | **Yes, 17 actions / 17 个可改键** |
-| **Pixel font** | Bundled commercial trial fonts | **Ark Pixel Font (SIL OFL 1.1)** |
+| **Pixel font** | Bundled trial fonts | **Ark Pixel Font + Fusion Pixel Font (both SIL OFL 1.1)** |
 
 > **Both are released under [AGPL v3](LICENSE).** All original copyright belongs to the original author.
 >
 > - **Original author:** 小李xlxl — https://space.bilibili.com/259437820
-> - **Modifier:** klhuyjnvbnvbnb (Bilibili) / [AssassinHLQ](https://github.com/AssassinHLQ) (GitHub)
+> - **Modifier:** [klhuyjnvbnvbnb](https://space.bilibili.com/1463614316) (Bilibili) / [AssassinHLQ](https://github.com/AssassinHLQ) (GitHub)
 > - **Full list of changes:** [Modifications](#modifications) below, or the **「修改说明」** button on the in-game main menu.
 
 ---
 
-# 🚫 About download sources (please read)
+# About download sources (please read)
 
 ## The author has never published any packaged build
 
@@ -41,12 +41,10 @@ no installers** — no Release attachments, no file-hosting links, no `.exe` of 
   ransomware, or credential stealers**
 - The author **cannot and never has** inspected, vouched for, or endorsed any third-party build
 
-**Only obtain a ready-to-run build from:**
+**The only way to run it right now is to build from source** (see [How to run](#how-to-run) below).
 
-| Source | Notes |
-|---|---|
-| **Official store pages (Steam / Epic)** | The platform handles distribution and safety review |
-| **Building from source yourself** | See [How to run](#how-to-run) below |
+This project **has not been released on any store or platform yet**; if that ever changes,
+it will be announced in this repository first.
 
 > ### Disclaimer
 >
@@ -122,10 +120,10 @@ Room Preset Editing
 
 This repository is **self-contained** — you only need this repo, no need to download the original project.
 
-> ⚠️ **Requires `Godot 4.7.1 .NET (Mono)`**, not the standard build. The C# target framework is `net9.0`.
+> **Requires `Godot 4.7.1 .NET (Mono)`**, not the standard build. The C# target framework is `net9.0`.
 
 1. Install **Godot 4.7.1 .NET** — [godotengine.org/download](https://godotengine.org/download) (pick the **.NET** version)
-   - ⚠️ The standard (non-.NET) build **will not work** — this project is C#.
+   - The standard (non-.NET) build **will not work** — this project is C#.
 2. Install **.NET SDK 9.0 or newer** — [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/9.0)
 3. Open `GunfireDungeon_Godot/project.godot` with Godot 4.7.1 .NET.
 4. On first open, the editor imports assets and compiles the C# project (this takes a minute).
@@ -198,7 +196,6 @@ The same list is shown **in-game** via the **「修改说明」** button on the 
 
 ### 3. Fonts & UI Assets
 
-* **Removed the bundled commercial trial bitmap fonts** (`DinkieBitmap-*Demo`, `VonwaonBitmap-*`)
 * Replaced with **[Ark Pixel Font](https://github.com/TakWolf/ark-pixel-font)** (`ArkPixel-12px-zh_cn.ttf`), licensed under **SIL OFL 1.1** — see `resource/font/ArkPixel-LICENSE.md`
 * Ark Pixel 12px only ships 24,471 glyphs and **is missing a number of common characters** (`筑 廊 恐 滚 奖` …) — including `筑` in the game's own title. **[Fusion Pixel Font](https://github.com/TakWolf/fusion-pixel-font)** (`FusionPixel-12px-zh_hans.ttf`, 36,558 glyphs, also 12px, same author, **SIL OFL 1.1**) is therefore bundled as a **fallback font** — see `resource/font/FusionPixel-OFL.txt`
 * The two are combined by `resource/font/GameFont.tres` as *base font + fallback*, so the **base font's metrics are unchanged** and missing glyphs are drawn by the fallback — still pixel-perfect, never a system font
@@ -217,9 +214,8 @@ The same list is shown **in-game** via the **「修改说明」** button on the 
 * Background sky and clouds by **[ansimuz](https://ansimuz.com)** (`Sunny Land 2D Pixel Art Pack`), licensed under **CC0 1.0**
 * Background mountains and stone wall are **procedurally generated** by this mod, using a brick palette sampled from the base game's own `TileSet1` — see `resource/sprite/ui/mainBackground/LICENSE.md`
 * **UI sound effects by [Kenney](https://kenney.nl)** (`Interface Sounds`), licensed under **CC0 1.0** — see `resource/sound/ui/LICENSE.md`
-* **All in-game sound effects replaced with [Kenney](https://kenney.nl) CC0 audio** (`Impact Sounds`, `Sci-fi Sounds`, `RPG Audio`)
-* Reason for replacement: the upstream audio had no traceable provenance, and five `.mp3` files carried **commercial sound-library metadata** — see `resource/sound/LICENSE.md` for the licence and the full mapping table
-* ⚠️ Trade-off: **Kenney has no realistic gunshots**, so firearms now use energy-weapon (laser) sounds
+* **All in-game sound effects replaced with [Kenney](https://kenney.nl) CC0 audio** (`Impact Sounds`, `Sci-Fi Sounds`, `RPG Audio`) — see `resource/sound/LICENSE.md` for the licence and the full mapping table
+* Trade-off: **Kenney has no realistic gunshots**, so firearms now use energy-weapon (laser) sounds
 
 ### 4. Bug Fixes
 

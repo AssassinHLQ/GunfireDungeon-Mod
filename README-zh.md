@@ -2,7 +2,7 @@
 
 ---
 
-# ⚠️ 先读这里
+# 先读这里
 
 ### 本仓库是魔改版，不是原版
 
@@ -16,17 +16,17 @@
 | **地牢层数** | 单层 | **10 层循环，到出口进下一层** |
 | **难度** | 固定 | **随层数递增** |
 | **键位设置** | 无 | **有，17 个动作可改键** |
-| **像素字体** | 内附商业试用版字体 | **方舟像素字体 + 缝合像素字体（均 SIL OFL 1.1）** |
+| **像素字体** | 内附试用版字体 | **方舟像素字体 + 缝合像素字体（均 SIL OFL 1.1）** |
 
 > **两者均以 [AGPL v3](LICENSE) 协议发布**，原项目版权归原作者所有。
 >
 > - **原作者：** 小李xlxl — https://space.bilibili.com/259437820
-> - **修改者：** klhuyjnvbnvbnb（哔哩哔哩）/ [AssassinHLQ](https://github.com/AssassinHLQ)（GitHub）
+> - **修改者：** [klhuyjnvbnvbnb](https://space.bilibili.com/1463614316)（哔哩哔哩）/ [AssassinHLQ](https://github.com/AssassinHLQ)（GitHub）
 > - **完整改动列表：** 见下方 [修改说明](#修改说明)，或游戏内主菜单的「**修改说明**」按钮。
 
 ---
 
-# 🚫 关于下载渠道（请务必先读）
+# 关于下载渠道（请务必先读）
 
 ## 本作者从未公开发布过任何打包版本
 
@@ -39,12 +39,9 @@
 - 这类文件**不受作者控制**，可能被植入**木马、挖矿程序、勒索软件或盗号代码**
 - 作者**无法也从未**对第三方打包版本的内容做任何检查、担保或背书
 
-**请只从以下渠道获取可直接运行的游戏：**
+**目前唯一可运行的方式是自行从源码编译**（见下方 [怎么运行](#怎么运行)）。
 
-| 渠道 | 说明 |
-|---|---|
-| **Steam / Epic 等官方商店页面** | 由平台负责分发与安全审核 |
-| **自行从源码编译** | 见下方 [怎么运行](#怎么运行) |
+本项目**尚未上架任何平台**；如果将来上架，会先在本仓库说明。
 
 > ### 免责声明
 >
@@ -119,7 +116,7 @@
 
 本仓库**自包含** —— 只需要下载这个仓库，不需要再去下载原作者的仓库。
 
-> ⚠️ 必须使用 **`Godot 4.7.1 .NET（Mono）版`**，**标准版无法运行**（本项目是 C# 工程，目标框架 `net9.0`）。
+> 必须使用 **`Godot 4.7.1 .NET（Mono）版`**，**标准版无法运行**（本项目是 C# 工程，目标框架 `net9.0`）。
 
 1. 安装 **Godot 4.7.1 .NET 版** —— [godotengine.org/download](https://godotengine.org/download)（注意要选 **.NET** 那个）
 2. 安装 **.NET SDK 9.0 或更新版本** —— [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/9.0)
@@ -201,7 +198,6 @@
 
 ### 三、字体与界面素材
 
-* **移除原项目内附带的商业试用版点阵字体**（`DinkieBitmap-*Demo`、`VonwaonBitmap-*`）
 * 替换为 **[方舟像素字体](https://github.com/TakWolf/ark-pixel-font)**（`ArkPixel-12px-zh_cn.ttf`），采用 **SIL OFL 1.1** 协议 —— 授权文件见 `resource/font/ArkPixel-LICENSE.md`
 * 方舟像素字体 12px 只有 24471 个字形，**缺「筑 / 廊 / 恐 / 滚 / 奖」等一批常用字**（游戏标题的「筑」正好缺失），因此**追加[缝合像素字体](https://github.com/TakWolf/fusion-pixel-font)作为回退字体**（`FusionPixel-12px-zh_hans.ttf`，36558 个字形，同为 12px 设计、同一作者、**SIL OFL 1.1**）—— 授权文件见 `resource/font/FusionPixel-OFL.txt`
 * 两者由 `resource/font/GameFont.tres` 组合成「主字体 + 回退字体」，**主字体的排版度量完全不变**，缺字自动用回退字体渲染，依然是像素风格而不会变成系统字体
@@ -213,9 +209,8 @@
 * 背景的天空与云来自 **[ansimuz](https://ansimuz.com)**（`Sunny Land 2D Pixel Art Pack`），采用 **CC0 1.0** 协议
 * 背景的远山与石墙为本修改版**程序化生成**，砖块配色取自原版自带的 `TileSet1` —— 授权说明见 `resource/sprite/ui/mainBackground/LICENSE.md`
 * **界面音效来自 [Kenney](https://kenney.nl) 的 `Interface Sounds`**，采用 **CC0 1.0** 协议 —— 授权说明见 `resource/sound/ui/LICENSE.md`
-* **全部游戏音效替换为 [Kenney](https://kenney.nl) 的 CC0 音效**（`Impact Sounds`、`Sci-fi Sounds`、`RPG Audio`）
-* 替换原因：上游音频来源不明，其中 5 个 `.mp3` 带有**商业音效库的元数据痕迹** —— 授权与完整映射表见 `resource/sound/LICENSE.md`
-* ⚠️ 风格取舍：**Kenney 没有写实枪声**，枪声改用能量武器音（激光类）
+* **全部游戏音效替换为 [Kenney](https://kenney.nl) 的 CC0 音效**（`Impact Sounds`、`Sci-Fi Sounds`、`RPG Audio`）—— 授权与完整映射表见 `resource/sound/LICENSE.md`
+* 风格取舍：**Kenney 没有写实枪声**，枪声改用能量武器音（激光类）
 
 ### 四、问题修复
 

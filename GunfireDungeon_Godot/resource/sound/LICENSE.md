@@ -7,20 +7,24 @@
 
 ---
 
-## 为什么要替换
+## 为什么替换
 
-用元数据检查上游自带的音频时发现，5 个 `.mp3` 文件里嵌着**商业音效库的标记**：
+本修改版要用于**商业发布**，因此希望游戏内每一项素材都**有明确、可查证的授权**。
+原项目自带的音效没有附带授权说明，无法确认可否商用，所以**整套音效一次性替换**
+为授权清晰的 CC0 素材（Kenney）。
 
-| 文件 | 内嵌元数据 | 含义 |
-|---|---|---|
-| `sfx/role/enemy/Enemydie.mp3` | `encoded_by=Pro Tools`、`originator_reference=...`、`date=2013-01-17` | 专业音频工作站 + 商业音效库特征 |
-| `sfx/role/player/Rolling.mp3` | `date=2001-03-16`、`IENG=E-hwa Choi` | 工程师署名 + 2001 年 |
-| `sfx/role/player/RoleHurt.mp3` | `date=1998-08-26`、`IENG=…` | 1998 年 |
-| `sfx/role/player/RoleDie.mp3` | 仅编码器信息 | — |
-| `sfx/role/player/PickupWeapon.mp3` | 仅编码器信息 | — |
+> 说明：下面这张表只是替换前的**元数据存档**，用于本项目的素材审计留痕，
+> **不是对原项目的任何指控**。原项目的音效归原项目所有，与本修改版无关。
 
-其余 61 个 `.ogg` **没有任何元数据标签**（说明被重新编码过），既查不到出处、
-也无法证明其来源合法。为了彻底消除这一类风险，**整套音效一次性替换**。
+| 文件（替换前） | 内嵌元数据（存档备查） |
+|---|---|
+| `sfx/role/enemy/Enemydie.mp3` | `encoded_by=Pro Tools`、`originator_reference=...`、`date=2013-01-17` |
+| `sfx/role/player/Rolling.mp3` | `date=2001-03-16`、`IENG=E-hwa Choi` |
+| `sfx/role/player/RoleHurt.mp3` | `date=1998-08-26`、`IENG=…` |
+| `sfx/role/player/RoleDie.mp3` | 仅编码器信息 |
+| `sfx/role/player/PickupWeapon.mp3` | 仅编码器信息 |
+
+其余 61 个 `.ogg` 没有元数据标签。这些记录仅为留痕，不代表任何判断。
 
 > 另：`sfx/bgm/Intro.ogg` 虽然路径被 `ResourcePath.cs` 声明过，但**游戏里从未播放**
 > （`Sound.json` 里没有它，代码里也没有调用），属于孤儿文件，已删除。
