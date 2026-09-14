@@ -1,12 +1,12 @@
 [
   {
     "Id": "role0001",
-    "Name": "\u73A9\u5BB6",
+    "Name": "\u73a9\u5bb6",
     "Type": 3,
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u73A9\u5BB6"
+      "Code": "\u73a9\u5bb6"
     },
     "Details": {
       "Code": ""
@@ -20,12 +20,12 @@
   },
   {
     "Id": "enemy0001",
-    "Name": "\u654C\u4EBA",
+    "Name": "\u654c\u4eba",
     "Type": 4,
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u654C\u4EBA"
+      "Code": "\u654c\u4eba"
     },
     "Details": {
       "Code": ""
@@ -58,12 +58,12 @@
   },
   {
     "Id": "shopBoss0001",
-    "Name": "\u5546\u5E97\u8001\u677F",
+    "Name": "\u5546\u5e97\u8001\u677f",
     "Type": 11,
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u5546\u5E97\u8001\u677F"
+      "Code": "\u5546\u5e97\u8001\u677f"
     },
     "Details": {
       "Code": ""
@@ -77,7 +77,7 @@
   },
   {
     "Id": "weapon0001",
-    "Name": "\u6B65\u67AA",
+    "Name": "\u6b65\u67aa",
     "Type": 5,
     "Quality": 3,
     "Price": 0,
@@ -96,7 +96,7 @@
   },
   {
     "Id": "weapon0002",
-    "Name": "\u9730\u5F39\u67AA",
+    "Name": "\u9730\u5f39\u67aa",
     "Type": 5,
     "Quality": 3,
     "Price": 0,
@@ -115,7 +115,7 @@
   },
   {
     "Id": "weapon0003",
-    "Name": "\u624B\u67AA",
+    "Name": "\u624b\u67aa",
     "Type": 5,
     "Quality": 2,
     "Price": 0,
@@ -191,7 +191,7 @@
   },
   {
     "Id": "bullet0004",
-    "Name": "\u69B4\u5F39\u70AE",
+    "Name": "\u69b4\u5f39\u70ae",
     "Type": 6,
     "Quality": 0,
     "Price": 0,
@@ -210,7 +210,7 @@
   },
   {
     "Id": "bullet0005",
-    "Name": "\u629B\u7269\u7EBF\u7C98\u6DB2\u5B50\u5F39",
+    "Name": "\u629b\u7269\u7ebf\u7c98\u6db2\u5b50\u5f39",
     "Type": 6,
     "Quality": 0,
     "Price": 0,
@@ -229,7 +229,7 @@
   },
   {
     "Id": "bullet0006",
-    "Name": "\u62D6\u5C3E\u5B50\u5F39",
+    "Name": "\u62d6\u5c3e\u5b50\u5f39",
     "Type": 6,
     "Quality": 0,
     "Price": 0,
@@ -286,7 +286,7 @@
   },
   {
     "Id": "bullet0009",
-    "Name": "\u5F13\u7BAD",
+    "Name": "\u5f13\u7bad",
     "Type": 6,
     "Quality": 0,
     "Price": 0,
@@ -305,7 +305,7 @@
   },
   {
     "Id": "summons0001",
-    "Name": "boss\u53EC\u5524\u7269\u5B50\u5F39",
+    "Name": "boss\u53ec\u5524\u7269\u5b50\u5f39",
     "Type": 99,
     "Quality": 0,
     "Price": 0,
@@ -324,7 +324,7 @@
   },
   {
     "Id": "special0001",
-    "Name": "boss\u7279\u6B8A\u5B50\u5F39",
+    "Name": "boss\u7279\u6b8a\u5b50\u5f39",
     "Type": 99,
     "Quality": 0,
     "Price": 0,
@@ -424,7 +424,7 @@
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u654C\u4EBA1\u6B7B\u4EA1\u788E\u7247"
+      "Code": "\u654c\u4eba1\u6b7b\u4ea1\u788e\u7247"
     },
     "Details": {
       "Code": ""
@@ -443,7 +443,7 @@
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u654C\u4EBA2\u6B7B\u4EA1"
+      "Code": "\u654c\u4eba2\u6b7b\u4ea1"
     },
     "Details": {
       "Code": ""
@@ -457,12 +457,12 @@
   },
   {
     "Id": "part_comm0001",
-    "Name": "\u901A\u7528\u96F6\u4EF6\u7269\u4F53",
+    "Name": "\u901a\u7528\u96f6\u4ef6\u7269\u4f53",
     "Type": 9,
     "Quality": 1,
     "Price": 0,
     "Intro": {
-      "Code": "\u901A\u7528\u96F6\u4EF6\u7269\u4F53"
+      "Code": "\u901a\u7528\u96f6\u4ef6\u7269\u4f53"
     },
     "Details": {
       "Code": ""
@@ -476,15 +476,15 @@
   },
   {
     "Id": "prop0001",
-    "Name": "\u978B\u5B50",
+    "Name": "\u978b\u5b50",
     "Type": 9,
     "Quality": 4,
     "Price": 0,
     "Intro": {
-      "Code": "\u63D0\u9AD8\u79FB\u52A8\u901F\u5EA6"
+      "Code": "\u63d0\u9ad8\u79fb\u52a8\u901f\u5ea6"
     },
     "Details": {
-      "Code": "\u63D0\u9AD8\u89D2\u8272\u7684\u57FA\u7840\u79FB\u52A8\u901F\u5EA6"
+      "Code": "\u63d0\u9ad8\u89d2\u8272\u7684\u57fa\u7840\u79fb\u52a8\u901f\u5ea6"
     },
     "IsStatic": false,
     "__Material": "",
@@ -495,12 +495,12 @@
   },
   {
     "Id": "prop0002",
-    "Name": "\u5FC3\u4E4B\u5BB9\u5668",
+    "Name": "\u5fc3\u4e4b\u5bb9\u5668",
     "Type": 9,
     "Quality": 3,
     "Price": 0,
     "Intro": {
-      "Code": "\u63D0\u9AD8\u8840\u91CF\u4E0A\u9650"
+      "Code": "\u63d0\u9ad8\u8840\u91cf\u4e0a\u9650"
     },
     "Details": {
       "Code": ""
@@ -514,12 +514,12 @@
   },
   {
     "Id": "prop0003",
-    "Name": "\u62A4\u76FE",
+    "Name": "\u62a4\u76fe",
     "Type": 9,
     "Quality": 3,
     "Price": 0,
     "Intro": {
-      "Code": "\u53EF\u4EE5\u62B5\u6321\u5B50\u5F39\uFF0C\u968F\u65F6\u95F4\u63A8\u79FB\u81EA\u52A8\u6062\u590D"
+      "Code": "\u53ef\u4ee5\u62b5\u6321\u5b50\u5f39\uff0c\u968f\u65f6\u95f4\u63a8\u79fb\u81ea\u52a8\u6062\u590d"
     },
     "Details": {
       "Code": ""
@@ -533,12 +533,12 @@
   },
   {
     "Id": "prop0004",
-    "Name": "\u62A4\u76FE\u8BA1\u65F6\u5668",
+    "Name": "\u62a4\u76fe\u8ba1\u65f6\u5668",
     "Type": 9,
     "Quality": 4,
     "Price": 0,
     "Intro": {
-      "Code": "\u63D0\u9AD8\u62A4\u76FE\u6062\u590D\u901F\u5EA6"
+      "Code": "\u63d0\u9ad8\u62a4\u76fe\u6062\u590d\u901f\u5ea6"
     },
     "Details": {
       "Code": ""
@@ -552,12 +552,12 @@
   },
   {
     "Id": "prop0005",
-    "Name": "\u6740\u4F24\u5F39",
+    "Name": "\u6740\u4f24\u5f39",
     "Type": 9,
     "Quality": 4,
     "Price": 0,
     "Intro": {
-      "Code": "\u63D0\u9AD8\u5B50\u5F39\u4F24\u5BB3"
+      "Code": "\u63d0\u9ad8\u5b50\u5f39\u4f24\u5bb3"
     },
     "Details": {
       "Code": ""
@@ -571,12 +571,12 @@
   },
   {
     "Id": "prop0006",
-    "Name": "\u7EA2\u5B9D\u77F3\u6212\u6307",
+    "Name": "\u7ea2\u5b9d\u77f3\u6212\u6307",
     "Type": 9,
     "Quality": 4,
     "Price": 0,
     "Intro": {
-      "Code": "\u53D7\u4F24\u540E\u5EF6\u957F\u65E0\u654C\u65F6\u95F4"
+      "Code": "\u53d7\u4f24\u540e\u5ef6\u957f\u65e0\u654c\u65f6\u95f4"
     },
     "Details": {
       "Code": ""
@@ -590,12 +590,12 @@
   },
   {
     "Id": "prop0007",
-    "Name": "\u5907\u7528\u62A4\u76FE",
+    "Name": "\u5907\u7528\u62a4\u76fe",
     "Type": 9,
     "Quality": 3,
     "Price": 0,
     "Intro": {
-      "Code": "\u53D7\u4F24\u65F6\u6709\u4E00\u5B9A\u6982\u7387\u62B5\u6D88\u4F24\u5BB3"
+      "Code": "\u53d7\u4f24\u65f6\u6709\u4e00\u5b9a\u6982\u7387\u62b5\u6d88\u4f24\u5bb3"
     },
     "Details": {
       "Code": ""
@@ -609,12 +609,12 @@
   },
   {
     "Id": "prop0008",
-    "Name": "\u773C\u955C",
+    "Name": "\u773c\u955c",
     "Type": 9,
     "Quality": 3,
     "Price": 0,
     "Intro": {
-      "Code": "\u63D0\u9AD8\u6B66\u5668\u7CBE\u51C6\u5EA6"
+      "Code": "\u63d0\u9ad8\u6b66\u5668\u7cbe\u51c6\u5ea6"
     },
     "Details": {
       "Code": ""
@@ -628,12 +628,12 @@
   },
   {
     "Id": "prop0009",
-    "Name": "\u9AD8\u901F\u5B50\u5F39",
+    "Name": "\u9ad8\u901f\u5b50\u5f39",
     "Type": 9,
     "Quality": 3,
     "Price": 0,
     "Intro": {
-      "Code": "\u63D0\u9AD8\u5B50\u5F39\u901F\u5EA6\u548C\u5C04\u7A0B"
+      "Code": "\u63d0\u9ad8\u5b50\u5f39\u901f\u5ea6\u548c\u5c04\u7a0b"
     },
     "Details": {
       "Code": ""
@@ -647,12 +647,12 @@
   },
   {
     "Id": "prop0010",
-    "Name": "\u5206\u88C2\u5B50\u5F39",
+    "Name": "\u5206\u88c2\u5b50\u5f39",
     "Type": 9,
     "Quality": 4,
     "Price": 0,
     "Intro": {
-      "Code": "\u5B50\u5F39\u6570\u91CF\u7FFB\u500D, \u4F46\u662F\u7CBE\u51C6\u5EA6, \u51FB\u9000\u548C\u4F24\u5BB3\u964D\u4F4E"
+      "Code": "\u5b50\u5f39\u6570\u91cf\u7ffb\u500d, \u4f46\u662f\u7cbe\u51c6\u5ea6, \u51fb\u9000\u548c\u4f24\u5bb3\u964d\u4f4e"
     },
     "Details": {
       "Code": ""
@@ -666,12 +666,12 @@
   },
   {
     "Id": "prop0011",
-    "Name": "\u5F39\u5C04\u5B50\u5F39",
+    "Name": "\u5f39\u5c04\u5b50\u5f39",
     "Type": 9,
     "Quality": 4,
     "Price": 0,
     "Intro": {
-      "Code": "\u5B50\u5F39\u53CD\u5F39\u6B21\u6570\u002B2"
+      "Code": "\u5b50\u5f39\u53cd\u5f39\u6b21\u6570+2"
     },
     "Details": {
       "Code": ""
@@ -685,12 +685,12 @@
   },
   {
     "Id": "prop0012",
-    "Name": "\u7A7F\u900F\u5B50\u5F39",
+    "Name": "\u7a7f\u900f\u5b50\u5f39",
     "Type": 9,
     "Quality": 4,
     "Price": 0,
     "Intro": {
-      "Code": "\u5B50\u5F39\u7A7F\u900F\u002B1"
+      "Code": "\u5b50\u5f39\u7a7f\u900f+1"
     },
     "Details": {
       "Code": ""
@@ -704,12 +704,12 @@
   },
   {
     "Id": "prop0013",
-    "Name": "\u6B66\u5668\u80CC\u5305",
+    "Name": "\u6b66\u5668\u80cc\u5305",
     "Type": 9,
     "Quality": 2,
     "Price": 0,
     "Intro": {
-      "Code": "\u6B66\u5668\u5BB9\u91CF\u002B1"
+      "Code": "\u6b66\u5668\u5bb9\u91cf+1"
     },
     "Details": {
       "Code": ""
@@ -723,12 +723,12 @@
   },
   {
     "Id": "prop0014",
-    "Name": "\u9053\u5177\u80CC\u5305",
+    "Name": "\u9053\u5177\u80cc\u5305",
     "Type": 9,
     "Quality": 2,
     "Price": 0,
     "Intro": {
-      "Code": "\u9053\u5177\u5BB9\u91CF\u002B1"
+      "Code": "\u9053\u5177\u5bb9\u91cf+1"
     },
     "Details": {
       "Code": ""
@@ -742,12 +742,12 @@
   },
   {
     "Id": "prop5000",
-    "Name": "\u533B\u836F\u7BB1",
+    "Name": "\u533b\u836f\u7bb1",
     "Type": 9,
     "Quality": 1,
     "Price": 0,
     "Intro": {
-      "Code": "\u4F7F\u7528\u540E\u56DE\u590D\u4E00\u9897\u7EA2\u5FC3"
+      "Code": "\u4f7f\u7528\u540e\u56de\u590d\u4e00\u9897\u7ea2\u5fc3"
     },
     "Details": {
       "Code": ""
@@ -761,12 +761,12 @@
   },
   {
     "Id": "prop5001",
-    "Name": "\u5F39\u836F\u7BB1",
+    "Name": "\u5f39\u836f\u7bb1",
     "Type": 9,
     "Quality": 1,
     "Price": 0,
     "Intro": {
-      "Code": "\u4F7F\u7528\u540E\u8865\u5145\u5F53\u524D\u6B66\u5668\u5907\u7528\u5F39\u836F"
+      "Code": "\u4f7f\u7528\u540e\u8865\u5145\u5f53\u524d\u6b66\u5668\u5907\u7528\u5f39\u836f"
     },
     "Details": {
       "Code": ""
@@ -780,12 +780,12 @@
   },
   {
     "Id": "prop5002",
-    "Name": "\u732A\u732A\u5B58\u94B1\u7F50",
+    "Name": "\u732a\u732a\u5b58\u94b1\u7f50",
     "Type": 9,
     "Quality": 1,
     "Price": 0,
     "Intro": {
-      "Code": "\u62FE\u8D77\u8BE5\u9053\u5177\u540E\u73A9\u5BB6\u6361\u5230\u7684\u6240\u6709\u91D1\u5E01\u5C06\u4F1A\u88AB\u5B58\u5165\u5230\u5B58\u94B1\u7F50\u4E2D, \u4F7F\u7528\u8BE5\u9053\u5177, \u4F1A\u6467\u6BC1\u5B58\u94B1\u7F50, \u5E76\u8FD4\u56DE\u53CC\u500D\u7684\u91D1\u5E01"
+      "Code": "\u62fe\u8d77\u8be5\u9053\u5177\u540e\u73a9\u5bb6\u6361\u5230\u7684\u6240\u6709\u91d1\u5e01\u5c06\u4f1a\u88ab\u5b58\u5165\u5230\u5b58\u94b1\u7f50\u4e2d, \u4f7f\u7528\u8be5\u9053\u5177, \u4f1a\u6467\u6bc1\u5b58\u94b1\u7f50, \u5e76\u8fd4\u56de\u53cc\u500d\u7684\u91d1\u5e01"
     },
     "Details": {
       "Code": ""
@@ -799,12 +799,12 @@
   },
   {
     "Id": "prop5003",
-    "Name": "\u7EA2\u5916\u9065\u63A7\u5668",
+    "Name": "\u7ea2\u5916\u9065\u63a7\u5668",
     "Type": 9,
     "Quality": 1,
     "Price": 0,
     "Intro": {
-      "Code": "\u4F7F\u7528\u540E\u4F1A\u89E6\u53D1\u9644\u8FD1\u5730\u4E0A\u7684\u6B66\u5668\u5F00\u706B"
+      "Code": "\u4f7f\u7528\u540e\u4f1a\u89e6\u53d1\u9644\u8fd1\u5730\u4e0a\u7684\u6b66\u5668\u5f00\u706b"
     },
     "Details": {
       "Code": ""
@@ -818,12 +818,12 @@
   },
   {
     "Id": "prop5004",
-    "Name": "\u9B54\u672F\u68D2",
+    "Name": "\u9b54\u672f\u68d2",
     "Type": 9,
     "Quality": 1,
     "Price": 0,
     "Intro": {
-      "Code": "\u968F\u673A\u9009\u62E9\u623F\u95F4\u5185\u7684\u4E00\u4E2A\u624B\u6301\u6B66\u5668\u7684\u654C\u4EBA, \u4EA4\u6362\u4F60\u4EEC\u624B\u4E2D\u7684\u6B66\u5668"
+      "Code": "\u968f\u673a\u9009\u62e9\u623f\u95f4\u5185\u7684\u4e00\u4e2a\u624b\u6301\u6b66\u5668\u7684\u654c\u4eba, \u4ea4\u6362\u4f60\u4eec\u624b\u4e2d\u7684\u6b66\u5668"
     },
     "Details": {
       "Code": ""
@@ -837,12 +837,12 @@
   },
   {
     "Id": "prop5005",
-    "Name": "\u4FBF\u643A\u5F0F\u4F9B\u8840\u5668",
+    "Name": "\u4fbf\u643a\u5f0f\u4f9b\u8840\u5668",
     "Type": 9,
     "Quality": 1,
     "Price": 0,
     "Intro": {
-      "Code": "\u4F7F\u7528\u91D1\u5E01\u6362\u53D6\u8840\u91CF"
+      "Code": "\u4f7f\u7528\u91d1\u5e01\u6362\u53d6\u8840\u91cf"
     },
     "Details": {
       "Code": ""
@@ -856,12 +856,12 @@
   },
   {
     "Id": "prop5006",
-    "Name": "\u4FBF\u643A\u5F0F\u732E\u8840\u5668",
+    "Name": "\u4fbf\u643a\u5f0f\u732e\u8840\u5668",
     "Type": 9,
     "Quality": 1,
     "Price": 0,
     "Intro": {
-      "Code": "\u4F7F\u7528\u8840\u91CF\u6362\u53D6\u91D1\u5E01"
+      "Code": "\u4f7f\u7528\u8840\u91cf\u6362\u53d6\u91d1\u5e01"
     },
     "Details": {
       "Code": ""
@@ -875,12 +875,12 @@
   },
   {
     "Id": "treasure_box0001",
-    "Name": "\u6728\u8D28\u5B9D\u7BB1",
+    "Name": "\u6728\u8d28\u5b9d\u7bb1",
     "Type": 10,
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u6728\u8D28\u5B9D\u7BB1"
+      "Code": "\u6728\u8d28\u5b9d\u7bb1"
     },
     "Details": {
       "Code": ""
@@ -899,7 +899,7 @@
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u5730\u7262\u623F\u95F4\u7684\u95E8(\u4E1C\u4FA7)"
+      "Code": "\u5730\u7262\u623f\u95f4\u7684\u95e8(\u4e1c\u4fa7)"
     },
     "Details": {
       "Code": ""
@@ -918,7 +918,7 @@
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u5730\u7262\u623F\u95F4\u7684\u95E8(\u897F\u4FA7)"
+      "Code": "\u5730\u7262\u623f\u95f4\u7684\u95e8(\u897f\u4fa7)"
     },
     "Details": {
       "Code": ""
@@ -937,7 +937,7 @@
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u5730\u7262\u623F\u95F4\u7684\u95E8(\u5357\u4FA7)"
+      "Code": "\u5730\u7262\u623f\u95f4\u7684\u95e8(\u5357\u4fa7)"
     },
     "Details": {
       "Code": ""
@@ -956,7 +956,7 @@
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u5730\u7262\u623F\u95F4\u7684\u95E8(\u5317\u4FA7)"
+      "Code": "\u5730\u7262\u623f\u95f4\u7684\u95e8(\u5317\u4fa7)"
     },
     "Details": {
       "Code": ""
@@ -970,12 +970,12 @@
   },
   {
     "Id": "gold_10",
-    "Name": "\u91D1\u5E01",
+    "Name": "\u91d1\u5e01",
     "Type": 99,
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u83B7\u5F9710\u91D1\u5E01"
+      "Code": "\u83b7\u5f9710\u91d1\u5e01"
     },
     "Details": {
       "Code": ""
@@ -989,12 +989,12 @@
   },
   {
     "Id": "gold_5",
-    "Name": "\u94F6\u5E01",
+    "Name": "\u94f6\u5e01",
     "Type": 99,
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u83B7\u5F975\u91D1\u5E01"
+      "Code": "\u83b7\u5f975\u91d1\u5e01"
     },
     "Details": {
       "Code": ""
@@ -1008,12 +1008,12 @@
   },
   {
     "Id": "gold_1",
-    "Name": "\u94DC\u5E01",
+    "Name": "\u94dc\u5e01",
     "Type": 99,
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u83B7\u5F971\u91D1\u5E01"
+      "Code": "\u83b7\u5f971\u91d1\u5e01"
     },
     "Details": {
       "Code": ""
@@ -1027,12 +1027,12 @@
   },
   {
     "Id": "hit_number",
-    "Name": "\u4F24\u5BB3\u6570\u5B57",
+    "Name": "\u4f24\u5bb3\u6570\u5b57",
     "Type": 99,
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u9020\u6210\u6216\u8005\u53D7\u5230\u4F24\u5BB3\u540E\u663E\u793A\u7684\u6570\u5B57"
+      "Code": "\u9020\u6210\u6216\u8005\u53d7\u5230\u4f24\u5bb3\u540e\u663e\u793a\u7684\u6570\u5b57"
     },
     "Details": {
       "Code": ""
@@ -1043,5 +1043,24 @@
     "Icon": "",
     "NotInRandomPool": false,
     "ShowInMapEditor": false
+  },
+  {
+    "Id": "daju0001",
+    "Name": "\u5927\u6a58",
+    "Type": 12,
+    "Quality": 0,
+    "Price": 0,
+    "Intro": {
+      "Code": "\u5927\u6a58"
+    },
+    "Details": {
+      "Code": "\u4e00\u697c\u4f20\u9001\u95e8\u524d\u5b88\u5173\u7684\u6a58\u732b"
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/role/enemy/Daju.tscn",
+    "Icon": "",
+    "NotInRandomPool": true,
+    "ShowInMapEditor": true
   }
 ]
