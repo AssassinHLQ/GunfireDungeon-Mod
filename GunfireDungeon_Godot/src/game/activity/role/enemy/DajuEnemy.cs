@@ -29,9 +29,25 @@ public partial class DajuEnemy : Boss
     private const float ClawHalfHeight = 44.0f;
     private const int BaseClawDamage = 2;
 
-    /// <summary>Boss 帧 128x128，再放大 1.35 倍</summary>
-    private static readonly Vector2 BossSpriteScale = new(1.35f, 1.35f);
-    private static readonly Vector2 BossSpriteOffset = new(0, -73);
+    /// <summary>
+    /// Boss 帧 128x128。
+    ///
+    /// 【为什么从 1.35 改成 1.0】原来贴图放大到 173 像素、受击框 164x158,
+    /// 而魔王模式里的 Boss 房是复用战斗房模板(比如 Boss2 只有 288x336), 而且带内墙 ——
+    /// 大橘占了房间宽度的 60%, 比门洞还宽, 于是恒定卡在墙里, 玩家打不到、
+    /// 房间清不掉、门不开, 整层卡死。缩到 1.0 后占据约 44%, 能正常走位。
+    ///
+    /// 贴图的视觉中心要跟着 scale 走: 原来是 128*1.35/2 ≈ 86, 现在是 128*1.0/2 = 64。
+    /// 不跟着改的话, 贴图会相对受击框偏下, 看起来像"浮在地上"。
+    /// </summary>
+    private static readonly Vector2 BossSpriteScale = new(1.0f, 1.0f);
+    private static readonly Vector2 BossSpriteOffset = new(0, -64);
+
+    /// <summary>
+    /// 受击框尺寸。和上面的 scale 保持同一比例(原 164x158 / 1.35 ≈ 122x117)。
+    /// </summary>
+    private static readonly Vector2 BossHitboxSize = new(122, 117);
+    private static readonly Vector2 BossHitboxOffset = new(0, -64);
 
     private const float PhaseTwoRatio = 0.5f;
 
@@ -87,8 +103,8 @@ public partial class DajuEnemy : Boss
         {
             return;
         }
-        HurtCollision.Shape = new RectangleShape2D { Size = new Vector2(164, 158) };
-        HurtCollision.Position = new Vector2(0, -73);
+        HurtCollision.Shape = new RectangleShape2D { Size = BossHitboxSize };
+        HurtCollision.Position = BossHitboxOffset;
     }
 
     public override void HurtHandler(ActivityObject target, AttackStats attackStats, float f)

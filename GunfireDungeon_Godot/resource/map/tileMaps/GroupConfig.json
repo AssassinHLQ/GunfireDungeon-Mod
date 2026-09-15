@@ -8,7 +8,7 @@
       "B": 0,
       "A": 0
     },
-    "SoundId": null,
+    "SoundId": "bgm_battle",
     "BattleList": [
       {
         "ErrorType": 0,
@@ -63,6 +63,10 @@
       {
         "ErrorType": 0,
         "Path": "resource/map/tileMaps/Test1/boss/Boss1"
+      },
+      {
+        "ErrorType": 0,
+        "Path": "resource/map/tileMaps/Test1/boss/Boss2"
       }
     ],
     "RewardList": [

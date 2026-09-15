@@ -41,7 +41,12 @@ public partial class SettlementPanel : Settlement
         else //正常重新开始
         {
             UiManager.Open_Game_Loading();
-            GameApplication.Instance.DungeonManager.RestartDungeon(false, GameApplication.Instance.FirstDungeonConfig, () =>
+            //必须用 CurrConfig(当前这一局的配置), 不能用 FirstDungeonConfig。
+            //FirstDungeonConfig 是启动时缓存的那一份, 永远是普通模式,
+            //用它重启会把魔王模式悄悄变回普通模式。
+            var dungeonManager = GameApplication.Instance.DungeonManager;
+            var config = dungeonManager.CurrConfig ?? GameApplication.Instance.FirstDungeonConfig;
+            dungeonManager.RestartDungeon(false, config, () =>
             {
                 UiManager.Destroy_Game_Loading();
             });

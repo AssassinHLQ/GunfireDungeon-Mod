@@ -149,20 +149,26 @@ public partial class GameApplication : Node2D, ICoroutine
 
         FirstDungeonConfig = GetDungeonConfig(DungeonGroupList[0], 1);
         
-        //临时处理
-        //RoomConfig[DungeonGroupList[0]].BgColor = new Color("0a0a19");
-        RoomConfig[DungeonGroupList[0]].SoundId = null; //"level1_bgm";
+        //原本这里把地牢组的 SoundId 强制置空(注释还写着 "level1_bgm"),
+        //导致 DungeonManager 播放 BGM 的分支永远进不去。
+        //现在 Sound.json 里已经配好 bgm_* 条目, 这里改为真正的地牢 BGM。
+        //想换曲子只改 GroupConfig.json 里的 SoundId 即可, 不用动代码。
+        RoomConfig[DungeonGroupList[0]].SoundId = "bgm_battle";
     }
 
     /// <summary>
     /// 获取地牢配置数据
     /// </summary>
-    public DungeonConfig GetDungeonConfig(string groupName, int layer)
+    /// <param name="groupName">地牢组名称</param>
+    /// <param name="layer">层级</param>
+    /// <param name="mode">地牢模式, 默认 Normal</param>
+    public DungeonConfig GetDungeonConfig(string groupName, int layer, DungeonMode mode = DungeonMode.Normal)
     {
         var config = new DungeonConfig();
         config.DungeonLayer = layer;
         config.GroupName = groupName;
         config.RandomSeed = null;
+        config.Mode = mode;
 
         config.BattleRoomCount = 12;
         config.RewardRoomCount = 2;
@@ -171,6 +177,44 @@ public partial class GameApplication : Node2D, ICoroutine
         config.ShopRoomCount = 1;
         config.EnableLimitRange = false;
         config.AllowedCornerAisles = false;
+
+        //魔王模式: 把战斗房按比例换成 Boss 房。
+        //Boss 满血不削弱(用户明确要求), 所以这里不改任何敌人属性, 只改房间类型。
+        //保留 2 个奖励房 + 1 个商店作为喘息, 由 DefaultDungeonRule 按生成顺序插入。
+        if (mode == DungeonMode.Erlkoenig)
+        {
+            config.BossRoomRatio = 70;      //70% 的战斗格变 Boss 房
+
+            //------------- 降低生成失败率 -------------
+            // 生成失败(报"尝试次数过多")的直接原因是【门连不上】:
+            // DungeonGenerator.GenerateRoom 里每个房间最多随机试 maxTryCount 次
+            // (Boss 房 = _maxTryCount * 2), 每次随机 方向 + 间隔 + 偏移,
+            // 然后要求 (a) 不与已有房间碰撞 (b) ConnectDoor 成功。
+            // 而 ConnectDoor 要求两个房间在垂直于走廊的轴上【至少重叠 6 格】。
+            //
+            // 关键是【偏移范围】: GetNextRoomOffset 用 RoomHorizontal/VerticalDispersion,
+            // 默认 ±0.6, 即偏移可达房间尺寸的 60%。两个房间的偏移都是独立随机的,
+            // 相对位移最大能到 1.2 倍房间宽(约 21 格) —— 远超过"重叠 6 格"的要求,
+            // 所以经常怎么试都连不上。
+            //
+            // 这里把偏移收到 ±0.25, 让新房间大概率正对着上一个房间的方向, 重叠就够 6 格了。
+            // 副作用是布局会比原来规整一些(不那么"散"), 但换来的是生成稳定。
+            const float dispersion = 0.25f;
+            config.RoomHorizontalMaxDispersion = dispersion;
+            config.RoomHorizontalMinDispersion = -dispersion;
+            config.RoomVerticalMaxDispersion = dispersion;
+            config.RoomVerticalMinDispersion = -dispersion;
+
+            //房间数也收一点, 地图越满越难塞
+            config.BattleRoomCount = 10;
+            config.RoomMaxInterval = 3;
+            config.AllowedCornerAisles = true;
+
+            //Boss 房用的曲子。
+            //AI 生成的 Boss.ogg / Boss_Full.ogg 已移除, 现在只剩 Scherzo 这一首 Boss 曲,
+            //所以普通模式和魔王模式用的是同一首。以后渲染出《魔王》再改这一行。
+            config.BossBgmId = "bgm_boss";
+        }
 
         // config.RoomMaxInterval = 30;
         // config.RoomMinInterval = 10;

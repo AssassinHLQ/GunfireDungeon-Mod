@@ -378,7 +378,11 @@ public class DungeonGenerator
             }
             else if (roomType == DungeonRoomType.Boss)
             {
-                maxTryCount *= 2;
+                //魔王模式里 Boss 房是主力房间类型(占比 70%), 而它要同时满足
+                //"不和已有房间碰撞"和"门能连上(侧边重叠>=6格)"两个条件, 20 次经常不够 ——
+                //失败就会报"生成房间尝试次数过多"。
+                //提高到 4 倍(40 次)显著降低失败率, 代价只是偶尔多试几次, 生成耗时可以忽略。
+                maxTryCount *= 4;
             }
             for (; tryCount < maxTryCount; tryCount++)
             {

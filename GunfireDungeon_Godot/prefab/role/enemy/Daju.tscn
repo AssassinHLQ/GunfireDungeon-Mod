@@ -28,11 +28,12 @@ shader_parameter/outline_rainbow = false
 shader_parameter/outline_use_blend = true
 shader_parameter/grey = 0.0
 
-; 大橘是 BOSS，受击框 164x158（对应 128x128 的帧再放大 1.35 倍）。
-; 用普通敌人的 12x18 会导致打头、打尾巴全部穿过去。
+; 大橘是 BOSS，受击框 122x117（对应 128x128 的帧按 1.0 倍显示）。
+; 【历史】原来是 1.35 倍显示 + 164x158 受击框，但那样大橘会比门洞还宽，
+; 在魔王模式复用的战斗房模板里恒定卡墙，所以缩小了。
 ; DajuEnemy.OnInit 里也会按同样的数值再设一次，这里写上是为了编辑器里能直接看到。
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_boss"]
-size = Vector2(164, 158)
+size = Vector2(122, 117)
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_empty"]
 
@@ -61,11 +62,11 @@ material = SubResource("ShaderMaterial_shadow")
 
 [node name="AnimatedSprite" parent="." index="2"]
 material = SubResource("ShaderMaterial_body")
-offset = Vector2(0, -73)
-scale = Vector2(1.35, 1.35)
+offset = Vector2(0, -64)
+scale = Vector2(1, 1)
 
 [node name="HurtCollision" parent="HurtArea" index="0"]
-position = Vector2(0, -73)
+position = Vector2(0, -64)
 shape = SubResource("RectangleShape2D_boss")
 
 [node name="MountPoint" parent="." index="7"]

@@ -81,7 +81,10 @@ public partial class PauseMenuPanel : PauseMenu
         else //正常重新开始
         {
             UiManager.Open_Game_Loading();
-            GameApplication.Instance.DungeonManager.RestartDungeon(false, GameApplication.Instance.FirstDungeonConfig, () =>
+            //和 SettlementPanel 一样: 必须用 CurrConfig, 否则魔王模式重启后变回普通模式
+            var dungeonManager = GameApplication.Instance.DungeonManager;
+            var config = dungeonManager.CurrConfig ?? GameApplication.Instance.FirstDungeonConfig;
+            dungeonManager.RestartDungeon(false, config, () =>
             {
                 UiManager.Destroy_Game_Loading();
             });

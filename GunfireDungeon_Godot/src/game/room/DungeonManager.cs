@@ -118,7 +118,13 @@ public partial class DungeonManager : Node2D
     }
 
     /// <summary>
-    /// 按当前楼层提升敌人强度, 倍率取自楼层配置
+    /// 魔王模式下敌人血量的倍率。
+    /// 魔王模式每个房间基本都有 Boss, 按原始 1200 血打下来节奏太拖, 所以砍半。
+    /// </summary>
+    public const float ErlkoenigHpMultiplier = 0.5f;
+
+    /// <summary>
+    /// 按当前楼层 + 当前地牢模式调整敌人强度。
     /// </summary>
     public void ApplyFloorDifficulty(Enemy enemy)
     {
@@ -127,13 +133,24 @@ public partial class DungeonManager : Node2D
             return;
         }
 
+        //楼层倍率(来自 FloorPlan.json)
         var multiplier = Plan.CurrentHpMultiplier;
+
+        //模式倍率。
+        //魔王模式要连续打 Boss, 所以额外砍血量。
+        //注意不能直接改 RoleBase.json 里 daju0001 的 Hp —— 普通模式最后那个
+        //boss/Boss1 房用的是同一个配置, 改了会连带影响普通模式。
+        if (CurrConfig != null && CurrConfig.Mode == DungeonMode.Erlkoenig)
+        {
+            multiplier *= ErlkoenigHpMultiplier;
+        }
+
         if (Mathf.IsEqualApprox(multiplier, 1f))
         {
             return;
         }
 
-        enemy.MaxHp = Mathf.RoundToInt(enemy.MaxHp * multiplier);
+        enemy.MaxHp = Mathf.Max(1, Mathf.RoundToInt(enemy.MaxHp * multiplier));
         enemy.Hp = enemy.MaxHp;
     }
     
@@ -148,6 +165,30 @@ public partial class DungeonManager : Node2D
     //用于记录玩家上一个所在区域
     private AffiliationArea _affiliationAreaFlag;
     private Role _cachePlayer;
+
+    /// <summary>
+    /// Boss 房间使用的 BGM (Sound.json 里的 Id)。
+    /// 原来游戏只播"地牢组"的 BGM(DungeonRoomGroup.SoundId), 进 Boss 房不会换曲子。
+    /// 这里加一层按房间类型覆盖: 进 Boss 房换成这首, 出去换回地牢组的。
+    ///
+    /// 如果当前 DungeonConfig 指定了 BossBgmId(比如魔王模式), 优先生效。
+    ///
+    /// 注: AI 生成的 Boss.ogg / Boss_Full.ogg 已按用户要求移除, 现在只剩这一首 Boss 曲,
+    /// 所以普通模式和魔王模式的 Boss 房都用它。
+    /// </summary>
+    public const string BossRoomBgmId = "bgm_boss";
+
+    /// <summary>
+    /// 大厅使用的 BGM (Sound.json 里的 Id)。
+    /// 大厅不属于任何地牢组, 所以不能靠 DungeonRoomGroup.SoundId, 只能单独指定。
+    /// 想换曲子: 改这里, 或者改 Sound.json 里 bgm_hall 指向的文件。
+    /// </summary>
+    public const string HallBgmId = "bgm_hall";
+
+    /// <summary>
+    /// 当前正在播放的 BGM Id, 用于避免重复播放同一首(重复调用会打断循环)
+    /// </summary>
+    private string _currBgmId;
 
     public DungeonManager(string loadRoleId)
     {
@@ -486,6 +527,17 @@ public partial class DungeonManager : Node2D
         
         yield return 0;
         GameApplication.Instance.Cursor.RefreshCursor();
+
+        //大厅背景音乐。
+        //
+        //【为什么原来完全没有音乐】PlayDungeonBgm 只在两个地方被调用:
+        //   · 地牢加载完成后(LoadDungeon 协程里)
+        //   · 玩家进入房间时(OnPlayerEnterRoom, 且只在地牢里)
+        // 大厅走的是这条 RunLoadHallCoroutine, 从来没有人播过 BGM,
+        // 所以 Sound.json 里就算配了 bgm_hall 也永远听不到。
+        _currBgmId = null;                  //清掉上一局的记录, 否则会被"已在播放同一首"挡住
+        PlayDungeonBgm(HallBgmId);
+
         if (finish != null)
         {
             finish();
@@ -541,8 +593,11 @@ public partial class DungeonManager : Node2D
         yield return 0;
         //生成地牢房间
         
-        //最多尝试10次
-        const int maxCount = 10;
+        //最多尝试 20 次。
+        //原来是 10 次。每次是一整套独立随机的地牢生成, 理论上重试一次就该成功,
+        //但魔王模式房间多、又要连 Boss 房, 单次成功率没那么高, 翻倍留些余量。
+        //重试只在真正失败时才发生, 不影响正常情况下的耗时。
+        const int maxCount = 20;
         for (var i = 0; i < maxCount; i++)
         {
             SeedRandom random;
@@ -631,10 +686,11 @@ public partial class DungeonManager : Node2D
         RenderingServer.SetDefaultClearColor(_dungeonGenerator.RoomGroup.BgColor.AsColor());
         
         //播放bgm
-        if (!string.IsNullOrEmpty(_dungeonGenerator.RoomGroup.SoundId) && ExcelConfig.Sound_Map.ContainsKey(_dungeonGenerator.RoomGroup.SoundId))
-        {
-            CurrWorld.PlayBgm(_dungeonGenerator.RoomGroup.SoundId);
-        }
+        //先清掉上一层的记录: World.OnUnloadSuccess 会 StopBgm, 但 _currBgmId 是
+        //DungeonManager 的字段、跨层保留。不清的话, 如果新一层的 BGM Id 和上一层相同,
+        //PlayDungeonBgm 会以为"已经在放同一首"而直接 return, 结果新层没有音乐。
+        _currBgmId = null;
+        PlayDungeonBgm(_dungeonGenerator.RoomGroup.SoundId);
         
         GameCamera.Main.FollowsMouseAmount = GameApplication.Instance.GameSave.FollowsMouseAmount;
 
@@ -1109,7 +1165,52 @@ public partial class DungeonManager : Node2D
             }
 
             _affiliationAreaFlag = roomInfo.AffiliationArea;
+
+            //按房间类型切 BGM:
+            //原版游戏只会播地牢组的 BGM, 进 Boss 房不换曲子。
+            //这里在 Boss 房换成 Boss 曲, 其他房间用回地牢组的。
+            //PlayBgm 内部会先 StopBgm 再淡入, 所以用 _currBgmId 挡住重复调用,
+            //否则同一首会被反复重播, 循环永远从开头开始。
+            var bossBgm = _dungeonGenerator?.Config?.BossBgmId;
+            if (string.IsNullOrEmpty(bossBgm))
+            {
+                bossBgm = BossRoomBgmId;
+            }
+
+            var wantBgm = roomInfo.RoomType == DungeonRoomType.Boss
+                ? bossBgm
+                : _dungeonGenerator?.RoomGroup?.SoundId;
+
+            PlayDungeonBgm(wantBgm);
         }
+    }
+
+    /// <summary>
+    /// 播放地牢 BGM。
+    /// 会先查 Sound.json 里有没有这个 Id, 有才播 —— 避免像原版那样
+    /// 传了不存在的 Id 时静默失败(SoundManager 里 TryGetValue 失败只 return null, 不报错)。
+    /// </summary>
+    private void PlayDungeonBgm(string soundId)
+    {
+        if (string.IsNullOrEmpty(soundId))
+        {
+            return;
+        }
+
+        //已经在放同一首, 不要重播
+        if (_currBgmId == soundId)
+        {
+            return;
+        }
+
+        if (!ExcelConfig.Sound_Map.ContainsKey(soundId))
+        {
+            GD.PushWarning($"BGM Id 在 Sound.json 里不存在, 已跳过: {soundId}");
+            return;
+        }
+
+        _currBgmId = soundId;
+        CurrWorld?.PlayBgm(soundId);
     }
     
     /// <summary>
