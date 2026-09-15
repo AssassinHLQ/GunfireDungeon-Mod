@@ -69,7 +69,9 @@ public partial class RoomMapPanel : RoomMap
             {
                 if (!_isMagnifyMap) //展开小地图
                 {
-                    if (UiManager.GetUiInstanceCount(UiManager.UiName.Game_PauseMenu) == 0 && !InputManager.PartPackage)
+                    if (UiManager.GetUiInstanceCount(UiManager.UiName.Game_PauseMenu) == 0 &&
+                        !InputManager.PartPackage &&
+                        CanOpenMap())
                     {
                         ExpandMap();
                         InputManager.MapOpened = true;
@@ -255,6 +257,46 @@ public partial class RoomMapPanel : RoomMap
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// 当前是否允许打开地图。
+    ///
+    /// 之所以要这个判断: 地图里点房间会直接执行传送(见 DoTransmission —— 它直接把玩家
+    /// Position 设到目标房间的传送点), 于是玩家在战斗中也能开地图点一下跑出去,
+    /// 战斗就白打了。原来的代码只在"暂停菜单打开/零件包打开"时挡了一下, 没挡战斗状态。
+    ///
+    /// 规则: 房间在刷怪波次(IsRunWave)且还没刷完时, 认为处于战斗状态, 禁止开地图。
+    /// 大厅(World.Current 不是 Dungeon)没有战斗概念, 照常允许。
+    /// </summary>
+    private bool CanOpenMap()
+    {
+        var world = World.Current;
+        if (world == null)
+        {
+            return false;
+        }
+
+        //大厅可以随便开
+        if (world is not Dungeon)
+        {
+            return true;
+        }
+
+        var roomInfo = GameApplication.Instance?.DungeonManager?.ActiveRoomInfo;
+        var preinstall = roomInfo?.RoomPreinstall;
+        if (preinstall == null)
+        {
+            return true;
+        }
+
+        //正在刷怪且当前波次还没结束 -> 战斗中
+        if (preinstall.IsRunWave && !preinstall.IsCurrWaveOver())
+        {
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>
