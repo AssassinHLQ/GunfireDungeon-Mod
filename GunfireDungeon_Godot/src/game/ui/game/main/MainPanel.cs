@@ -14,6 +14,13 @@ public partial class MainPanel : Main
     /// </summary>
     private ChangelogOverlay _changelog;
 
+    /// <summary>
+    /// 主菜单背景音乐播放器。
+    /// 注意: PlayMusic 返回的节点挂在 GameApplication.GlobalNodeRoot 下, 不是本 UI 的子节点,
+    /// 所以主菜单隐藏/销毁时它不会自动停, 必须自己 stop。
+    /// </summary>
+    private SoundManager.GameAudioPlayer _bgm;
+
     public override void OnCreateUi()
     {
         //视差背景(石墙大厅 + 拱窗外的黄昏天空), 必须排在最底层
@@ -58,11 +65,43 @@ public partial class MainPanel : Main
     public override void OnShowUi()
     {
         Utils.HandlerFocusList(S_ButtonList.Instance);
+
+        //主菜单 BGM(淡入 1 秒)
+        PlayMenuBgm();
+    }
+
+    /// <summary>
+    /// 播主菜单 BGM。重复调用是安全的: 已经在放就不再重开。
+    /// </summary>
+    private void PlayMenuBgm()
+    {
+        if (_bgm != null && _bgm.Playing)
+        {
+            return;
+        }
+
+        _bgm = SoundManager.PlayTransitionMusic("bgm_menu", 1);
+    }
+
+    /// <summary>
+    /// 停主菜单 BGM(淡出 1.5 秒, TransitionToStop 内部时长)。
+    /// </summary>
+    private void StopMenuBgm()
+    {
+        if (_bgm != null && _bgm.Playing)
+        {
+            _bgm.TransitionToStop();
+        }
+
+        _bgm = null;
     }
 
     //点击开始游戏
     private void OnStartGameClick()
     {
+        //先淡出主菜单 BGM, 再进大厅(大厅自己的 BGM 由地牢组 SoundId 决定)
+        StopMenuBgm();
+
         UiManager.Open_Game_Loading();
         GameApplication.Instance.DungeonManager.LoadHall(() =>
         {
