@@ -11,7 +11,20 @@ public partial class InteractiveTipBarHandler : Control, IUiNodeScript
 {
     private RoomUI.InteractiveTipBar _interactiveTipBar;
     private EventBinder<EventEnum> _binder;
-    private ActivityObject _interactiveTarget;
+
+    /// <summary>
+    /// 当前提示的目标。
+    /// 这里存 Node2D(取 GlobalPosition 用)而不是 ActivityObject:
+    /// 商店货架 ShopItemSlot 是 Area2D, 不是 ActivityObject,
+    /// 原来用 ActivityObject 存会导致商店的互动提示永远不显示。
+    /// </summary>
+    private Node2D _interactiveNode;
+
+    /// <summary>
+    /// 当前提示的互动物体。取名字用 —— ActivityObject 走 ActivityBase.Name,
+    /// 其他实现走各自的显示名。
+    /// </summary>
+    private IInteractive _interactiveItem;
     
     public void SetUiNode(IUiNode uiNode)
     {
@@ -48,9 +61,14 @@ public partial class InteractiveTipBarHandler : Control, IUiNodeScript
     /// <param name="target">所在坐标</param>
     /// <param name="showText">显示文本</param>
     /// <param name="icon">显示图标</param>
-    public void ShowBar(ActivityObject target, string showText, Texture2D icon)
+    public void ShowBar(string showText, Texture2D icon)
     {
-        _interactiveTipBar.Instance.GlobalPosition = GameApplication.Instance.WorldToUiPosition(_interactiveTarget.GlobalPosition);
+        if (_interactiveNode == null)
+        {
+            return;
+        }
+
+        _interactiveTipBar.Instance.GlobalPosition = GameApplication.Instance.WorldToUiPosition(_interactiveNode.GlobalPosition);
         _interactiveTipBar.L_Icon.Instance.Texture = icon;
         _interactiveTipBar.Instance.Visible = true;
         _interactiveTipBar.L_NameLabel.Instance.Text = showText;
@@ -60,29 +78,55 @@ public partial class InteractiveTipBarHandler : Control, IUiNodeScript
     {
         if (o == null)
         {
-            _interactiveTarget = null;
+            _interactiveNode = null;
+            _interactiveItem = null;
             //隐藏互动提示
             HideBar();
+            return;
         }
-        else
+
+        var result = (CheckInteractiveResult)o;
+
+        //必须是 Node2D 才能取到 GlobalPosition 来定位提示条。
+        //ActivityObject 是 CharacterBody2D, ShopItemSlot 是 Area2D, 两者都满足。
+        if (result.Target is not Node2D node)
         {
-            var result = (CheckInteractiveResult)o;
-            if (result.Target is ActivityObject interactiveItem)
-            {
-                //if (interactiveItem is Weapon)
-                var icon = result.GetIcon();
-                if (icon != null)
-                {
-                    _interactiveTarget = interactiveItem;
-                    //显示互动提示
-                    ShowBar(interactiveItem, interactiveItem.ActivityBase.Name, icon);
-                }
-                else
-                {
-                    _interactiveTarget = null;
-                }
-            }
+            _interactiveNode = null;
+            _interactiveItem = null;
+            return;
         }
+
+        var icon = result.GetIcon();
+        if (icon == null)
+        {
+            _interactiveNode = null;
+            _interactiveItem = null;
+            return;
+        }
+
+        _interactiveNode = node;
+        _interactiveItem = result.Target;
+        //显示互动提示
+        ShowBar(GetDisplayName(result.Target), icon);
+    }
+
+    /// <summary>
+    /// 取互动物体在提示条上显示的名字。
+    /// ActivityObject 用配置表里的名字; ShopItemSlot 不是 ActivityObject, 走它自己的 DisplayName。
+    /// </summary>
+    private static string GetDisplayName(IInteractive target)
+    {
+        if (target is ActivityObject ao)
+        {
+            return ao.ActivityBase?.Name ?? "";
+        }
+
+        if (target is ShopItemSlot slot)
+        {
+            return slot.DisplayName;
+        }
+
+        return "";
     }
     
     /// <summary>
@@ -90,9 +134,9 @@ public partial class InteractiveTipBarHandler : Control, IUiNodeScript
     /// </summary>
     public void OnCameraPositionUpdate(float delta)
     {
-        if (_interactiveTarget != null)
+        if (_interactiveNode != null && GodotObject.IsInstanceValid(_interactiveNode))
         {
-            _interactiveTipBar.Instance.GlobalPosition = GameApplication.Instance.WorldToUiPosition(_interactiveTarget.GlobalPosition);
+            _interactiveTipBar.Instance.GlobalPosition = GameApplication.Instance.WorldToUiPosition(_interactiveNode.GlobalPosition);
         }
     }
 
