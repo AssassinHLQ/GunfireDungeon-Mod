@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections;
 using Godot;
 
@@ -29,8 +29,12 @@ public class PlayerRollState : StateBase<Player, PlayerStateEnum>
         //禁用伤害碰撞
         Master.HurtCollision.Disabled = true;
         
-        //翻滚移动方向
-        _moveDir = InputManager.MoveAxis;
+        //翻滚移动方向。
+        //原来写的是 InputManager.MoveAxis —— 那要求玩家必须先按 WASD 才能指定方向,
+        //站着不动按翻滚会得到零向量, 就完全不动。
+        //改成 Player.GetRollDirection(): 鼠标优先、八向吸附, 手柄用右摇杆。
+        //只在这里取一次, Process 里不再重算 —— 否则翻滚途中甩鼠标会让方向中途拐弯。
+        _moveDir = Master.GetRollDirection();
         Master.BasisVelocity = _moveDir * Master.RoleState.RollSpeed;
     }
 
@@ -54,17 +58,16 @@ public class PlayerRollState : StateBase<Player, PlayerStateEnum>
     {
         Master.AnimatedSprite.Play(AnimatorNames.Roll);
 
+        //翻滚期间关掉"枪口跟随鼠标"。
+        //不再手动翻脸了 —— 原来有一段:
+        //    var face = Master.Face;
+        //    if (velocity.X > 0 && face == Left) Master.Face = Right; ...
+        //    Master.Face = face;                 // 结束时又恢复
+        // 三个问题: (1) 翻脸本来由 HandlerAiming 负责, 这里是重复;
+        //          (2) 只处理左右, 而翻滚已改成八向, 斜向/竖直照顾不到;
+        //          (3) 中途改了又恢复, 视觉上就是"翻过去又翻回来"的闪动。
+        // 去掉之后, 翻滚朝向由鼠标直接决定, 和站着不动时一致。
         Master.MountLookTarget = false;
-        var face = Master.Face;
-        var velocity = Master.BasisVelocity;
-        if (velocity.X > 0 && face == FaceDirection.Left)
-        {
-            Master.Face = FaceDirection.Right;
-        }
-        else if (velocity.X < 0 && face == FaceDirection.Right)
-        {
-            Master.Face = FaceDirection.Left;
-        }
 
         SoundManager.PlaySoundByConfigDelay("role_rolling", Master.Position, 0.25f);
         
@@ -72,7 +75,6 @@ public class PlayerRollState : StateBase<Player, PlayerStateEnum>
         _coroutineId = -1;
         
         Master.MountLookTarget = true;
-        Master.Face = face;
         Master.OverRoll();
         if (InputManager.MoveAxis != Vector2.Zero) //切换到移动状态
         {

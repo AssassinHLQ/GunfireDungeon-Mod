@@ -625,6 +625,78 @@ public partial class Player : Role
     }
 
     /// <summary>
+    /// 翻滚方向。返回一个【八向单位向量】。
+    ///
+    /// 需求: 角色不移动时也能翻滚, 方向取鼠标指向; 鼠标偏哪里就往哪里滚, 并且是八向。
+    ///
+    /// 取值优先级:
+    ///   1. 有移动输入(WASD / 左摇杆) -> 用【移动方向】。
+    ///      移动时玩家的意图很明确, 这时候翻滚应该顺着走的方向, 而不是被鼠标拽偏。
+    ///   2. 没有移动输入(站着不动) -> 用鼠标指向的方向。
+    ///      这是翻滚的核心需求: 站着也能滚, 朝鼠标方向滚。
+    ///   3. 手柄右摇杆有输入 -> 用右摇杆方向(手柄玩家的"瞄准方向", 和鼠标等价)
+    ///   4. 鼠标正好压在角色身上(方向退化) -> 用角色当前朝向兜底
+    ///
+    /// 注意这里【不用】CalcMousePosition():
+    /// 那个函数会应用"自动索敌"和"辅助瞄准", 会把方向拉向敌人。
+    /// 翻滚方向必须是玩家自己指的方向, 不能被索敌改掉。
+    /// </summary>
+    public Vector2 GetRollDirection()
+    {
+        var gPos = GlobalPosition;
+
+        //1. 有移动输入就用移动方向(优先级最高)
+        var moveAxis = InputManager.MoveAxis;
+        if (moveAxis.LengthSquared() > 0.001f)
+        {
+            return SnapTo8Dir(moveAxis.Normalized());
+        }
+
+        //2. 站着不动: 用手柄右摇杆(如果玩家正在用瞄准摇杆)
+        if (InputManager.IsJoystickInput && InputManager.IsJoystickRInput)
+        {
+            var stick = InputManager.AimingPosition - gPos;
+            if (stick.LengthSquared() > 1f)
+            {
+                return SnapTo8Dir(stick.Normalized());
+            }
+        }
+
+        //3. 站着不动: 用鼠标指向
+        var toMouse = GetGlobalMousePosition() - gPos;
+        if (toMouse.LengthSquared() > 1f)
+        {
+            return SnapTo8Dir(toMouse.Normalized());
+        }
+
+        //4. 退化情况: 鼠标正好压在角色身上, 用朝向兜底
+        //   右 = (1,0), 左 = (-1,0)
+        return Face == FaceDirection.Left ? Vector2.Left : Vector2.Right;
+    }
+
+    /// <summary>
+    /// 把任意单位向量吸附到最近的八向。
+    /// 直接用 sin/cos 算 45 度的整数倍, 这样输出一定是"正好斜 45 度",
+    /// 不会出现 43.7 度这种偏差累积。
+    ///
+    /// 额外好处: 正上/正下会得到【精确的 0】而不是 6e-17 这种残留分量。
+    /// 这点很重要 —— RunRoll 里是靠 velocity.X 的正负决定要不要翻脸的,
+    /// 如果竖直方向残留一个 ±6e-17, 就会被误判成"往左/往右滚"而翻脸。
+    /// </summary>
+    private static Vector2 SnapTo8Dir(Vector2 dir)
+    {
+        //兜底: 万一传进来的是零向量或极短向量, atan2(0,0) 结果无意义
+        if (dir.LengthSquared() < 1e-8f)
+        {
+            return Vector2.Right;
+        }
+
+        var step = Mathf.Pi / 4f;                       //45 度
+        var snapped = Mathf.Round(dir.Angle() / step) * step;
+        return new Vector2(Mathf.Cos(snapped), Mathf.Sin(snapped));
+    }
+
+    /// <summary>
     /// 翻滚结束
     /// </summary>
     public void OverRoll()
