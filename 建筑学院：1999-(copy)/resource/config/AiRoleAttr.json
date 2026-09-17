@@ -1,0 +1,44 @@
+[
+  {
+    "Id": "enemy0001",
+    "Remark": "\u654c\u4eba1",
+    "AttackInterval": 0,
+    "ViewRange": 250,
+    "TailAfterViewRange": 300,
+    "ViewAngleRange": 150,
+    "Gold": [
+      -2,
+      3
+    ],
+    "BloodColor": "b03030",
+    "__BodyFragment": "enemy_dead0001"
+  },
+  {
+    "Id": "enemy0002",
+    "Remark": "\u654c\u4eba2",
+    "AttackInterval": 2.2,
+    "ViewRange": 200,
+    "TailAfterViewRange": 300,
+    "ViewAngleRange": 150,
+    "Gold": [
+      -2,
+      4
+    ],
+    "BloodColor": "",
+    "__BodyFragment": ""
+  },
+  {
+    "Id": "daju0001",
+    "Remark": "\u5927\u6a58 BOSS",
+    "AttackInterval": 1.6,
+    "ViewRange": 420,
+    "TailAfterViewRange": 600,
+    "ViewAngleRange": 240,
+    "Gold": [
+      30,
+      60
+    ],
+    "BloodColor": "b03030",
+    "__BodyFragment": "enemy_dead0001"
+  }
+]

@@ -1,0 +1,35 @@
+/.vscode
+/.import
+/.mono
+/.vs
+/.godot
+/build
+/buffTable
+/excelTool/bin
+/excelTool/obj
+/excelTool/**/*.uid
+/excelTool/.idea
+/excelTool/.vs
+/excelTool/.vscode
+/excelTool/publish
+**/*.DotSettings.user
+/GunfireDungeon.csproj.old*
+**/.DS_Store
+GameSave.json
+GameConfig.json
+/android
+/src/config/*.uid
+
+# AI 生图工具(usa-gpt-image 技能)的默认输出目录。
+# 该技能默认 --output-dir ./generated, 若在仓库根目录调用会落在这里。
+# 生图产物是草稿/参考素材, 不是发行资产; 需要进游戏的须先经量化管线处理
+# 并显式拷贝到 resource/ 下, 不要直接提交这个目录。
+/generated/
+
+# Godot 会为 generated/ 里的图片自动生成 *.import 边车文件, 一并排除
+/generated/**/*.import
+
+# Python 脚本(generate_background.py 等)的本地环境与字节码缓存
+__pycache__/
+*.py[cod]
+.venv/

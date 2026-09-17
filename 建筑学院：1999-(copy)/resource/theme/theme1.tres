@@ -1,0 +1,258 @@
+[gd_resource type="Theme" load_steps=9 format=3 uid="uid://drb1ajgvcih7p"]
+
+; 菜单主题 —— 边框与滑块素材
+; 来源: Kenney (www.kenney.nl)
+;   "Fantasy UI Borders" (CC0 1.0)  —— 边框
+;   "UI Pack"             (CC0 1.0)  —— 滑块
+; 九宫格边距 16: 96x96 素材的角饰正好在 16px 处结束(实测), 之后为恒定 8px 边线
+; 三个菜单各用不同造型, 靠 Theme 类型变体区分:
+;   默认         -> 主菜单   (panel-border-008)
+;   PauseButton  -> ESC 菜单 (panel-border-004)
+;   SettingButton-> 设置菜单 (panel-border-024)
+
+[ext_resource type="Texture2D" uid="uid://c86n03o5xyjno" path="res://resource/sprite/ui/fantasyBorder/btn_main.png" id="1_main"]
+[ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/btn_pause.png" id="2_pause"]
+[ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/checkbox_off.png" id="6_cboff"]
+[ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/checkbox_on.png" id="7_cbon"]
+[ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/btn_setting.png" id="3_set"]
+[ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/slider_thumb.png" id="4_thumb"]
+[ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/slider_track.png" id="5_track"]
+[ext_resource type="Texture2D" path="res://resource/sprite/ui/fantasyBorder/slider_grabber.png" id="8_grab"]
+
+[sub_resource type="StyleBoxTexture" id="BtnNormal"]
+texture = ExtResource("1_main")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(1, 1, 1, 0.82)
+content_margin_left = 36.0
+content_margin_top = 14.0
+content_margin_right = 36.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxTexture" id="BtnHover"]
+texture = ExtResource("1_main")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(1, 1, 1, 1)
+content_margin_left = 36.0
+content_margin_top = 14.0
+content_margin_right = 36.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxTexture" id="BtnPressed"]
+texture = ExtResource("1_main")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(0.7, 0.7, 0.7, 1)
+content_margin_left = 36.0
+content_margin_top = 14.0
+content_margin_right = 36.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxTexture" id="BtnFocus"]
+texture = ExtResource("1_main")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(1, 0.93, 0.74, 1)
+content_margin_left = 36.0
+content_margin_top = 14.0
+content_margin_right = 36.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxTexture" id="SldTrack"]
+texture = ExtResource("5_track")
+texture_margin_left = 8.0
+texture_margin_top = 4.0
+texture_margin_right = 8.0
+texture_margin_bottom = 4.0
+content_margin_top = 6.0
+content_margin_bottom = 6.0
+
+[sub_resource type="StyleBoxTexture" id="SldGrabber"]
+texture = ExtResource("4_thumb")
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxTexture" id="BtnNormalPause"]
+texture = ExtResource("2_pause")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(1, 1, 1, 0.82)
+content_margin_left = 36.0
+content_margin_top = 14.0
+content_margin_right = 36.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxTexture" id="BtnHoverPause"]
+texture = ExtResource("2_pause")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(1, 1, 1, 1)
+content_margin_left = 36.0
+content_margin_top = 14.0
+content_margin_right = 36.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxTexture" id="BtnFocusPause"]
+texture = ExtResource("2_pause")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(1, 0.93, 0.74, 1)
+content_margin_left = 36.0
+content_margin_top = 14.0
+content_margin_right = 36.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxTexture" id="BtnNormalSet"]
+texture = ExtResource("3_set")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(1, 1, 1, 0.82)
+content_margin_left = 36.0
+content_margin_top = 14.0
+content_margin_right = 36.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxTexture" id="BtnHoverSet"]
+texture = ExtResource("3_set")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(1, 1, 1, 1)
+content_margin_left = 36.0
+content_margin_top = 14.0
+content_margin_right = 36.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxTexture" id="BtnFocusSet"]
+texture = ExtResource("3_set")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+modulate_color = Color(1, 0.93, 0.74, 1)
+content_margin_left = 36.0
+content_margin_top = 14.0
+content_margin_right = 36.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxFlat" id="SldLine"]
+content_margin_top = 2.0
+content_margin_bottom = 2.0
+bg_color = Color(0.72, 0.74, 0.8, 0.85)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_left = 2
+corner_radius_bottom_right = 2
+
+[sub_resource type="StyleBoxEmpty" id="CbEmpty"]
+
+[sub_resource type="StyleBoxFlat" id="CheckBoxNormal"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.16, 0.17, 0.22, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.7, 0.72, 0.78, 1)
+
+[sub_resource type="StyleBoxFlat" id="CheckBoxHover"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.22, 0.24, 0.3, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.45, 0.75, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="CheckBoxPressed"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.3, 0.5, 0.8, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.7, 0.88, 1, 1)
+
+[resource]
+Button/colors/font_color = Color(0.85098, 0.85098, 0.866667, 1)
+Button/colors/font_color_disabled = Color(1, 1, 1, 0.3)
+Button/colors/font_color_focus = Color(1, 0.93, 0.74, 1)
+Button/colors/font_color_hover = Color(1, 1, 1, 1)
+Button/colors/font_color_pressed = Color(1, 0.93, 0.74, 1)
+; 主菜单背景是黄昏天空, 比较亮, 给文字加深色描边保证可读
+Button/colors/font_outline_color = Color(0, 0, 0, 0.85)
+Button/constants/outline_size = 8
+Button/constants/hseparation = 2
+Button/font_sizes/font_size = 32
+Button/styles/normal = SubResource("BtnNormal")
+Button/styles/hover = SubResource("BtnHover")
+Button/styles/pressed = SubResource("BtnPressed")
+Button/styles/focus = SubResource("BtnFocus")
+Button/styles/disabled = SubResource("BtnNormal")
+Label/colors/font_outline_color = Color(0, 0, 0, 0.85)
+Label/constants/outline_size = 6
+HSlider/styles/slider = SubResource("SldLine")
+HSlider/styles/grabber_area = SubResource("SldLine")
+HSlider/styles/grabber_area_highlight = SubResource("SldLine")
+HSlider/icons/grabber = ExtResource("8_grab")
+HSlider/icons/grabber_highlight = ExtResource("8_grab")
+HSlider/icons/grabber_disabled = ExtResource("8_grab")
+PauseButton/base_type = &"Button"
+PauseButton/font_sizes/font_size = 36
+PauseButton/styles/normal = SubResource("BtnNormalPause")
+PauseButton/styles/hover = SubResource("BtnHoverPause")
+PauseButton/styles/pressed = SubResource("BtnHoverPause")
+PauseButton/styles/focus = SubResource("BtnFocusPause")
+PauseButton/styles/disabled = SubResource("BtnNormalPause")
+SettingButton/base_type = &"Button"
+; 设置面板的「返回」也用 004, 和 ESC 菜单统一
+SettingButton/styles/normal = SubResource("BtnNormalPause")
+SettingButton/styles/hover = SubResource("BtnHoverPause")
+SettingButton/styles/pressed = SubResource("BtnHoverPause")
+SettingButton/styles/focus = SubResource("BtnFocusPause")
+SettingButton/styles/disabled = SubResource("BtnNormalPause")
+
+; CheckBox 继承 Button 的样式链, 不显式覆盖就会被 96px 花边边框撑爆。
+; 这里把背景样式全部置空(只显示图标), 并用自制的正方形像素图标替换引擎默认图标。
+; 关键: Godot 的 CheckBox 图标边长 = 其 font_size。若沿用 Button 的 32,
+; 图标只有 16px 就会显成长方形。所以必须显式给 CheckBox 设自己的字号。
+CheckBox/font_sizes/font_size = 48
+CheckBox/styles/normal = SubResource("CbEmpty")
+CheckBox/styles/hover = SubResource("CbEmpty")
+CheckBox/styles/pressed = SubResource("CbEmpty")
+CheckBox/styles/focus = SubResource("CbEmpty")
+CheckBox/styles/disabled = SubResource("CbEmpty")
+CheckBox/icons/checked = ExtResource("7_cbon")
+CheckBox/icons/unchecked = ExtResource("6_cboff")
+CheckBox/icons/checked_disabled = ExtResource("7_cbon")
+CheckBox/icons/unchecked_disabled = ExtResource("6_cboff")
+

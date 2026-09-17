@@ -1,0 +1,110 @@
+[
+  {
+    "Id": "0001",
+    "Remark": "\u6B65\u67AA",
+    "LockingStand": true,
+    "FiringStand": true,
+    "ShowSubline": false,
+    "LockingTime": 0.5,
+    "LockAngleTime": 0,
+    "AttackLockAngle": true,
+    "BulletSpeedScale": 0.3,
+    "AmmoConsumptionProbability": 0
+  },
+  {
+    "Id": "0002",
+    "Remark": "\u9730\u5F39\u67AA",
+    "LockingStand": true,
+    "FiringStand": true,
+    "ShowSubline": false,
+    "LockingTime": 1,
+    "LockAngleTime": 0,
+    "AttackLockAngle": false,
+    "BulletSpeedScale": 0.25,
+    "AmmoConsumptionProbability": 0
+  },
+  {
+    "Id": "0003",
+    "Remark": "\u624B\u67AA",
+    "LockingStand": true,
+    "FiringStand": true,
+    "ShowSubline": false,
+    "LockingTime": 0.4,
+    "LockAngleTime": 0,
+    "AttackLockAngle": false,
+    "BulletSpeedScale": 0.3,
+    "AmmoConsumptionProbability": 0
+  },
+  {
+    "Id": "0004",
+    "Remark": "\u79FB\u52A8\u5C04\u51FB",
+    "LockingStand": false,
+    "FiringStand": false,
+    "ShowSubline": false,
+    "LockingTime": 0.3,
+    "LockAngleTime": 0,
+    "AttackLockAngle": true,
+    "BulletSpeedScale": 0.3,
+    "AmmoConsumptionProbability": 0
+  },
+  {
+    "Id": "0005",
+    "Remark": "\u4F7F\u7528\u8FDC\u8DDD\u79BB\u6B66\u5668",
+    "LockingStand": true,
+    "FiringStand": true,
+    "ShowSubline": true,
+    "LockingTime": 1,
+    "LockAngleTime": 0.3,
+    "AttackLockAngle": true,
+    "BulletSpeedScale": 0.9,
+    "AmmoConsumptionProbability": 0
+  },
+  {
+    "Id": "0006",
+    "Remark": "\u6C64\u59C6\u900A",
+    "LockingStand": true,
+    "FiringStand": true,
+    "ShowSubline": false,
+    "LockingTime": 0.5,
+    "LockAngleTime": 0,
+    "AttackLockAngle": false,
+    "BulletSpeedScale": 0.25,
+    "AmmoConsumptionProbability": 0
+  },
+  {
+    "Id": "0007",
+    "Remark": "\u6FC0\u5149\u6B66\u5668",
+    "LockingStand": true,
+    "FiringStand": true,
+    "ShowSubline": true,
+    "LockingTime": 1.2,
+    "LockAngleTime": 0.5,
+    "AttackLockAngle": true,
+    "BulletSpeedScale": 1,
+    "AmmoConsumptionProbability": 0
+  },
+  {
+    "Id": "0008",
+    "Remark": "\u69B4\u5F39\u70AE",
+    "LockingStand": true,
+    "FiringStand": true,
+    "ShowSubline": false,
+    "LockingTime": 0.6,
+    "LockAngleTime": 0.2,
+    "AttackLockAngle": true,
+    "BulletSpeedScale": 0.8,
+    "AmmoConsumptionProbability": 0
+  },
+  {
+    "Id": "0009",
+    "Remark": "M1\u578B\u70ED\u80FD\u72D9\u51FB\u67AA",
+    "LockingStand": true,
+    "FiringStand": true,
+    "ShowSubline": false,
+    "LockingTime": 0.7,
+    "LockAngleTime": 0,
+    "AttackLockAngle": true,
+    "BulletSpeedScale": 0.3,
+    "AmmoConsumptionProbability": 0
+  }
+]

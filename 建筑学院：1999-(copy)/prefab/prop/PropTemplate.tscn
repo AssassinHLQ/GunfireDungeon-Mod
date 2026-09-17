@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3 uid="uid://utgoqn1dt4c3"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_cpqup"]
+size = Vector2(12, 10)
+
+[node name="PropTemplate" type="CharacterBody2D"]
+collision_layer = 4
+
+[node name="ShadowSprite" type="Sprite2D" parent="."]
+z_index = -1
+
+[node name="AnimatedSprite" type="AnimatedSprite2D" parent="."]
+
+[node name="Collision" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_cpqup")
