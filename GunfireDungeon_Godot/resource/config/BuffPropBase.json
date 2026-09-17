@@ -35,7 +35,8 @@
     "__Activity": "prop0004",
     "Buff": {
       "ShieldRecoveryTime": [
-        2.5
+        2,
+        0.2
       ]
     }
   },
