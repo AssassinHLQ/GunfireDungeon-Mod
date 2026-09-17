@@ -1,4 +1,4 @@
-[gd_resource type="SpriteFrames" load_steps=27 format=3 uid="uid://n11thtali6es"]
+[gd_resource type="SpriteFrames" load_steps=36 format=3 uid="uid://n11thtali6es"]
 
 [ext_resource type="Texture2D" uid="uid://djn05q31ewlto" path="res://resource/sprite/role/role0001/idle/Sprite-0002.png" id="3_lsdrf"]
 [ext_resource type="Texture2D" uid="uid://dv2eddjas7mqh" path="res://resource/sprite/role/role0001/roll/Sprite-0008.png" id="4_3f4uc"]
@@ -25,6 +25,15 @@
 [ext_resource type="Texture2D" uid="uid://srftacfygokx" path="res://resource/sprite/role/role0001/roll/Sprite-0016.png" id="32_hy1f8"]
 [ext_resource type="Texture2D" uid="uid://certfpiyl3so1" path="res://resource/sprite/role/role0001/roll/Sprite-0017.png" id="33_v63jc"]
 [ext_resource type="Texture2D" uid="uid://n0mpi1v4luqu" path="res://resource/sprite/role/role0001/roll/Sprite-0018.png" id="34_cst0f"]
+[ext_resource type="Texture2D" uid="uid://vkreskxnx1oe" path="res://resource/sprite/role/role0001/die/Die_000.png" id="35_die0"]
+[ext_resource type="Texture2D" uid="uid://mwl81pllxi4p" path="res://resource/sprite/role/role0001/die/Die_001.png" id="36_die1"]
+[ext_resource type="Texture2D" uid="uid://bfiefahuo1pf" path="res://resource/sprite/role/role0001/die/Die_002.png" id="37_die2"]
+[ext_resource type="Texture2D" uid="uid://k3yw0yvladou" path="res://resource/sprite/role/role0001/die/Die_003.png" id="38_die3"]
+[ext_resource type="Texture2D" uid="uid://c0ys0nv6qan8t" path="res://resource/sprite/role/role0001/die/Die_004.png" id="39_die4"]
+[ext_resource type="Texture2D" uid="uid://dsvgfmqfij6c6" path="res://resource/sprite/role/role0001/die/Die_005.png" id="40_die5"]
+[ext_resource type="Texture2D" uid="uid://diunnrk51emrj" path="res://resource/sprite/role/role0001/die/Die_006.png" id="41_die6"]
+[ext_resource type="Texture2D" uid="uid://cci5457abmv07" path="res://resource/sprite/role/role0001/die/Die_007.png" id="42_die7"]
+[ext_resource type="Texture2D" uid="uid://ctx8ugfu0igo5" path="res://resource/sprite/role/role0001/die/Die_008.png" id="43_die8"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_bf2lh"]
 atlas = ExtResource("3_lsdrf")
@@ -40,7 +49,34 @@ animations = [{
 "name": &"default",
 "speed": 5.0
 }, {
-"frames": [],
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("35_die0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("36_die1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("37_die2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("38_die3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("39_die4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("40_die5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("41_die6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("42_die7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("43_die8")
+}],
 "loop": false,
 "name": &"die",
 "speed": 8.0
