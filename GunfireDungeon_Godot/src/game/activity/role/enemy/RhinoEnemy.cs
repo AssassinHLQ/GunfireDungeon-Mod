@@ -309,8 +309,10 @@ public partial class RhinoEnemy : Boss
             HurtCollision.Disabled = true;
         }
 
-        // 3) 地下的这几帧同时充当预警时间，玩家看到脚下的圈可以走开
-        ShowWarning(dest, skill, 0f);
+        // 3) 地下的这几帧同时充当预警时间，玩家看到脚下的圈可以走开。
+        // 用 BurrowWarnTime 而不是 skill.Windup —— 后者是"钻下+地下"的总时长，
+        // 拿它当预警会让红圈比实际攻击多留 0.3 秒。
+        ShowWarning(dest, skill, 0f, BurrowWarnTime);
         yield return new WaitForSeconds(BurrowWarnTime);
 
         // 4) 钻出来
@@ -382,8 +384,10 @@ public partial class RhinoEnemy : Boss
 
     /// <summary>
     /// 画攻击范围预警。直线技能画矩形，圆形技能画圆（isLine=false 且 isSector=false）。
+    /// duration &lt;= 0 时用技能自己的前摇时长。
     /// </summary>
-    private void ShowWarning(Vector2 position, SkillDef skill, float rotation)
+    private void ShowWarning(Vector2 position, SkillDef skill, float rotation,
+        float duration = -1f)
     {
         var world = GameApplication.Instance?.DungeonManager?.CurrWorld;
         if (world?.YSortLayer == null)
@@ -397,7 +401,8 @@ public partial class RhinoEnemy : Boss
         };
         world.YSortLayer.AddChild(warning);
         warning.Configure(position, skill.IsLine, isSector: false,
-            skill.Range, skill.HalfWidth, skill.Windup, rotation);
+            skill.Range, skill.HalfWidth,
+            duration > 0f ? duration : skill.Windup, rotation);
     }
 
     /// <summary>冲刺只允许在当前房间的实际矩形内移动，避免撞进墙里或跳到别的房间。</summary>
