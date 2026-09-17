@@ -168,16 +168,37 @@ public partial class DungeonManager : Node2D
     private Role _cachePlayer;
 
     /// <summary>
-    /// Boss 房间使用的 BGM (Sound.json 里的 Id)。
+    /// Boss 房间使用的默认 BGM (Sound.json 里的 Id)。
     /// 原来游戏只播"地牢组"的 BGM(DungeonRoomGroup.SoundId), 进 Boss 房不会换曲子。
     /// 这里加一层按房间类型覆盖: 进 Boss 房换成这首, 出去换回地牢组的。
     ///
     /// 如果当前 DungeonConfig 指定了 BossBgmId(比如魔王模式), 优先生效。
     ///
-    /// 注: AI 生成的 Boss.ogg / Boss_Full.ogg 已按用户要求移除, 现在只剩这一首 Boss 曲,
-    /// 所以普通模式和魔王模式的 Boss 房都用它。
+    /// 注: AI 生成的 Boss.ogg / Boss_Full.ogg 已按用户要求移除。
+    /// 单个 Boss 想要自己的曲子, 往 <see cref="BossBgmIdMap"/> 里加一行。
     /// </summary>
     public const string BossRoomBgmId = "bgm_boss";
+
+    /// <summary>
+    /// 犀牛(Rhino) Boss 房专用的 BGM。
+    /// 舒伯特《魔王》D.328 钢琴版 —— 作曲公有领域(舒伯特 1828 年逝世),
+    /// 音频是本项目自己用 MIDI 渲染的, 见 docs/音乐授权清单.md 4.1。
+    /// </summary>
+    public const string RhinoBossBgmId = "bgm_boss_rhino";
+
+    /// <summary>
+    /// 特定 Boss 的专属 BGM: key = 房间预设里那个 Boss 标记的 Id,
+    /// value = Sound.json 里的 BGM Id。不在表里的 Boss 用默认 Boss 曲。
+    ///
+    /// 【为什么按标记 Id 判断, 而不是按楼层或房间名】
+    /// Boss1 / Boss2 房里都是大橘, 只有 Boss3 是犀牛, 但"第几间 Boss 房"会随
+    /// 地图改动而变, 魔王模式更是会连着打 Boss; 直接读房间预设里预设的 Boss Id 最准。
+    /// 以后新 Boss 想要专属曲, 在这里加一行就行。
+    /// </summary>
+    private static readonly Dictionary<string, string> BossBgmIdMap = new Dictionary<string, string>
+    {
+        { "rhino0001", RhinoBossBgmId },
+    };
 
     /// <summary>
     /// 大厅使用的 BGM (Sound.json 里的 Id)。
@@ -1195,11 +1216,56 @@ public partial class DungeonManager : Node2D
             }
 
             var wantBgm = roomInfo.RoomType == DungeonRoomType.Boss
-                ? bossBgm
+                ? GetBossBgmId(roomInfo, bossBgm)
                 : GetBattleBgmId(_dungeonGenerator?.RoomGroup?.SoundId);
 
             PlayDungeonBgm(wantBgm);
         }
+    }
+
+    /// <summary>
+    /// 取 Boss 房该放的 BGM。
+    /// 默认是 <paramref name="defaultBgmId"/> (DungeonConfig.BossBgmId 或 BossRoomBgmId),
+    /// 但如果这间房预设的 Boss 在 <see cref="BossBgmIdMap"/> 里有专属曲, 就用专属曲。
+    ///
+    /// 进房间的时候 <see cref="RoomInfo.RoomPreinstall"/> 已经带着原始预设数据了
+    /// (RoomPreinstallInfo 就是 Preinstall.json 反序列化出来的), 所以不用等 Boss
+    /// 真的生成出来就能判断。
+    /// </summary>
+    private string GetBossBgmId(RoomInfo roomInfo, string defaultBgmId)
+    {
+        var waveList = roomInfo?.RoomPreinstall?.RoomPreinstallInfo?.WaveList;
+        if (waveList != null)
+        {
+            foreach (var wave in waveList)
+            {
+                if (wave == null)
+                {
+                    continue;
+                }
+
+                foreach (var markInfo in wave)
+                {
+                    var markList = markInfo?.MarkList;
+                    if (markList == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var markItem in markList)
+                    {
+                        if (markItem?.Id != null
+                            && BossBgmIdMap.TryGetValue(markItem.Id, out var bossBgmId)
+                            && ExcelConfig.Sound_Map.ContainsKey(bossBgmId))
+                        {
+                            return bossBgmId;
+                        }
+                    }
+                }
+            }
+        }
+
+        return defaultBgmId;
     }
 
     /// <summary>

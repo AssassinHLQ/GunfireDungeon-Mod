@@ -388,5 +388,11 @@
     "Path": "res://resource/sound/bgm/Scherzo.ogg",
     "Volume": 1,
     "Remark": "Boss BGM - Scherzo"
+  },
+  {
+    "Id": "bgm_boss_rhino",
+    "Path": "res://resource/sound/bgm/Erlkoenig_Piano.ogg",
+    "Volume": 1,
+    "Remark": "Rhino Boss BGM - \u9b54\u738b D.328 \u94a2\u7434\u7248 (\u8212\u4f2f\u7279\u4f5c\u66f2, \u516c\u6709\u9886\u57df; \u672c\u9879\u76ee\u6e32\u67d3)"
   }
 ]
