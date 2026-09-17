@@ -90,8 +90,9 @@ public partial class RoomUIPanel : RoomUI
         }
 
         _shownFloor = dungeonManager.CurrentFloor;
-        //显示楼层名(来自 FloorPlan.json)与进度, 同一楼层可能出现两次所以带上序号
-        _floorLabel.Text = $"{dungeonManager.CurrentFloorName}  {_shownFloor}/{dungeonManager.TotalFloors}";
+        //只显示楼层名(来自 FloorPlan.json)。
+        //原来还拼了 "1/9" 这种总层数进度, 用户要求去掉。
+        _floorLabel.Text = dungeonManager.CurrentFloorName;
         _floorLabel.Visible = true;
     }
 

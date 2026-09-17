@@ -402,9 +402,9 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -260.0
+offset_left = -212.0
 offset_top = -148.0
-offset_right = -48.0
+offset_right = 0.0
 offset_bottom = 4.0
 grow_horizontal = 0
 grow_vertical = 0
@@ -454,10 +454,11 @@ stretch_mode = 3
 
 [node name="ManaProgress" parent="Control/WeaponBar" instance=ExtResource("17_3h7xx")]
 layout_mode = 0
-offset_left = 24.0
+offset_left = 0.0
 offset_top = -20.0
-offset_right = 208.0
+offset_right = 212.0
 offset_bottom = 36.0
+color = Color(0.207031, 0.207031, 0.207031, 0)
 ValueColor = Color(0, 0.364706, 0.67451, 1)
 TempColor = Color(0.867188, 0.867188, 0.867188, 1)
 TempTime = 1.0
