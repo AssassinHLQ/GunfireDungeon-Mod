@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Godot;
 
 using DsUi;
@@ -112,7 +112,7 @@ public partial class LifeBarHandler : Control, IUiNodeScript
         progress.Visible = false;
         labelIcon.Visible = false;
         var row = new HBoxContainer();
-        row.AddThemeConstantOverride("separation", 2);
+        row.AddThemeConstantOverride("separation", 4);
         row.MouseFilter = Control.MouseFilterEnum.Ignore;
         container.AddChild(row);
         if (shield) _shieldIcons = row; else _lifeIcons = row;
@@ -144,7 +144,11 @@ public partial class LifeBarHandler : Control, IUiNodeScript
                 texture = ResourceManager.LoadTexture2D(ResourcePath.resource_sprite_ui_roomUI_Life_half_png);
             }
             icon.Texture = texture;
-            icon.CustomMinimumSize = texture.GetSize() * 3f;
+            // The HUD textures are authored at their intended on-screen pixel size.
+            var nativeSize = texture.GetSize();
+            icon.CustomMinimumSize = nativeSize;
+            icon.Size = nativeSize;
+            icon.Scale = Vector2.One;
             row.AddChild(icon);
         }
     }

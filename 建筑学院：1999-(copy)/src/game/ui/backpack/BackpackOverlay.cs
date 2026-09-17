@@ -97,9 +97,6 @@ public partial class BackpackOverlay : CanvasLayer
         var title = CreateLabel("背包与角色状态", 32);
         title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         header.AddChild(title);
-        var hint = CreateLabel("B / Esc 关闭", 20);
-        hint.Modulate = new Color(0.78f, 0.82f, 0.92f);
-        header.AddChild(hint);
 
         var tabs = new TabContainer
         {

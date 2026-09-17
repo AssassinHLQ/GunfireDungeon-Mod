@@ -379,8 +379,8 @@
   },
   {
     "Id": "bgm_boss",
-    "Path": "res://resource/sound/bgm/Erlkoenig_Piano.ogg",
+    "Path": "res://resource/sound/bgm/Scherzo.ogg",
     "Volume": 1,
-    "Remark": "Boss BGM - Erlkoenig piano"
+    "Remark": "Boss BGM - Scherzo"
   }
 ]

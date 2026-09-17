@@ -199,6 +199,10 @@ public static class FireManager
             foreach (var attackStatse in data.Damages)
             {
                 attackStatse.BaseDamage = roleState.CalcDamage(attackStatse.BaseDamage, attackStatse.Type);
+                if (weapon.TriggerRole is Enemy)
+                {
+                    attackStatse.BaseDamage = Mathf.Max(1, Mathf.RoundToInt(attackStatse.BaseDamage * 0.2f));
+                }
             }
             
             data.Repel = roleState.CalcBulletRepel(data.Repel);
@@ -254,6 +258,10 @@ public static class FireManager
         foreach (var attackStatse in data.Damages)
         {
             attackStatse.BaseDamage = roleState.CalcDamage(attackStatse.BaseDamage, attackStatse.Type);
+            if (role is Enemy)
+            {
+                attackStatse.BaseDamage = Mathf.Max(1, Mathf.RoundToInt(attackStatse.BaseDamage * 0.2f));
+            }
         }
 
         data.Repel = roleState.CalcBulletRepel(data.Repel);

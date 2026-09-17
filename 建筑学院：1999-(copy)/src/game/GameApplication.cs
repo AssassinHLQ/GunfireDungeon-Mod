@@ -211,8 +211,7 @@ public partial class GameApplication : Node2D, ICoroutine
             config.AllowedCornerAisles = true;
 
             //Boss 房用的曲子。
-            //AI 生成的 Boss.ogg / Boss_Full.ogg 已移除, 现在只剩 Scherzo 这一首 Boss 曲,
-            //所以普通模式和魔王模式用的是同一首。以后渲染出《魔王》再改这一行。
+            //Boss 房使用原来的 Scherzo 曲目。
             config.BossBgmId = "bgm_boss";
         }
 
