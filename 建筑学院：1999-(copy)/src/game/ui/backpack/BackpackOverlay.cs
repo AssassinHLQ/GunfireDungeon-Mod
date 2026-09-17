@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Godot;
@@ -35,6 +35,14 @@ public partial class BackpackOverlay : CanvasLayer
 
         if (@event.IsActionPressed(InputAction.PartPackage))
         {
+            // 有其它 Ui 打开时（设置 / 暂停 / 结算 / 图鉴 ...）不要抢这个快捷键，
+            // 否则在设置界面里按背包键会莫名其妙弹出背包。
+            // 背包自己打开时 _root.Visible 为 true，仍然允许它被同一个键关掉。
+            if (InputManager.HasUiBlockage && !_root.Visible)
+            {
+                return;
+            }
+
             Toggle();
             GetViewport().SetInputAsHandled();
         }
