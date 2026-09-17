@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -158,7 +158,7 @@ public abstract partial class Role : ActivityObject
     {
         get
         {
-            if (AttackTimer > 0 || MeleeAttackTimer > 0)
+            if (AttackTimer > 0 || MeleeAttackTimer > 0 || _meleeAttackPlaying)
             {
                 return true;
             }
@@ -180,6 +180,9 @@ public abstract partial class Role : ActivityObject
     /// 近战计时器
     /// </summary>
     public float MeleeAttackTimer { get; set; }
+
+    //近战不再使用额外的固定冷却，只在挥刀动画期间阻止重入。
+    private bool _meleeAttackPlaying;
 
     /// <summary>
     /// 是否死亡
@@ -280,6 +283,16 @@ public abstract partial class Role : ActivityObject
         }
     }
     private int _maxShield = 0;
+
+    /// <summary>
+    /// 将护盾恢复到当前最大值，并清理跨场景时不应保留的恢复计时与小数进度。
+    /// </summary>
+    public void RestoreShieldToMax()
+    {
+        Shield = MaxShield;
+        _shieldRecoveryTimer = 0;
+        _addShieldVal = 0;
+    }
 
     /// <summary>
     /// 当前装甲值
@@ -717,7 +730,8 @@ public abstract partial class Role : ActivityObject
             }
             else
             {
-                bool flag = !(item is ActivityObject ao && ao.IsThrowing);
+                //宝箱掉落的道具在弹起/回弹期间即可拾取；空中的武器等普通物体仍保持原有过滤。
+                bool flag = item is PropActivity || !(item is ActivityObject ao && ao.IsThrowing);
                 //找到可互动的物体了
                 if (flag && !findFlag)
                 {
@@ -1150,7 +1164,9 @@ public abstract partial class Role : ActivityObject
         PlayHitAnimation();
         
         //显示数字
-        if (this is not Player)
+        //低画质会关掉这个 —— 每次命中都会 new 一个带物理体的 ActivityObject,
+        //弹幕游戏里同屏命中次数非常多, 是真正的 CPU 大头, 不是为了好看才关的。
+        if (this is not Player && GraphicsQuality.DamageNumberEnabled)
         {
             var damage = damageResult.SubShieldDamage + damageResult.SubArmorDamage + damageResult.SubHealthDamage;
             var hitNumber = ObjectManager.GetActivityObject<HitNumber>(Ids.Id_hit_number);
@@ -1744,7 +1760,7 @@ public abstract partial class Role : ActivityObject
     /// </summary>
     public virtual void Attack()
     {
-        if (MeleeAttackTimer <= 0 && WeaponPack.ActiveItem != null)
+        if (!_meleeAttackPlaying && MeleeAttackTimer <= 0 && WeaponPack.ActiveItem != null)
         {
             WeaponPack.ActiveItem.Trigger(this);
         }
@@ -1762,12 +1778,14 @@ public abstract partial class Role : ActivityObject
 
         if (WeaponPack.ActiveItem != null && !WeaponPack.ActiveItem.Reloading && WeaponPack.ActiveItem.Attribute.CanMeleeAttack)
         {
-            MeleeAttackTimer = RoleState.MeleeAttackTime;
+            _meleeAttackPlaying = true;
+            MeleeAttackTimer = 0;
             MountLookTarget = false;
             
             //播放近战动画
             PlayAnimation_MeleeAttack(() =>
             {
+                _meleeAttackPlaying = false;
                 MountLookTarget = true;
             });
         }

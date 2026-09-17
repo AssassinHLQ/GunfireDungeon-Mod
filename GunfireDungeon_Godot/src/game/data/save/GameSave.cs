@@ -34,6 +34,21 @@ public partial class GameSave
     public float SfxVolume = 0.5f;
 
     /// <summary>
+    /// 主音量, (0 - 1)。
+    /// 作用相当于系统的音量合成器总推子: 它同时缩放到 BGM 与 SFX 两条总线上,
+    /// 也就是说 BGM 总线最终音量 = MasterVolume * BgmVolume, SFX 同理。
+    /// </summary>
+    [JsonInclude]
+    public float MasterVolume = 1f;
+
+    /// <summary>
+    /// 帧率上限。
+    /// 0 表示不限制；其余值直接给 Engine.MaxFps。
+    /// </summary>
+    [JsonInclude]
+    public int TargetFps = 60;
+
+    /// <summary>
     /// 鼠标跟随进度（0 - 1）
     /// </summary>
     [JsonInclude]
@@ -44,6 +59,47 @@ public partial class GameSave
     /// </summary>
     [JsonInclude]
     public bool PerfectPixel = true;
+
+    //======================= 画质 =========================
+    // 这几个字段由 GraphicsQuality 统一管理, 正常情况下不要单独改其中一个 ——
+    // 非"自定义"档位下, 每次启动都会用预设值把它们覆盖回来。
+
+    /// <summary>
+    /// 是否已经做过首次画质判断。false = 还没判断过, 会在启动时按设备自动选一档。
+    /// </summary>
+    [JsonInclude]
+    public bool QualityInitialized = false;
+
+    /// <summary>
+    /// 画质档位, 取值见 <see cref="QualityPreset"/>
+    /// </summary>
+    [JsonInclude]
+    public int QualityLevel = (int)QualityPreset.High;
+
+    /// <summary>
+    /// 是否开启辉光(全屏后期, 手机上最贵的一项)
+    /// </summary>
+    [JsonInclude]
+    public bool GlowEnabled = true;
+
+    /// <summary>
+    /// 粒子数量比例 (0 - 1)
+    /// </summary>
+    [JsonInclude]
+    public float ParticleAmount = 1f;
+
+    /// <summary>
+    /// 是否显示伤害数字
+    /// </summary>
+    [JsonInclude]
+    public bool DamageNumberEnabled = true;
+
+    /// <summary>
+    /// 是否允许屏幕震动
+    /// </summary>
+    [JsonInclude]
+    public bool ScreenShakeEnabled = true;
+
     
     /// <summary>
     /// 手柄锁定瞄准
@@ -86,9 +142,22 @@ public partial class GameSave
             DisplayServer.WindowSetMode(FullScreen ? DisplayServer.WindowMode.Fullscreen : DisplayServer.WindowMode.Windowed);
             DisplayServer.WindowSetVsyncMode(VerticalSync ? DisplayServer.VSyncMode.Enabled : DisplayServer.VSyncMode.Disabled);
         });
-        SoundManager.SetBusValue(BUS.BGM, BgmVolume);
-        SoundManager.SetBusValue(BUS.SFX, SfxVolume);
+        SoundManager.ApplyAllBusVolume();
         app.SetPerfectPixel(PerfectPixel);
+        ApplyTargetFps();
+
+        //画质: 先按设备定档(只做一次), 再应用到场景。
+        //必须在场景里的地牢/粒子创建之前调用, 否则会先按全特效渲染一帧。
+        GraphicsQuality.Initialize(this);
+        GraphicsQuality.Apply(this);
+    }
+
+    /// <summary>
+    /// 把帧率上限应用到引擎。0 = 不限制。
+    /// </summary>
+    public void ApplyTargetFps()
+    {
+        Engine.MaxFps = TargetFps <= 0 ? 0 : TargetFps;
     }
 
     public void Save()

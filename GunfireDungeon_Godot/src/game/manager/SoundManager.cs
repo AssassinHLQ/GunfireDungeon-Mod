@@ -442,4 +442,28 @@ public partial class SoundManager
             AudioServer.SetBusVolumeDb(2, v);
         }
     }
+    /// <summary>
+    /// 把存档里的主音量 + BGM/音效音量一起应用到音频总线。
+    ///
+    /// 主音量相当于系统音量合成器的总推子, 它同时缩放到两条总线上:
+    ///     BGM 总线 = MasterVolume * BgmVolume
+    ///     SFX 总线 = MasterVolume * SfxVolume
+    /// 这样子音量之间的相对比例不会因为拖动主音量而改变。
+    ///
+    /// 任何一处音量变化都应该调用这个方法, 而不是单独调 SetBusValue,
+    /// 否则主音量会被覆盖掉。
+    /// </summary>
+    public static void ApplyAllBusVolume()
+    {
+        var app = GameApplication.Instance;
+        if (app == null || app.GameSave == null)
+        {
+            return;
+        }
+
+        var save = app.GameSave;
+        var master = Mathf.Clamp(save.MasterVolume, 0f, 1f);
+        SetBusValue(BUS.BGM, master * Mathf.Clamp(save.BgmVolume, 0f, 1f));
+        SetBusValue(BUS.SFX, master * Mathf.Clamp(save.SfxVolume, 0f, 1f));
+    }
 }

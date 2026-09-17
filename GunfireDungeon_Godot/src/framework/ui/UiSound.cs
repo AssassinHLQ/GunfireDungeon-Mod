@@ -100,7 +100,10 @@ public static class UiSound
 
         if (node is HSlider slider)
         {
-            //拖动时 ValueChanged 会连续触发, 只在松手时响一声
+            //用户要求"开始滑、滑完都要有音效"。
+            //原来只接了 DragEnded(松手), 所以按下开始拖的时候是静音的。
+            //不能接 ValueChanged —— 拖动时它每帧都触发, 会响成一串。
+            slider.DragStarted += () => Play(TogglePath, ToggleVolume * 0.8f);
             slider.DragEnded += _ => Play(TogglePath, ToggleVolume * 0.8f);
         }
     }

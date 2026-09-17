@@ -198,6 +198,20 @@ public class RoomPreinstall : IDestroy
         mark.Attr = markInfoItem.Attr;
         mark.VerticalSpeed = markInfoItem.VerticalSpeed;
         mark.Altitude = markInfoItem.Altitude;
+
+        //旧地图可能仍显式放置武器零件，统一替换为经典数值/技能道具，避免旧配置绕过随机掉落过滤。
+        if (RandomPool.IsPartDropId(markInfoItem.Id) || RandomPool.IsPartDropId(activityBase?.Id))
+        {
+            var replacement = world.RandomPool.GetRandomProp();
+            if (replacement == null)
+            {
+                return true;
+            }
+
+            mark.Id = replacement.Id;
+            mark.ActivityType = ActivityType.Prop;
+            return false;
+        }
                     
         if (activityBase is RandomActivityBase) //随机物体
         {

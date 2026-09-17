@@ -1,4 +1,5 @@
 ﻿
+using System;
 using System.Collections.Generic;
 using Config;
 using Godot;
@@ -14,11 +15,31 @@ public class RandomPool
     /// 所属世界
     /// </summary>
     public World World { get; }
-    
+
+    private readonly List<ExcelConfig.ActivityBase> _lootPropList;
+
     public RandomPool(World world)
     {
         World = world;
         Random = world.Random;
+
+        _lootPropList = new List<ExcelConfig.ActivityBase>();
+        foreach (var prop in PreinstallMarkManager.GetMarkConfigsByType(ActivityType.Prop))
+        {
+            if (prop != null && !IsPartDropId(prop.Id))
+            {
+                _lootPropList.Add(prop);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 判断一个道具标记是否是已经从普通掉落移除的武器零件。
+    /// </summary>
+    public static bool IsPartDropId(string id)
+    {
+        return string.Equals(id, ActivityObject.Ids.Id_part_comm0001, StringComparison.Ordinal) ||
+               (id != null && id.StartsWith("partProp", StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -42,7 +63,7 @@ public class RandomPool
     /// </summary>
     public ExcelConfig.ActivityBase GetRandomProp()
     {
-        return Random.RandomChoose(PreinstallMarkManager.GetMarkConfigsByType(ActivityType.Prop));
+        return Random.RandomChoose(_lootPropList);
     }
 
     /// <summary>

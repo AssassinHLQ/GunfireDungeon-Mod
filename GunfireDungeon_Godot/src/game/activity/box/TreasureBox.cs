@@ -6,6 +6,11 @@ using Godot;
 /// </summary>
 public partial class TreasureBox : ObstacleObject
 {
+    // 宝箱奖励的投掷只保留短暂的弹出表现，避免玩家需要原地等待道具落地。
+    private const float RewardThrowAltitude = 2f;
+    private const float RewardAnimationSpeedScale = 2f;
+    private const float RewardThrowVerticalSpeed = 30f;
+
     public bool IsOpen { get; private set; }
 
     public override void OnInit()
@@ -27,13 +32,14 @@ public partial class TreasureBox : ObstacleObject
         }
 
         IsOpen = true;
+        AnimatedSprite.SpeedScale = RewardAnimationSpeedScale;
         AnimatedSprite.Play(AnimatorNames.Open);
     }
 
     private void OnAnimationFinished()
     {
         var weapon = Create(World.RandomPool.GetRandomProp());
-        weapon.Throw(Position, 2, 95, new Vector2(0, 11), 0);
+        weapon.Throw(Position, RewardThrowAltitude, RewardThrowVerticalSpeed, new Vector2(0, 11), 0);
     }
 
     public override void Hurt(ActivityObject target, List<AttackStats> damages, List<AbnormalData> abnormals, float angle)

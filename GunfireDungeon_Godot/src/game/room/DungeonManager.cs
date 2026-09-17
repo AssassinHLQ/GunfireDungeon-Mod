@@ -333,6 +333,8 @@ public partial class DungeonManager : Node2D
         {
             UiManager.Destroy_Game_Loading();
             _isAdvancingFloor = false;
+            //跨层时保留角色与道具，但护盾应从最大值重新开始。
+            CurrWorld?.Player?.RestoreShieldToMax();
             //进入新层后弹出提示
             ShowFloorNotification();
         });

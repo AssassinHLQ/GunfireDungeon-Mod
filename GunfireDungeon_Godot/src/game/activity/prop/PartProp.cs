@@ -75,8 +75,9 @@ public partial class PartProp : PropActivity
             activityBase.Intro = partBase.Intro;
             activityBase.Details = partBase.Details;
             activityBase.Icon = partBase.Icon;
-            activityBase.ShowInMapEditor = true;
-            activityBase.NotInRandomPool = false;
+            //零件仍作为武器内部逻辑节点注册，但不再作为可拾取掉落或地图编辑器物体出现。
+            activityBase.ShowInMapEditor = false;
+            activityBase.NotInRandomPool = true;
             
             ExcelConfig.ActivityBase_Map.Add(id, activityBase);
             ExcelConfig.ActivityBase_List.Add(activityBase);

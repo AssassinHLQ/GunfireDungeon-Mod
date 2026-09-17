@@ -78,18 +78,10 @@ public partial class World : CanvasModulate, ICoroutine, IDestroy
                 if (value) //暂停
                 {
                     ProcessMode = ProcessModeEnum.WhenPaused;
-                    if (BgmAudio != null)
-                    {
-                        BgmAudio.SetVolume(BgmAudio.DefaultVolume * 0.4f);
-                    }
                 }
                 else //取消暂停
                 {
                     ProcessMode = ProcessModeEnum.Inherit;
-                    if (BgmAudio != null)
-                    {
-                        BgmAudio.SetVolume(BgmAudio.DefaultVolume);
-                    }
                 }
             }
         }

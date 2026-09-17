@@ -250,10 +250,13 @@ public partial class GameApplication : Node2D, ICoroutine
         //界面音效: 挂在节点添加事件上, 之后创建的所有按钮都会自动带音效
         //必须放在创建任何界面之前
         UiSound.Install(GetTree());
-        //固定帧率
-        Engine.MaxFps = TargetFps;
+        //画质系统的全局钩子。地牢是逐层重建的, 靠 NodeAdded 才能覆盖到之后新建的
+        //粒子/环境/相机节点; 存档里的具体数值在 LoadGameSave 之后由 GraphicsQuality.Apply 套用。
+        GraphicsQuality.Install(GetTree());
+        //帧率上限由存档决定(GameSave.Init 里应用), 这里不再硬编码。
+        //【原来这里有个 bug】先写 Engine.MaxFps = TargetFps, 紧接着又写 = 300,
+        //第二行把第一行覆盖掉了, 所以引擎实际一直跑在 300 fps。
         //Engine.TimeScale = 0.2f;
-        Engine.MaxFps = 300;
         
         //调整窗口分辨率
         CallDeferred(nameof(OnWindowSizeChanged));
@@ -265,8 +268,11 @@ public partial class GameApplication : Node2D, ICoroutine
         //加载存档
         LoadGameSave(this);
         
-        //调试Ui
-        UiManager.Open_Debug_Debugger();
+        //调试Ui(开发者工具)。
+        //这是内置的"外挂"(日志 / 工具 / 作弊按钮 / 节点检查器), 默认必须关闭,
+        //只有玩家在【设置 - 开发者设置】里手动打开才显示。
+        //注意顺序: 必须在 LoadGameSave 之后调用, 否则读不到开关状态。
+        ApplyDevToolsVisible();
         
         // 初始化鼠标
         InitCursor();
@@ -398,6 +404,149 @@ public partial class GameApplication : Node2D, ICoroutine
             SceneRoot.Reparent(NoPerfectPixelRoot);
             GameCamera.Main.Reparent(NoPerfectPixelRoot);
         }
+    }
+
+    /// <summary>
+    /// 按存档开关显示/隐藏两个开发者工具。
+    ///
+    /// 这两个工具是内置的"外挂", 普通玩家不应该看到:
+    ///   1. 调试器悬浮图标 —— 左上角可拖动的小图标, 点开是日志/工具面板, 也显示 FPS,
+    ///      里面还有"秒杀全部敌人"这类作弊按钮
+    ///   2. 节点检查器 DsInspector —— 扫描整个场景树, 也提供 add_cheat_button 接口
+    ///
+    /// 两个开关互相独立, 分别由 GameSave.Debug.ShowDebuggerIcon / ShowInspector 控制。
+    /// 默认都是 false, 也就是默认完全关闭。
+    /// </summary>
+    public void ApplyDevToolsVisible()
+    {
+        var save = GameSave;
+        if (save?.Debug == null)
+        {
+            return;
+        }
+
+        //节点树还没搭完, 延后一帧再应用, 否则取不到刚创建的调试 Ui
+        //每次调用都重置重试计数, 这样玩家在设置里开关后能重新走一遍等待流程
+        _devToolRetry = 0;
+        CallDeferred(nameof(ApplyDevToolsVisibleDeferred));
+    }
+
+    private void ApplyDevToolsVisibleDeferred()
+    {
+        var save = GameSave;
+        if (save?.Debug == null)
+        {
+            return;
+        }
+
+        var showDebugger = save.Debug.ShowDebuggerIcon;
+        var showInspector = save.Debug.ShowInspector;
+
+        //---- 1. 调试器悬浮图标 ----
+        //【加固】开关关闭时不只是"藏起来", 而是把面板从树里销毁。
+        // 原因: HoverButton 在 Debugger.tscn 里默认是 visible = true,
+        // 只要面板存在, 那个小图标(commonIcon/Debug.png)就会出现在左上角。
+        // 光设 Visible = false 太脆弱 —— 任何一次重新 Open 都会让它复活,
+        // 而且面板常驻内存也没必要。彻底销毁最干净。
+        var panels = UiManager.GetUiInstance<UI.debug.Debugger.DebuggerPanel>(UiManager.UiName.Debug_Debugger);
+        var exists = panels != null && panels.Length > 0;
+
+        if (showDebugger)
+        {
+            var debuggerPanel = exists ? panels[0] : UiManager.Open_Debug_Debugger();
+            if (debuggerPanel != null)
+            {
+                debuggerPanel.S_HoverButton.Instance.Visible = true;
+            }
+        }
+        else
+        {
+            if (exists)
+            {
+                //先收起面板内容(它会顺带解除输入屏蔽), 再整体销毁
+                panels[0].OnClose();
+                UiManager.Destroy_Debug_Debugger();
+            }
+        }
+
+        //---- 2. 节点检查器 DsInspector ----
+        //左上角那个"扳手"图标就是这里来的: addons/ds_inspector/icon/Icon.png,
+        //挂在 DsInspectorTool 的 HoverIcon(TextureButton) 上。
+        //
+        //【之前为什么关不掉】两个原因, 都踩中了:
+        //  1. DsInspectorTool 的根节点是 CanvasLayer, 不是 CanvasItem ——
+        //     CanvasLayer 根本没有 Visible 属性, 所以 "tool is CanvasItem" 判断
+        //     永远为 false, 那句 Visible = false 从来没执行过。
+        //     真正要藏的是它下面的 HoverIcon, 那才是个 CanvasItem。
+        //  2. DsInspector 是 autoload, 它的 _deff_init 会把自己 reparent 到新建的
+        //     DsInspectorTool 下面, 于是 "/root/DsInspector" 这个路径初始化之后就没了。
+        //     所以不能死认路径, 改成按特征在 /root 下找。
+        var tool = FindDsInspectorTool();
+        if (tool != null)
+        {
+            ApplyInspectorVisible(tool, showInspector);
+        }
+        else if (_devToolRetry < DevToolRetryLimit)
+        {
+            //DsInspector 自己也是 call_deferred("_deff_init") 才把工具节点挂进树的,
+            //谁先谁后不确定。没找到就再等一帧, 最多重试 DevToolRetryLimit 次。
+            //(导出后 OS.has_feature("editor") 为假, 这个工具根本不会创建, 重试几次就会放弃。)
+            _devToolRetry++;
+            CallDeferred(nameof(ApplyDevToolsVisibleDeferred));
+        }
+    }
+
+    /// <summary>DsInspector 工具节点延迟创建的等待上限(帧)</summary>
+    private const int DevToolRetryLimit = 10;
+
+    /// <summary>已经为找 DsInspector 工具节点重试了多少帧</summary>
+    private int _devToolRetry;
+
+    /// <summary>
+    /// 按开关设置 DsInspector 那个"扳手"图标和面板的显示状态。
+    /// 注意 HoverIcon 才是左上角看到的图标, 工具节点本身是 CanvasLayer, 没有 Visible。
+    /// </summary>
+    private static void ApplyInspectorVisible(Node tool, bool showInspector)
+    {
+        if (tool.GetNodeOrNull<CanvasItem>("HoverIcon") is { } hoverIcon)
+        {
+            hoverIcon.Visible = showInspector;
+        }
+
+        //关闭时顺手把已经弹出的面板收掉, 免得图标没了面板还开着
+        if (!showInspector && tool.GetNodeOrNull<Window>("WindowDialog") is { } dialog)
+        {
+            dialog.Hide();
+        }
+    }
+
+    /// <summary>
+    /// 找到 DsInspector 的调试工具节点(DsInspectorTool, 一个 CanvasLayer)。
+    ///
+    /// 不能写死节点路径: DsInspector.gd 的 _deff_init 里执行了
+    ///     get_parent().add_child(debug_tool)
+    ///     reparent(debug_tool)
+    /// 也就是把 autoload 自己搬到了新建的工具节点下面, "/root/DsInspector" 随后失效。
+    /// 这里改成在 /root 的直接子节点里按特征找:
+    /// "一个 CanvasLayer, 且带名为 HoverIcon 的子节点" 就是它。
+    /// </summary>
+    private Node FindDsInspectorTool()
+    {
+        var root = GetTree()?.Root;
+        if (root == null)
+        {
+            return null;
+        }
+
+        foreach (var child in root.GetChildren())
+        {
+            if (child is CanvasLayer layer && layer.GetNodeOrNull("HoverIcon") != null)
+            {
+                return layer;
+            }
+        }
+
+        return null;
     }
 
     //初始化房间配置

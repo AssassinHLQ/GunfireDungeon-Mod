@@ -5,6 +5,11 @@ using Vector2 = Godot.Vector2;
 
 public partial class Role
 {
+    //近战总动画约 0.1 秒，避免前摇拖慢首次出伤和连续攻击。
+    private const float MeleeAttackWindupTime = 0.025f;
+    private const float MeleeAttackHoldTime = 0.025f;
+    private const float MeleeAttackReturnTime = 0.05f;
+
     /// <summary>
     /// 播放近战攻击动画
     /// </summary>
@@ -19,9 +24,8 @@ public partial class Role
         var tween = CreateTween();
         tween.SetParallel();
         
-        tween.TweenProperty(MountPoint, "rotation_degrees", r - MeleeAttackAngle / 2f, 0.1);
-        tween.TweenProperty(MountPoint, "position", p2, 0.1);
-        tween.TweenProperty(MountPoint, "position", p2, 0.1);
+        tween.TweenProperty(MountPoint, "rotation_degrees", r - MeleeAttackAngle / 2f, MeleeAttackWindupTime);
+        tween.TweenProperty(MountPoint, "position", p2, MeleeAttackWindupTime);
         tween.Chain();
 
         tween.TweenCallback(Callable.From(() =>
@@ -57,7 +61,7 @@ public partial class Role
         }));
         tween.Chain();
         
-        tween.TweenInterval(0.1f);
+        tween.TweenInterval(MeleeAttackHoldTime);
         tween.Chain();
 
         tween.TweenCallback(Callable.From(() =>
@@ -65,8 +69,8 @@ public partial class Role
             //关闭近战碰撞区域
             MeleeAttackCollision.Disabled = true;
         }));
-        tween.TweenProperty(MountPoint, "rotation_degrees", r, 0.2);
-        tween.TweenProperty(MountPoint, "position", p1, 0.2);
+        tween.TweenProperty(MountPoint, "rotation_degrees", r, MeleeAttackReturnTime);
+        tween.TweenProperty(MountPoint, "position", p1, MeleeAttackReturnTime);
         tween.Chain();
         
         tween.TweenCallback(Callable.From(() =>

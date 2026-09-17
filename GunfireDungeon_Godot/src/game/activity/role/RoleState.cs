@@ -78,9 +78,9 @@ public class RoleState
     public float WoundMaxInv = 2.5f;
 
     /// <summary>
-    /// 近战攻击间隔时间
+    /// 兼容旧配置的近战计时字段。近战现在不再使用固定攻击间隔。
     /// </summary>
-    public float MeleeAttackTime = 0.5f;
+    public float MeleeAttackTime = 0;
 
     /// <summary>
     /// 翻滚速度
