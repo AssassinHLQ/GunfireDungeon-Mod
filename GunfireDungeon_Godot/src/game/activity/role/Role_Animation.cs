@@ -5,10 +5,12 @@ using Vector2 = Godot.Vector2;
 
 public partial class Role
 {
-	//近战总动画约 0.1 秒，避免前摇拖慢首次出伤和连续攻击。
-	private const float MeleeAttackWindupTime = 0.025f;
-	private const float MeleeAttackHoldTime = 0.025f;
-	private const float MeleeAttackReturnTime = 0.05f;
+	//近战总动画 0.05 秒（挥出 0.0125 + 停留 0.0125 + 收回 0.025）。
+	//近战没有额外的固定冷却，只在挥刀动画期间阻止重入（见 Role.MeleeAttack），
+	//所以动画时长直接决定近战攻速 —— 这里比原来快了一倍（原 0.1 秒）。
+	private const float MeleeAttackWindupTime = 0.0125f;
+	private const float MeleeAttackHoldTime = 0.0125f;
+	private const float MeleeAttackReturnTime = 0.025f;
 
 	/// <summary>
 	/// 播放近战攻击动画
