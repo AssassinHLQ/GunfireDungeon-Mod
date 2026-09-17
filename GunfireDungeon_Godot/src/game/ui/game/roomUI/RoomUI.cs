@@ -1071,37 +1071,6 @@ public abstract partial class RoomUI : UiBase
     }
 
     /// <summary>
-    /// 路径: RoomUI.Control.WeaponBar.VBoxContainer.BulletItem
-    /// </summary>
-    public class BulletItem : UiNode<RoomUIPanel, Godot.TextureRect, BulletItem>
-    {
-        public BulletItem(RoomUIPanel uiPanel, Godot.TextureRect node) : base(uiPanel, node) {  }
-        public override BulletItem Clone() => new (UiPanel, (Godot.TextureRect)Instance.Duplicate());
-    }
-
-    /// <summary>
-    /// 路径: RoomUI.Control.WeaponBar.VBoxContainer
-    /// </summary>
-    public class VBoxContainer_1 : UiNode<RoomUIPanel, Godot.VBoxContainer, VBoxContainer_1>
-    {
-        /// <summary>
-        /// 节点路径: RoomUI.Control.WeaponBar.BulletItem
-        /// </summary>
-        public BulletItem L_BulletItem
-        {
-            get
-            {
-                if (_L_BulletItem == null) _L_BulletItem = new BulletItem(UiPanel, Instance.GetNode<Godot.TextureRect>("BulletItem"));
-                return _L_BulletItem;
-            }
-        }
-        private BulletItem _L_BulletItem;
-
-        public VBoxContainer_1(RoomUIPanel uiPanel, Godot.VBoxContainer node) : base(uiPanel, node) {  }
-        public override VBoxContainer_1 Clone() => new (UiPanel, (Godot.VBoxContainer)Instance.Duplicate());
-    }
-
-    /// <summary>
     /// 路径: RoomUI.Control.WeaponBar
     /// </summary>
     public class WeaponBar : UiNode<RoomUIPanel, UI.game.RoomUI.WeaponBarHandler, WeaponBar>
@@ -1157,19 +1126,6 @@ public abstract partial class RoomUI : UiBase
             }
         }
         private ManaIcon _L_ManaIcon;
-
-        /// <summary>
-        /// 节点路径: RoomUI.Control.VBoxContainer
-        /// </summary>
-        public VBoxContainer_1 L_VBoxContainer
-        {
-            get
-            {
-                if (_L_VBoxContainer == null) _L_VBoxContainer = new VBoxContainer_1(UiPanel, Instance.GetNode<Godot.VBoxContainer>("VBoxContainer"));
-                return _L_VBoxContainer;
-            }
-        }
-        private VBoxContainer_1 _L_VBoxContainer;
 
         public WeaponBar(RoomUIPanel uiPanel, UI.game.RoomUI.WeaponBarHandler node) : base(uiPanel, node) {  }
         public override WeaponBar Clone() => new (UiPanel, (UI.game.RoomUI.WeaponBarHandler)Instance.Duplicate());
@@ -1387,11 +1343,6 @@ public abstract partial class RoomUI : UiBase
     /// 场景中唯一名称的节点, 节点路径: RoomUI.Control.WeaponBar.ManaIcon
     /// </summary>
     public ManaIcon S_ManaIcon => L_Control.L_WeaponBar.L_ManaIcon;
-
-    /// <summary>
-    /// 场景中唯一名称的节点, 节点路径: RoomUI.Control.WeaponBar.VBoxContainer.BulletItem
-    /// </summary>
-    public BulletItem S_BulletItem => L_Control.L_WeaponBar.L_VBoxContainer.L_BulletItem;
 
     /// <summary>
     /// 场景中唯一名称的节点, 节点路径: RoomUI.Control.WeaponBar

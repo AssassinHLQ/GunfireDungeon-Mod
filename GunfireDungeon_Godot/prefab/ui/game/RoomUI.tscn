@@ -25,7 +25,6 @@
 [ext_resource type="PackedScene" uid="uid://d03w81wvnbpsa" path="res://prefab/ui/component/game/ProgressBar.tscn" id="17_3h7xx"]
 [ext_resource type="Script" uid="uid://d3ov7ar2rm74r" path="res://src/game/ui/game/roomUI/WeaponBarHandler.cs" id="19_1ptwe"]
 [ext_resource type="Texture2D" uid="uid://cxfd0mwijpnox" path="res://resource/sprite/ui/commonIcon/Mana.png" id="19_lc56i"]
-[ext_resource type="Texture2D" uid="uid://cmcl7js46mcce" path="res://resource/sprite/ui/roomUI/GunBullet1.png" id="20_081mo"]
 
 [sub_resource type="Gradient" id="1"]
 colors = PackedColorArray(0.4, 0.498039, 1, 1, 0.4, 0.498039, 1, 0.313726)
@@ -456,12 +455,21 @@ stretch_mode = 3
 [node name="ManaProgress" parent="Control/WeaponBar" instance=ExtResource("17_3h7xx")]
 layout_mode = 0
 offset_left = 24.0
-offset_top = 16.0
+offset_top = -20.0
 offset_right = 208.0
 offset_bottom = 36.0
 ValueColor = Color(0, 0.364706, 0.67451, 1)
 TempColor = Color(0.867188, 0.867188, 0.867188, 1)
 TempTime = 1.0
+
+[node name="TempRect" parent="Control/WeaponBar/ManaProgress" index="0"]
+visible = false
+
+[node name="ValueRect" parent="Control/WeaponBar/ManaProgress" index="1"]
+visible = false
+
+[node name="Number" parent="Control/WeaponBar/ManaProgress" index="2"]
+theme_override_font_sizes/font_size = 48
 
 [node name="ManaIcon" type="TextureRect" parent="Control/WeaponBar"]
 layout_mode = 0
@@ -471,32 +479,6 @@ offset_bottom = 10.0
 scale = Vector2(4, 4)
 mouse_filter = 2
 texture = ExtResource("19_lc56i")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="Control/WeaponBar"]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 4.0
-offset_top = -1532.0
-offset_right = 64.0
-grow_horizontal = 0
-grow_vertical = 0
-pivot_offset = Vector2(32, 1060)
-mouse_filter = 2
-theme_override_constants/separation = 1
-alignment = 2
-
-[node name="BulletItem" type="TextureRect" parent="Control/WeaponBar/VBoxContainer"]
-material = ExtResource("7_iw6pa")
-custom_minimum_size = Vector2(40, 20)
-layout_mode = 2
-size_flags_horizontal = 4
-mouse_filter = 2
-texture = ExtResource("20_081mo")
-stretch_mode = 5
 
 [node name="Mask" type="ColorRect" parent="."]
 visible = false
