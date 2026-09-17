@@ -48,7 +48,7 @@ public partial class RhinoEnemy : Boss
     private const float BurrowLandOffset = 58.0f;
 
     private static readonly Vector2 BossSpriteOffset =
-        new(0, -RhinoSpriteFrames.AnchorY + 38);   // 让"脚下中心"落在节点原点上
+        RhinoSpriteFrames.SpriteOffset;   // 让"脚下中心"落在节点原点上
 
     private static readonly Vector2 BossHitboxSize = new(88, 56);
     private static readonly Vector2 BossHitboxOffset = new(0, -28);

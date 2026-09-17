@@ -30,6 +30,20 @@ public static class RhinoSpriteFrames
     public const int AnchorX = 136;
     public const int AnchorY = 74;
 
+    /// <summary>帧画布尺寸。</summary>
+    public const int FrameWidth = 271;
+    public const int FrameHeight = 77;
+
+    /// <summary>
+    /// AnimatedSprite2D 要用的 Offset —— 让"脚下中心"落在节点原点上。
+    ///
+    /// AnimatedSprite2D 把贴图【居中】画在 Offset 处(centered=true),
+    /// 所以 Offset.Y = -(AnchorY - FrameHeight/2) = -(74 - 38.5) = -35.5。
+    /// 这里用算式而不是写死的数字, 免得以后换了帧高就悄悄错位。
+    /// </summary>
+    public static readonly Vector2 SpriteOffset =
+        new(0f, -(AnchorY - FrameHeight * 0.5f));
+
     // ── 技能动画名 ──
     public static readonly StringName AnimCharge = "boss_charge";
     public static readonly StringName AnimBurrow = "boss_burrow";

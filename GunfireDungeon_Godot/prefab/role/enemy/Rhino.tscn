@@ -29,9 +29,10 @@ shader_parameter/outline_use_blend = true
 shader_parameter/grey = 0.0
 
 ; 犀牛: 帧画布 271x77, "脚下中心" 在 (136, 74)。
-; offset = -(74 - 77/2) = -35.5, 取 -36, 让脚下中心落在节点原点上。
+; offset = -(74 - 77/2) = -35.5, 让脚下中心落在节点原点上。
 ; 受击框 88x56 对准身体(身体实测约 86~90 x 54~60)。
-; RhinoEnemy.OnInit 里会按同样的数值再设一次, 这里写上是为了在编辑器里能直接看到。
+; RhinoEnemy.OnInit 里会按同样的数值再设一次(取自 RhinoSpriteFrames.SpriteOffset),
+; 这里写上是为了在编辑器里能直接看到。
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_boss"]
 size = Vector2(88, 56)
 
@@ -62,7 +63,7 @@ material = SubResource("ShaderMaterial_shadow")
 
 [node name="AnimatedSprite" parent="." index="2"]
 material = SubResource("ShaderMaterial_body")
-offset = Vector2(0, -36)
+offset = Vector2(0, -35.5)
 scale = Vector2(1, 1)
 
 [node name="HurtCollision" parent="HurtArea" index="0"]
