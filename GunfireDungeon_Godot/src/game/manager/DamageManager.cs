@@ -40,7 +40,11 @@ public class DamageManager
         float healthDamage;
         
         // 未溢出伤害的情况下不能触发暴击，不同的伤害类型也有可能不能触发暴击
-        var isCrit = shieldOverflow > 0 && damageConfig.Critable && Utils.Random.RandomBoolean(criticalHitRate);
+        // criticalHitRate <= 0 时【绝对不能】暴击。
+        // RandomBoolean 的实现是 NextSingle() <= probability, 所以概率为 0 时
+        // 理论上还有 NextSingle() 恰好等于 0 的极小几率(约 2^-24)。
+        // 这里显式挡掉, 让"免疫暴击"变成硬保证, 而不是靠"概率小到不可能"。
+        var isCrit = criticalHitRate > 0 && shieldOverflow > 0 && damageConfig.Critable && Utils.Random.RandomBoolean(criticalHitRate);
         if (isCrit)
         {
             armorDamage = criticalHit * (1 - attackStats.CritArmorPenetration) * armorMultiplier;
@@ -107,7 +111,11 @@ public class DamageManager
         float healthDamage;
         
         // 未溢出伤害的情况下不能触发暴击，不同的伤害类型也有可能不能触发暴击
-        var isCrit = shieldOverflow > 0 && damageConfig.Critable && Utils.Random.RandomBoolean(criticalHitRate);
+        // criticalHitRate <= 0 时【绝对不能】暴击。
+        // RandomBoolean 的实现是 NextSingle() <= probability, 所以概率为 0 时
+        // 理论上还有 NextSingle() 恰好等于 0 的极小几率(约 2^-24)。
+        // 这里显式挡掉, 让"免疫暴击"变成硬保证, 而不是靠"概率小到不可能"。
+        var isCrit = criticalHitRate > 0 && shieldOverflow > 0 && damageConfig.Critable && Utils.Random.RandomBoolean(criticalHitRate);
         if (isCrit)
         {
             armorDamage = criticalHit * (1 - attackStats.CritArmorPenetration) * armorMultiplier;
@@ -192,7 +200,11 @@ public class DamageManager
         float healthDamage;
         
         // 未溢出伤害的情况下不能触发暴击，不同的伤害类型也有可能不能触发暴击
-        var isCrit = shieldOverflow > 0 && damageConfig.Critable && Utils.Random.RandomBoolean(criticalHitRate);
+        // criticalHitRate <= 0 时【绝对不能】暴击。
+        // RandomBoolean 的实现是 NextSingle() <= probability, 所以概率为 0 时
+        // 理论上还有 NextSingle() 恰好等于 0 的极小几率(约 2^-24)。
+        // 这里显式挡掉, 让"免疫暴击"变成硬保证, 而不是靠"概率小到不可能"。
+        var isCrit = criticalHitRate > 0 && shieldOverflow > 0 && damageConfig.Critable && Utils.Random.RandomBoolean(criticalHitRate);
         if (isCrit)
         {
             GD.Print("触发暴击！");

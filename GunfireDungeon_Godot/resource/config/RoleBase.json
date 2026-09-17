@@ -29,7 +29,7 @@
     "Camp": 2,
     "RoleStrength": 0,
     "__AiAttr": "",
-    "CritResist": 0.1,
+    "CritResist": 1,
     "PhysicalReduce": 0,
     "FireReduce": 0,
     "ElectricReduce": 0,
