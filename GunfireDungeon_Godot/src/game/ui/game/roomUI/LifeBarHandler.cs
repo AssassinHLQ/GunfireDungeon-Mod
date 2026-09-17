@@ -13,6 +13,8 @@ public partial class LifeBarHandler : Control, IUiNodeScript
     private bool _refreshHpFlag = false;
     private bool _refreshGoldFlag = false;
     private bool _refreshArmorFlag = false;
+    private HBoxContainer _lifeIcons;
+    private HBoxContainer _shieldIcons;
 
     private Role _player;
 
@@ -23,9 +25,9 @@ public partial class LifeBarHandler : Control, IUiNodeScript
         _bar.UiPanel.OnHideUiEvent += OnHide;
         
         var container = _bar.L_VBoxContainer;
-        container.L_LifeContainer.L_LifeProgressBar.Instance.SetAutoLengthRange(60, 1800);
-        container.L_ShieldContainer.L_ShieldProgressBar.Instance.SetAutoLengthRange(60, 1800);
-        container.L_ArmorContainer.L_ArmorProgressBar.Instance.SetAutoLengthRange(60, 1800);
+        ConfigureIconRow(container.L_LifeContainer.Instance, container.L_LifeContainer.L_LifeProgressBar.Instance, container.L_LifeContainer.L_TextureRect.Instance, false);
+        ConfigureIconRow(container.L_ShieldContainer.Instance, container.L_ShieldContainer.L_ShieldProgressBar.Instance, container.L_ShieldContainer.L_TextureRect.Instance, true);
+        container.L_ArmorContainer.Instance.Visible = false;
     }
     
     public void OnShow()
@@ -98,18 +100,57 @@ public partial class LifeBarHandler : Control, IUiNodeScript
     private void HandlerRefreshLife()
     {
         var player = World.Current.Player;
-        if (player == null)
-        {
-            return;
-        }
+        if (player == null) return;
 
-        var container = _bar.L_VBoxContainer;
-        container.L_LifeContainer.L_LifeProgressBar.Instance.MaxValue = player.MaxHp;
-        container.L_LifeContainer.L_LifeProgressBar.Instance.Value = player.Hp;
-        container.L_ShieldContainer.L_ShieldProgressBar.Instance.MaxValue = player.MaxShield;
-        container.L_ShieldContainer.L_ShieldProgressBar.Instance.Value = player.RealShield;
-        
-        container.L_ShieldContainer.Instance.Visible = player.MaxShield > 0;
+        RefreshIcons(_lifeIcons, player.MaxHp, player.Hp, false);
+        RefreshIcons(_shieldIcons, player.MaxShield, Mathf.RoundToInt(player.RealShield), true);
+        _bar.L_VBoxContainer.L_ShieldContainer.Instance.Visible = player.MaxShield > 0;
+    }
+
+    private void ConfigureIconRow(HBoxContainer container, Control progress, TextureRect labelIcon, bool shield)
+    {
+        progress.Visible = false;
+        labelIcon.Visible = false;
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 4);
+        row.MouseFilter = Control.MouseFilterEnum.Ignore;
+        container.AddChild(row);
+        if (shield) _shieldIcons = row; else _lifeIcons = row;
+    }
+
+    private static void RefreshIcons(HBoxContainer row, int maxValue, int currentValue, bool shield)
+    {
+        if (row == null) return;
+        foreach (var child in row.GetChildren()) child.QueueFree();
+        var count = shield ? maxValue : Mathf.CeilToInt(maxValue / 2f);
+        for (var i = 0; i < count; i++)
+        {
+            var icon = new TextureRect
+            {
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.Keep
+            };
+            var texture = ResourceManager.LoadTexture2D(shield
+                ? ResourcePath.resource_sprite_ui_roomUI_Shield_full_png
+                : ResourcePath.resource_sprite_ui_roomUI_Life_full_png);
+            if ((shield && currentValue <= i) || (!shield && currentValue <= i * 2))
+            {
+                texture = ResourceManager.LoadTexture2D(shield
+                    ? ResourcePath.resource_sprite_ui_roomUI_Shield_empty_png
+                    : ResourcePath.resource_sprite_ui_roomUI_Life_empty_png);
+            }
+            else if (!shield && currentValue == i * 2 + 1)
+            {
+                texture = ResourceManager.LoadTexture2D(ResourcePath.resource_sprite_ui_roomUI_Life_half_png);
+            }
+            icon.Texture = texture;
+            // The HUD textures are authored at their intended on-screen pixel size.
+            var nativeSize = texture.GetSize();
+            icon.CustomMinimumSize = nativeSize;
+            icon.Size = nativeSize;
+            icon.Scale = Vector2.One;
+            row.AddChild(icon);
+        }
     }
     
     private void HandlerRefreshGold()
@@ -131,11 +172,7 @@ public partial class LifeBarHandler : Control, IUiNodeScript
             return;
         }
 
-        var container = _bar.L_VBoxContainer;
-        container.L_ArmorContainer.L_ArmorProgressBar.Instance.MaxValue = player.MaxArmor;
-        container.L_ArmorContainer.L_ArmorProgressBar.Instance.Value = player.Armor;
-        
-        container.L_ArmorContainer.Instance.Visible = player.MaxArmor > 0;
+        _bar.L_VBoxContainer.L_ArmorContainer.Instance.Visible = false;
     }
 
     public void OnDestroy()

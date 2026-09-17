@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Godot;
 
 /// <summary>
@@ -53,7 +53,7 @@ public static class KeyBindingManager
         new(InputAction.RemoveProp, "丢弃道具"),
         new(InputAction.Map, "打开地图"),
         new(InputAction.Menu, "打开菜单"),
-        new(InputAction.PartPackage, "零件背包")
+        new(InputAction.PartPackage, "道具背包")
     };
 
     //---------------- 存档编码辅助 ----------------

@@ -384,20 +384,21 @@ public partial class DajuEnemy : Boss
             duration, rotation);
     }
 
-    /// <summary>冲刺可能把 Boss 推出房间导致穿墙，用房间内壁钳制。</summary>
+    /// <summary>冲刺只允许在当前房间的实际矩形内移动，避免跳到初始房间或墙体。</summary>
     private Vector2 ClampPositionToRoom(Vector2 target)
     {
         var room = AffiliationArea?.RoomInfo;
-        var world = GameApplication.Instance?.DungeonManager?.CurrWorld;
-        if (room == null || world == null)
+        if (room == null)
         {
             return target;
         }
 
-        var used = world.GetUsedRect();
-        const float pad = 24f;
+        var roomOrigin = room.GetWorldPosition();
+        var roomEnd = roomOrigin + new Vector2(room.GetWidth(), room.GetHeight());
+        var padX = BossHitboxSize.X * 0.5f + 4f;
+        var padY = BossHitboxSize.Y * 0.5f + 4f;
         return new Vector2(
-            Mathf.Clamp(target.X, used.Position.X + pad, used.End.X - pad),
-            Mathf.Clamp(target.Y, used.Position.Y + pad, used.End.Y - pad));
+            Mathf.Clamp(target.X, roomOrigin.X + padX, roomEnd.X - padX),
+            Mathf.Clamp(target.Y, roomOrigin.Y + padY, roomEnd.Y - padY));
     }
 }

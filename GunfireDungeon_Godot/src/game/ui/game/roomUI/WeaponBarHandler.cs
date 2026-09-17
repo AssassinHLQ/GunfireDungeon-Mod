@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Godot;
 
 using DsUi;
@@ -33,7 +33,7 @@ public partial class WeaponBarHandler : Control, IUiNodeScript
         if (weapon != null)
         {
             SetWeaponTexture(weapon.GetCurrentTexture());
-            SetWeaponAmmunition(weapon.CurrBufferMana, weapon.Attribute.MaxBufferMana, weapon.CurrMana, weapon.Attribute.MaxMana);
+            SetWeaponAmmunition(weapon.CurrAmmo, weapon.Attribute.AmmoCapacity);
         }
         else
         {
@@ -44,6 +44,7 @@ public partial class WeaponBarHandler : Control, IUiNodeScript
         if (_prevWeapon != weapon)
         {
             _prevWeapon = weapon;
+            _prevAmmo = weapon?.CurrAmmo ?? -1;
             if (weapon != null)
             {
                 var list = new bool[weapon.Attribute.AmmoCapacity];
@@ -93,14 +94,39 @@ public partial class WeaponBarHandler : Control, IUiNodeScript
     }
     
     /// <summary>
-    /// 设置弹药数据
+    /// 弹夹进度条的颜色（原来法力条是蓝色，换成暖色一眼能看出是子弹）
     /// </summary>
-    public void SetWeaponAmmunition(int currBufferMana, int maxBufferMana, int currMana, int maxMana)
+    private static readonly Color MagazineColor = new Color(1f, 0.78f, 0.32f, 1f);
+
+    /// <summary>
+    /// 弹夹进度条是否已经换过颜色，只需要换一次
+    /// </summary>
+    private bool _magazineStyled;
+
+    /// <summary>
+    /// 设置弹药数据。
+    /// 法力系统已经移除，原来显示法力值的进度条现在改成显示【弹夹余弹】。
+    /// </summary>
+    public void SetWeaponAmmunition(int currAmmo, int maxAmmo)
     {
-        _weaponBar.L_ManaProgress.Instance.MaxValue = maxMana;
-        _weaponBar.L_ManaProgress.Instance.Value = currMana;
-        _weaponBar.L_BufferManaProgress.Instance.MaxValue = maxBufferMana;
-        _weaponBar.L_BufferManaProgress.Instance.Value = currBufferMana;
+        // 法力缓冲条与法力图标已经没有对应数值了，保持隐藏
+        _weaponBar.L_BufferManaProgress.Instance.Visible = false;
+        _weaponBar.L_ManaIcon.Instance.Visible = false;
+
+        var magazine = _weaponBar.L_ManaProgress.Instance;
+        magazine.Visible = true;
+        if (!_magazineStyled)
+        {
+            _magazineStyled = true;
+            magazine.ValueColor = MagazineColor;
+            magazine.ValueRect.Color = MagazineColor;
+        }
+
+        // MaxValue 必须先于 Value 设置，Value 会用 _maxValue 做钳制
+        magazine.MaxValue = Mathf.Max(1, maxAmmo);
+        magazine.Value = currAmmo;
+        // CommProgressBar 默认只显示当前值，弹夹要的是「当前 / 上限」
+        magazine.NumberLabel.Text = currAmmo + "/" + maxAmmo;
     }
 
     public void OnDestroy()

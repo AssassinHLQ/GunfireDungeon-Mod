@@ -404,6 +404,11 @@ public abstract partial class Role : ActivityObject
     private bool _flashingInvincibleFlag = false;
     //闪烁动画协程id
     private long _invincibleFlashingId = -1;
+    //无敌闪烁用的颜色。
+    //以前是「半透明 / 全透明」交替, 但全透明那一帧会把角色整个隐掉,
+    //结果受击无敌期间死亡时看不见死亡动画, 所以改成「正常 / 泛红」交替,
+    //alpha 恒为 1, 任何一帧都能看清角色。
+    private static readonly Color InvincibleFlashColor = new Color(1f, 0.25f, 0.25f, 1f);
     //护盾恢复计时器
     private float _shieldRecoveryTimer = 0;
     //护盾恢复值小数部分，大于1自动往 Shiel 上加
@@ -777,12 +782,12 @@ public abstract partial class Role : ActivityObject
                 if (_flashingInvincibleFlag)
                 {
                     _flashingInvincibleFlag = false;
-                    SetBlendModulate(new Color(1, 1, 1, 0.7f));
+                    SetBlendModulate(Colors.White);
                 }
                 else
                 {
                     _flashingInvincibleFlag = true;
-                    SetBlendModulate(new Color(1, 1, 1, 0));
+                    SetBlendModulate(InvincibleFlashColor);
                 }
             }
         }
@@ -1212,6 +1217,9 @@ public abstract partial class Role : ActivityObject
             if (!IsDie)
             {
                 IsDie = true;
+
+                //死亡动画播放期间停止闪烁, 否则受击无敌残留的泛红会和死亡动画抢颜色
+                StopInvincibleFlashing();
                 
                 //禁用状态机控制器
                 var stateController = GetComponent<IStateController>();

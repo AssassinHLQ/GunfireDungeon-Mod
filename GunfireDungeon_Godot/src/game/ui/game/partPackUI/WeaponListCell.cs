@@ -18,6 +18,8 @@ public class WeaponListCell : UiCell<PartPackUI.WeaponItem, Weapon>
         PartListGrid.SetColumns(1);
         PartListGrid.SetCellOffset(new Vector2I(0, 0));
         PartListGrid.GridContainer.Resized += OnPartListGridResized;
+        CellNode.L_PartListItem.Instance.Visible = false;
+        CellNode.L_VBoxContainer.L_WeaponBuffMana.Instance.Visible = false;
     }
 
     public override void OnSetData(Weapon data)
@@ -25,13 +27,8 @@ public class WeaponListCell : UiCell<PartPackUI.WeaponItem, Weapon>
         //图标
         CellNode.L_Control.L_WeaponIcon.Instance.Texture = data.GetDefaultTexture();
 
-        var partLists = new List<PartListCellData>();
-        foreach (var keyValuePair in data.PartListMap)
-        {
-            partLists.Add(new PartListCellData(keyValuePair.Key, keyValuePair.Value, this));
-        }
-        
-        PartListGrid.SetDataList(partLists);
+        // 不再展示武器零件树，武器本身作为背包查看对象显示。
+        PartListGrid.SetDataList(new List<PartListCellData>());
         RefreshBaseInfo();
     }
 
@@ -46,10 +43,7 @@ public class WeaponListCell : UiCell<PartPackUI.WeaponItem, Weapon>
         {
             return;
         }
-        //法力值：99/99
-        CellNode.L_VBoxContainer.L_WeaponMana.Instance.Text = "法力值：" + Data.CurrMana + "/" + Data.Attribute.MaxMana;
-        //缓冲区：99/99
-        CellNode.L_VBoxContainer.L_WeaponBuffMana.Instance.Text = "缓冲区：" + Data.CurrBufferMana + "/" + Data.Attribute.MaxBufferMana;
+        CellNode.L_VBoxContainer.L_WeaponMana.Instance.Text = "弹夹：" + Data.CurrAmmo + "/" + Data.Attribute.AmmoCapacity;
     }
 
     private void OnPartListGridResized()

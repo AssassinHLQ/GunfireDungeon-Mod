@@ -1,4 +1,4 @@
-
+﻿
 
 using DsUi;
 using Godot;
@@ -141,17 +141,7 @@ public partial class RoomUIPanel : RoomUI
             RefreshFloorLabel();
         }
 
-        if (InputManager.PartPackage)
-        {
-            if (PartPack.IsOpen)
-            {
-                PartPack.HideUi();
-            }
-            else
-            {
-                PartPack.ShowUi();
-            }
-        }
+        // 道具背包由全局 BackpackOverlay 处理，保留原有快捷键和暂停入口。
     }
 
     public override void _GuiInput(InputEvent @event)

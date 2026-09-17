@@ -1,4 +1,4 @@
-[
+﻿[
   {
     "Id": "shooting0001",
     "Path": "res://resource/sound/sfx/shooting/Shooting0001.ogg",
@@ -381,6 +381,6 @@
     "Id": "bgm_boss",
     "Path": "res://resource/sound/bgm/Scherzo.ogg",
     "Volume": 1,
-    "Remark": "Boss\u6218 - \u8096\u90a6\u7b2c\u4e00\u8c10\u8c11\u66f2 (Alice Hwang, Musopen CC PD)"
+    "Remark": "Boss BGM - Scherzo"
   }
 ]

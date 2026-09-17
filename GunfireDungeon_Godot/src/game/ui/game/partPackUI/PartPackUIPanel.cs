@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using DsUi;
 using Godot;
 using UI.game.RoomUI;
@@ -47,6 +47,7 @@ public partial class PartPackUIPanel : PartPackUI
 
         WeaponCellOriginSize = S_WeaponItem.Instance.CustomMinimumSize;
         PartListCellHeight = S_PartListItem.Instance.CustomMinimumSize.Y;
+        S_PartBg.Instance.Visible = false;
         
         PartPackGrid = CreateUiGrid<PartPackItem, PartPropCellData, PartPackCell>(S_PartPackItem);
         PartPackGrid.SetAutoColumns(true);
@@ -55,6 +56,7 @@ public partial class PartPackUIPanel : PartPackUI
         WeaponListGrid = CreateUiGrid<WeaponItem, Weapon, WeaponListCell>(S_WeaponItem);
         WeaponListGrid.SetColumns(1);
         WeaponListGrid.SetCellOffset(new Vector2I(0, 16));
+
     }
 
 
@@ -138,8 +140,8 @@ public partial class PartPackUIPanel : PartPackUI
         var player = application.DungeonManager.CurrWorld?.Player;
         if (player != null)
         {
-            //检测零件是否变化
-            var count = player.PartPropPack.Count;
+            //零件系统已停用，保留旧数据结构仅用于兼容旧资源。
+            var count = 0;
             if (count != PartPackGrid.Count) //长度变化
             {
                 RefreshPartPack(player.PartPropPack);
@@ -623,4 +625,6 @@ public partial class PartPackUIPanel : PartPackUI
         }
         return null;
     }
+
+
 }

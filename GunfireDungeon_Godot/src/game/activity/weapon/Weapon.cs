@@ -165,7 +165,7 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
     private float _manaRecoveryValue;
     
     //触发板机是是否计算弹药消耗
-    private bool _triggerCalcAmmon = true;
+    private bool _triggerCalcAmmon = false;
     
     //用于记录是否有角色操作过这把武器
     private bool _triggerRoleFlag = false;
@@ -1359,7 +1359,7 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
     public bool IsTotalAmmoEmpty()
     {
         // 判断法力值和弹丸法术是否消耗殆尽
-        return CurrBufferMana + CurrMana <= 0;
+        return CurrAmmo <= 0;
     }
 
     /// <summary>

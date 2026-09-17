@@ -1,4 +1,4 @@
-﻿
+
 using Config;
 using Godot;
 
@@ -84,8 +84,26 @@ public class BulletPart : PartLogicBase
                 }
             }
             
-            var result = new IBullet[Count];
-            for (var i = 0; i < Count; i++)
+            // 「分裂子弹」这类被动通过 RoleState.CalcBulletCountEvent 改变每次开火发射的弹丸数量。
+            // 这里必须调用 CalcBulletCount，否则对应的道具挂上了事件也永远不会生效。
+            var bulletCount = Count;
+            RoleState roleState = null;
+            if (Weapon.Master != null && !Weapon.Master.IsDestroyed)
+            {
+                roleState = Weapon.Master.RoleState;
+            }
+            else if (Weapon.TriggerRole != null && !Weapon.TriggerRole.IsDestroyed)
+            {
+                roleState = Weapon.TriggerRole.RoleState;
+            }
+
+            if (roleState != null)
+            {
+                bulletCount = Mathf.Max(1, roleState.CalcBulletCount(bulletCount));
+            }
+
+            var result = new IBullet[bulletCount];
+            for (var i = 0; i < bulletCount; i++)
             {
                 result[i] = ShootBullet(bulletParam.Clone());
             }
