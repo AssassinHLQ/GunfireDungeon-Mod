@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Config;
 using DsUi;
@@ -184,6 +185,20 @@ public partial class DungeonManager : Node2D
     /// 想换曲子: 改这里, 或者改 Sound.json 里 bgm_hall 指向的文件。
     /// </summary>
     public const string HallBgmId = "bgm_hall";
+
+    /// <summary>
+    /// 按楼层覆盖【普通房间】的 BGM (Sound.json 里的 Id)。
+    ///
+    /// 第 1 层仍然是悲怆三(RoomGroup.SoundId = bgm_battle);
+    /// 第 2 层换成月光三 —— 贝多芬 升c小调第14钢琴奏鸣曲 第三乐章 Presto。
+    ///
+    /// 只覆盖普通房间。Boss 房不受影响, 仍然走 <see cref="BossRoomBgmId"/>。
+    /// 没有列在这里的楼层会用回地牢组配置的曲子。
+    /// </summary>
+    private static readonly Dictionary<int, string> FloorBattleBgmId = new Dictionary<int, string>
+    {
+        { 2, "bgm_battle_f2" },
+    };
 
     /// <summary>
     /// 当前正在播放的 BGM Id, 用于避免重复播放同一首(重复调用会打断循环)
@@ -1181,10 +1196,26 @@ public partial class DungeonManager : Node2D
 
             var wantBgm = roomInfo.RoomType == DungeonRoomType.Boss
                 ? bossBgm
-                : _dungeonGenerator?.RoomGroup?.SoundId;
+                : GetBattleBgmId(_dungeonGenerator?.RoomGroup?.SoundId);
 
             PlayDungeonBgm(wantBgm);
         }
+    }
+
+    /// <summary>
+    /// 取普通房间该放的 BGM。
+    /// 先查楼层覆盖表(见 <see cref="FloorBattleBgmId"/>), 命中且 Sound.json 里确实
+    /// 有这首才用; 否则回退到地牢组配置的曲子。
+    /// </summary>
+    private string GetBattleBgmId(string defaultBgmId)
+    {
+        if (FloorBattleBgmId.TryGetValue(CurrentFloor, out var floorBgmId)
+            && ExcelConfig.Sound_Map.ContainsKey(floorBgmId))
+        {
+            return floorBgmId;
+        }
+
+        return defaultBgmId;
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-﻿[
+[
   {
     "Id": "shooting0001",
     "Path": "res://resource/sound/sfx/shooting/Shooting0001.ogg",
@@ -357,7 +357,7 @@
     "Id": "bgm_menu",
     "Path": "res://resource/sound/bgm/Menu.ogg",
     "Volume": 1,
-    "Remark": "\u4e3b\u83dc\u5355 - \u8096\u90a6\u591c\u66f2 Op.55 No.1 (Luke Faulkner, Musopen CC PD), \u6c1b\u56f4\u4e2d"
+    "Remark": "\u4e3b\u83dc\u5355 - \u8096\u90a6\u591c\u66f2 Op.55 No.1 (Luke Faulkner, Musopen CC PD), \u6c1b\u56f4\u8f7b"
   },
   {
     "Id": "bgm_menu_heavy",
@@ -369,13 +369,19 @@
     "Id": "bgm_hall",
     "Path": "res://resource/sound/bgm/Hall_Nocturne72.ogg",
     "Volume": 1,
-    "Remark": "\u5927\u5385 - \u8096\u90a6\u591c\u66f2 Op. posth. 72 No.1 (Anonymous, Musopen CC PD)"
+    "Remark": "\u5927\u5385 - \u8096\u90a6\u591c\u66f2 Op. posth. 72 No.1 (Anonymous, Musopen CC PD), 1.1\u500d\u901f, \u6c1b\u56f4\u65e0"
   },
   {
     "Id": "bgm_battle",
     "Path": "res://resource/sound/bgm/Battle_Pathetique.ogg",
     "Volume": 1,
     "Remark": "\u666e\u901a\u5173\u5361 - \u8d1d\u591a\u82ac\u60b2\u67aa\u594f\u9e23\u66f2\u7b2c\u4e09\u4e50\u7ae0 (Paul Pitman, Musopen CC PD)"
+  },
+  {
+    "Id": "bgm_battle_f2",
+    "Path": "res://resource/sound/bgm/Battle_Moonlight3.ogg",
+    "Volume": 1,
+    "Remark": "\u666e\u901a\u5173\u5361 \u7b2c2\u5c42 - \u8d1d\u591a\u82ac\u6708\u5149\u594f\u9e23\u66f2\u7b2c\u4e09\u4e50\u7ae0 (Musopen CC PD)"
   },
   {
     "Id": "bgm_boss",
