@@ -43,7 +43,7 @@
   },
   {
     "Id": "rhino0001",
-    "Remark": "\u7280\u725b BOSS",
+    "Remark": "Rhino BOSS",
     "AttackInterval": 1.5,
     "ViewRange": 420,
     "TailAfterViewRange": 600,

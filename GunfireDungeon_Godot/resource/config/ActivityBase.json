@@ -1065,15 +1065,15 @@
   },
   {
     "Id": "rhino0001",
-    "Name": "\u7280\u725b",
+    "Name": "Rhino",
     "Type": 12,
     "Quality": 0,
     "Price": 0,
     "Intro": {
-      "Code": "\u7280\u725b"
+      "Code": "Rhino"
     },
     "Details": {
-      "Code": "\u4f1a\u4e03\u4e2a\u6280\u80fd\u7684\u7280\u725b BOSS"
+      "Code": "Rhino BOSS"
     },
     "IsStatic": false,
     "__Material": "",

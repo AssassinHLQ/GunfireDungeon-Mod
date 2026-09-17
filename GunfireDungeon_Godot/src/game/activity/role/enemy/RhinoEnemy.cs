@@ -47,6 +47,12 @@ public partial class RhinoEnemy : Boss
     /// <summary>掘地落地时距离玩家多远（要小于圆形半径，否则永远打不到）。</summary>
     private const float BurrowLandOffset = 58.0f;
 
+    /// <summary>
+    /// 钳制回可走区域时, 在受击框半宽之外再留多远。
+    /// 目的是不让犀牛贴着墙根站住。
+    /// </summary>
+    private const float WallPad = 20.0f;
+
     private static readonly Vector2 BossSpriteOffset =
         RhinoSpriteFrames.SpriteOffset;   // 让"脚下中心"落在节点原点上
 
@@ -99,8 +105,9 @@ public partial class RhinoEnemy : Boss
     private long _coroutine = -1;
     private float _contactTimer;
     private bool _underground;
+    private Rect2? _walkableRect;
 
-    public override string BossDisplayName => "犀牛";
+    public override string BossDisplayName => "Rhino";
 
     public override void OnInit()
     {
@@ -260,7 +267,7 @@ public partial class RhinoEnemy : Boss
 
             if (skill.Dash > 0f)
             {
-                Position = ClampPositionToRoom(Position + dir * skill.Dash);
+                Position = ClampInsideRoom(Position + dir * skill.Dash);
             }
 
             var targetPos = t2.GetCenterPosition();
@@ -299,7 +306,7 @@ public partial class RhinoEnemy : Boss
         yield return new WaitForSeconds(BurrowDigTime);
 
         // 2) 挪到玩家旁边（挪短一点，保证落在圆形半径之内）
-        var dest = ClampPositionToRoom(
+        var dest = ClampInsideRoom(
             target.GetCenterPosition() - dir * BurrowLandOffset);
         Position = dest;
 
@@ -405,7 +412,82 @@ public partial class RhinoEnemy : Boss
             duration > 0f ? duration : skill.Windup, rotation);
     }
 
-    /// <summary>冲刺只允许在当前房间的实际矩形内移动，避免撞进墙里或跳到别的房间。</summary>
+    /// <summary>
+    /// 当前房间【可走区域】的世界坐标矩形 —— 取导航多边形顶点的包围盒。
+    ///
+    /// 【为什么不用房间的 Size】
+    /// <c>RoomInfo.GetWidth()/GetHeight()</c> 给的是**含墙的外框**
+    /// (Boss3 是 18x21 格 = 288x336)。拿它做钳制只能保证犀牛在外框之内,
+    /// 而墙就在外框的里侧 —— 冲刺/掘地一落地就进墙, 玩家打不到
+    /// (用户反馈「总是闪现到墙外打不到」)。
+    /// 导航多边形才是【真正能走的区域】, 它的包围盒才是该用的边界。
+    ///
+    /// 拿不到导航数据时返回 null, 调用方回退到房间外框。
+    /// </summary>
+    private Rect2? GetWalkableRect()
+    {
+        if (_walkableRect.HasValue)
+        {
+            return _walkableRect;
+        }
+
+        var room = AffiliationArea?.RoomInfo;
+        var vertices = room?.RoomSplit?.TileInfo?.NavigationVertices;
+        if (room == null || vertices == null || vertices.Count == 0)
+        {
+            // 不缓存失败结果: 刚进房间时 AffiliationArea 可能还没挂上
+            return null;
+        }
+
+        var first = room.ToGlobalPosition(vertices[0].AsVector2());
+        float minX = first.X, maxX = first.X;
+        float minY = first.Y, maxY = first.Y;
+        foreach (var v in vertices)
+        {
+            var p = room.ToGlobalPosition(v.AsVector2());
+            minX = Mathf.Min(minX, p.X);
+            maxX = Mathf.Max(maxX, p.X);
+            minY = Mathf.Min(minY, p.Y);
+            maxY = Mathf.Max(maxY, p.Y);
+        }
+
+        _walkableRect = new Rect2(minX, minY, maxX - minX, maxY - minY);
+        return _walkableRect;
+    }
+
+    /// <summary>把一条轴钳到 [lo+pad, hi-pad]; 区间太小时取中点, 避免出现 min &gt; max。</summary>
+    private static float ClampAxis(float value, float lo, float hi, float pad)
+    {
+        var a = lo + pad;
+        var b = hi - pad;
+        return a >= b ? (lo + hi) * 0.5f : Mathf.Clamp(value, a, b);
+    }
+
+    /// <summary>
+    /// 把目标位置钳制回房间内。优先用【可走区域】(导航多边形包围盒),
+    /// 拿不到导航数据时回退到房间外框。
+    /// </summary>
+    private Vector2 ClampInsideRoom(Vector2 target)
+    {
+        var padX = BossHitboxSize.X * 0.5f + WallPad;
+        var padY = BossHitboxSize.Y * 0.5f + WallPad;
+
+        var walkable = GetWalkableRect();
+        if (walkable.HasValue)
+        {
+            var r = walkable.Value;
+            return new Vector2(
+                ClampAxis(target.X, r.Position.X, r.End.X, padX),
+                ClampAxis(target.Y, r.Position.Y, r.End.Y, padY));
+        }
+
+        return ClampPositionToRoom(target);
+    }
+
+    /// <summary>
+    /// 兜底: 只会用在拿不到导航数据的时候, 所以把"离墙"的余量放大到 2 格,
+    /// 尽量抵消"房间外框把墙也算进去"这件事。
+    /// </summary>
     private Vector2 ClampPositionToRoom(Vector2 target)
     {
         var room = AffiliationArea?.RoomInfo;
@@ -416,10 +498,10 @@ public partial class RhinoEnemy : Boss
 
         var roomOrigin = room.GetWorldPosition();
         var roomEnd = roomOrigin + new Vector2(room.GetWidth(), room.GetHeight());
-        var padX = BossHitboxSize.X * 0.5f + 4f;
-        var padY = BossHitboxSize.Y * 0.5f + 4f;
+        var padX = BossHitboxSize.X * 0.5f + GameConfig.TileCellSize * 2f;
+        var padY = BossHitboxSize.Y * 0.5f + GameConfig.TileCellSize * 2f;
         return new Vector2(
-            Mathf.Clamp(target.X, roomOrigin.X + padX, roomEnd.X - padX),
-            Mathf.Clamp(target.Y, roomOrigin.Y + padY, roomEnd.Y - padY));
+            ClampAxis(target.X, roomOrigin.X, roomEnd.X, padX),
+            ClampAxis(target.Y, roomOrigin.Y, roomEnd.Y, padY));
     }
 }

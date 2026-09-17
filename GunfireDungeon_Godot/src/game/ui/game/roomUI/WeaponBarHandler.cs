@@ -24,7 +24,12 @@ public partial class WeaponBarHandler : Control, IUiNodeScript
         if (weapon != null)
         {
             SetWeaponTexture(weapon.GetCurrentTexture());
-            SetWeaponAmmunition(weapon.CurrAmmo, weapon.Attribute.AmmoCapacity);
+            // 第二个数字给【剩余子弹总量】= 弹夹 + 储备池。
+            // 原来传的是 Attribute.AmmoCapacity(弹夹容量), 满弹时永远显示 "12/12",
+            // 玩家看不出还剩多少子弹。
+            // 储备池就是 Weapon.CurrMana(原「法力」, 会随时间排入缓冲区、开火时消耗),
+            // 换弹本身不消耗它, 所以真正会减少的那一份就是它。
+            SetWeaponAmmunition(weapon.CurrAmmo, weapon.CurrAmmo + weapon.CurrMana);
         }
         else
         {
@@ -50,18 +55,20 @@ public partial class WeaponBarHandler : Control, IUiNodeScript
     }
 
     /// <summary>
-    /// 设置弹药数据。
-    /// 法力系统已经移除，原来显示法力值的进度条现在只用来承载【弹夹余弹】数字：
+    /// 设置弹药数字。
+    /// 法力系统已经移除，原来显示法力值的进度条现在只用来承载【弹夹】数字：
     /// 填充条（原来的黄色/蓝色那条）与子弹图标列都已经去掉，只留数字。
     /// </summary>
-    public void SetWeaponAmmunition(int currAmmo, int maxAmmo)
+    /// <param name="currAmmo">当前弹夹里的子弹数</param>
+    /// <param name="totalAmmo">剩余子弹总量（弹夹 + 储备池）</param>
+    public void SetWeaponAmmunition(int currAmmo, int totalAmmo)
     {
         // 法力缓冲条与法力图标已经没有对应数值了，保持隐藏
         _weaponBar.L_BufferManaProgress.Instance.Visible = false;
         _weaponBar.L_ManaIcon.Instance.Visible = false;
 
-        // CommProgressBar 默认只显示当前值，弹夹要的是「当前 / 上限」
-        _weaponBar.L_ManaProgress.Instance.NumberLabel.Text = currAmmo + "/" + maxAmmo;
+        // 显示成「弹夹 / 剩余总量」
+        _weaponBar.L_ManaProgress.Instance.NumberLabel.Text = currAmmo + "/" + totalAmmo;
     }
 
     public void OnDestroy()
