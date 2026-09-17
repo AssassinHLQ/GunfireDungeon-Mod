@@ -11,11 +11,9 @@ public static partial class UiManager
         public const string Game_PauseMenu = "game/PauseMenu";
         public const string Game_Encyclopedia = "game/Encyclopedia";
         public const string Game_BottomTips = "game/BottomTips";
-        public const string Game_PartPackUI = "game/PartPackUI";
         public const string Game_Setting = "game/Setting";
         public const string Game_Loading = "game/Loading";
         public const string Game_WeaponRoulette = "game/WeaponRoulette";
-        public const string Game_PartTips = "game/PartTips";
         public const string Game_RoomMap = "game/RoomMap";
         public const string Game_Settlement = "game/Settlement";
         public const string Game_Victory = "game/Victory";
@@ -153,26 +151,6 @@ public static partial class UiManager
     }
 
     /// <summary>
-    /// 打开 game/PartPackUI, 并返回UI实例
-    /// </summary>
-    public static UI.game.PartPackUI.PartPackUIPanel Open_Game_PartPackUI()
-    {
-        return OpenUi<UI.game.PartPackUI.PartPackUIPanel>(UiName.Game_PartPackUI);
-    }
-
-    /// <summary>
-    /// 销毁 game/PartPackUI 的所有实例
-    /// </summary>
-    public static void Destroy_Game_PartPackUI()
-    {
-        var uiInstance = GetUiInstance<UI.game.PartPackUI.PartPackUIPanel>(UiName.Game_PartPackUI);
-        foreach (var uiPanel in uiInstance)
-        {
-            uiPanel.Destroy();
-        }
-    }
-
-    /// <summary>
     /// 打开 game/Setting, 并返回UI实例
     /// </summary>
     public static UI.game.Setting.SettingPanel Open_Game_Setting()
@@ -226,26 +204,6 @@ public static partial class UiManager
     public static void Destroy_Game_WeaponRoulette()
     {
         var uiInstance = GetUiInstance<UI.game.WeaponRoulette.WeaponRoulettePanel>(UiName.Game_WeaponRoulette);
-        foreach (var uiPanel in uiInstance)
-        {
-            uiPanel.Destroy();
-        }
-    }
-
-    /// <summary>
-    /// 打开 game/PartTips, 并返回UI实例
-    /// </summary>
-    public static UI.game.PartTips.PartTipsPanel Open_Game_PartTips()
-    {
-        return OpenUi<UI.game.PartTips.PartTipsPanel>(UiName.Game_PartTips);
-    }
-
-    /// <summary>
-    /// 销毁 game/PartTips 的所有实例
-    /// </summary>
-    public static void Destroy_Game_PartTips()
-    {
-        var uiInstance = GetUiInstance<UI.game.PartTips.PartTipsPanel>(UiName.Game_PartTips);
         foreach (var uiPanel in uiInstance)
         {
             uiPanel.Destroy();

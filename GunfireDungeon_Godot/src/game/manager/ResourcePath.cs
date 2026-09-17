@@ -71,7 +71,6 @@ public class ResourcePath
     public const string prefab_shell_Shell0002_tscn = "res://prefab/shell/Shell0002.tscn";
     public const string prefab_shell_Shell0003_tscn = "res://prefab/shell/Shell0003.tscn";
     public const string prefab_shell_Shell0004_tscn = "res://prefab/shell/Shell0004.tscn";
-    public const string prefab_ui_component_game_PartPackSlot_tscn = "res://prefab/ui/component/game/PartPackSlot.tscn";
     public const string prefab_ui_component_game_ProgressBar_tscn = "res://prefab/ui/component/game/ProgressBar.tscn";
     public const string prefab_ui_debug_Debugger_tscn = "res://prefab/ui/debug/Debugger.tscn";
     public const string prefab_ui_debug_Log_tscn = "res://prefab/ui/debug/Log.tscn";
@@ -108,8 +107,6 @@ public class ResourcePath
     public const string prefab_ui_game_Encyclopedia_tscn = "res://prefab/ui/game/Encyclopedia.tscn";
     public const string prefab_ui_game_Loading_tscn = "res://prefab/ui/game/Loading.tscn";
     public const string prefab_ui_game_Main_tscn = "res://prefab/ui/game/Main.tscn";
-    public const string prefab_ui_game_PartPackUI_tscn = "res://prefab/ui/game/PartPackUI.tscn";
-    public const string prefab_ui_game_PartTips_tscn = "res://prefab/ui/game/PartTips.tscn";
     public const string prefab_ui_game_PauseMenu_tscn = "res://prefab/ui/game/PauseMenu.tscn";
     public const string prefab_ui_game_RoomMap_tscn = "res://prefab/ui/game/RoomMap.tscn";
     public const string prefab_ui_game_RoomUI_tscn = "res://prefab/ui/game/RoomUI.tscn";

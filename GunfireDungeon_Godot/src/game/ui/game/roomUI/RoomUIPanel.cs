@@ -1,9 +1,8 @@
-﻿
+
 
 using DsUi;
 using Godot;
 using UI.game.BottomTips;
-using UI.game.PartPackUI;
 using UI.game.RoomMap;
 using UI.game.WeaponRoulette;
 
@@ -18,11 +17,6 @@ public partial class RoomUIPanel : RoomUI
     /// 房间小地图
     /// </summary>
     public RoomMapPanel RoomMap { get; private set; }
-    
-    /// <summary>
-    /// 武器零件Ui
-    /// </summary>
-    public PartPackUIPanel PartPack { get; private set; }
 
     /// <summary>
     /// 遮挡Ui数量
@@ -42,8 +36,6 @@ public partial class RoomUIPanel : RoomUI
     {
         GameApplication.Instance.RoomUIPanel = this;
         RoomMap = OpenNestedUi<RoomMapPanel>(UiManager.UiName.Game_RoomMap);
-        PartPack = OpenNestedUi<PartPackUIPanel>(UiManager.UiName.Game_PartPackUI);
-        PartPack.HideUi();
 
         CreateFloorLabel();
         
