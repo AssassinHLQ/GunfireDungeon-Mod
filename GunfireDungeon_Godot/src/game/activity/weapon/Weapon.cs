@@ -37,6 +37,13 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
     public int CurrAmmo { get; private set; }
 
     /// <summary>
+    /// 备用弹药（弹夹之外还剩多少发）。
+    /// 语义见下面 <see cref="SetCurrReserveAmmo"/> 那一段注释 ——
+    /// 这是原「法力」系统被替换之后的正式弹药储备。
+    /// </summary>
+    public int CurrReserveAmmo { get; private set; }
+
+    /// <summary>
     /// 武器管的开火点
     /// </summary>
     [Export, ExportFillNode]
@@ -345,9 +352,11 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
         
         //弹药量
         SetCurrAmmo(Attribute.AmmoCapacity);
-        //当前缓冲区法力值
+        //备用弹药（法力系统已停用，见 CurrReserveAmmo 那段注释）
+        SetCurrReserveAmmo(MaxReserveAmmo);
+        //当前缓冲区法力值（惰性，不再参与射击限制）
         SetCurrBufferMana(Attribute.MaxBufferMana);
-        //当前法力值
+        //当前法力值（惰性）
         SetCurrMana(Attribute.MaxMana);
 
         if (attribute.PartPack.TryGetValue("Fire", out var partList))
@@ -1354,12 +1363,12 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
     }
     
     /// <summary>
-    /// 返回是否弹药耗尽
+    /// 返回是否弹药耗尽：弹夹和备用弹药【都】空了才算空。
+    /// 原来只判断 CurrAmmo —— 而弹夹是无限补的，所以那个判断其实永远为假。
     /// </summary>
     public bool IsTotalAmmoEmpty()
     {
-        // 判断法力值和弹丸法术是否消耗殆尽
-        return CurrAmmo <= 0;
+        return CurrAmmo <= 0 && CurrReserveAmmo <= 0;
     }
 
     /// <summary>
@@ -1368,6 +1377,47 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
     public void SetCurrAmmo(int count)
     {
         CurrAmmo = Mathf.Clamp(count, 0, Attribute.AmmoCapacity);
+    }
+
+    // ─────────────────────────── 备用弹药 ───────────────────────────
+    //
+    // 【为什么另起一套，而不是去改原来的「法力」】
+    // 项目里原本有一套「法力」系统（MaxMana / CurrBufferMana / ManaRecoverySpeed），
+    // 它按"开火零件消耗法力"来限制射击，而弹夹本身是【无限补】的
+    // （ReloadSuccess 直接 CurrAmmo = AmmoCapacity，不扣任何储备）。
+    //
+    // 但游戏的设计本来就是弹药制 —— 弹药箱 prop5001 的说明写的就是
+    // "使用后补充当前武器备用弹药"，效果槽 TotalAmmo 也一直留在配置里
+    // （ActivePropBase.json），只是 Eff_TotalAmmo.OnUse() 从来没实现过。
+    //
+    // 所以这里把「备用弹药」做成正式字段，把法力那套置为【惰性】
+    // （UseBufferMana 恒返回 true），射击限制改由备用弹药负责。
+
+    /// <summary>
+    /// 备用弹药上限相当于几个弹夹。
+    /// 想整体调"弹药够不够用"就改这一个常量，所有武器一起生效。
+    /// </summary>
+    public const int ReserveMagazineCount = 6;
+
+    /// <summary>备用弹药上限 = 弹夹容量 × <see cref="ReserveMagazineCount"/>。</summary>
+    public int MaxReserveAmmo => Mathf.Max(1, Attribute.AmmoCapacity) * ReserveMagazineCount;
+
+    /// <summary>强制设置备用弹药。</summary>
+    public void SetCurrReserveAmmo(int count)
+    {
+        CurrReserveAmmo = Mathf.Clamp(count, 0, MaxReserveAmmo);
+    }
+
+    /// <summary>补充备用弹药（弹药箱带参数时用），超出上限会被夹住。</summary>
+    public void AddReserveAmmo(int count)
+    {
+        SetCurrReserveAmmo(CurrReserveAmmo + count);
+    }
+
+    /// <summary>补满备用弹药（弹药箱不带参数时用）。</summary>
+    public void FillReserveAmmo()
+    {
+        SetCurrReserveAmmo(MaxReserveAmmo);
     }
     
     /// <summary>
@@ -1391,16 +1441,10 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
     /// </summary>
     public bool UseBufferMana(int mana)
     {
-        if (!_triggerCalcAmmon)
-        {
-            return true;
-        }
-        if (CurrBufferMana < mana)
-        {
-            return false;
-        }
-        CurrBufferMana -= mana;
-
+        // 法力系统已停用：射击不再消耗法力，改由【备用弹药】限制（见 ReloadSuccess）。
+        // 这个函数必须保留 —— 零件链（BulletPart / FinishPlayBuffPart /
+        // MergePlayBuffPart / RandomPlayBuffPart / TakeTurnsBuffPart）都会调它。
+        // 恒返回 true 就等于"零件永远有资源可用"，不会因为法力不够而不开火。
         return true;
     }
     
@@ -1409,7 +1453,9 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
     /// </summary>
     public void Reload()
     {
-        if (!Reloading && CurrAmmo < Attribute.AmmoCapacity && _beLoadedState != 1)
+        //备用弹药为 0 时不必起手换弹 —— 换也换不出子弹
+        if (!Reloading && CurrAmmo < Attribute.AmmoCapacity && _beLoadedState != 1
+            && CurrReserveAmmo > 0)
         {
             Reloading = true;
             _playReloadFinishSoundFlag = false;
@@ -1787,24 +1833,27 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
         if (Attribute.AloneReload) //单独装填
         {
 
-            if (CurrAmmo + Attribute.AloneReloadCount <= Attribute.AmmoCapacity)
-            {
-                CurrAmmo += Attribute.AloneReloadCount;
-            }
-            else //子弹满了
-            {
-                CurrAmmo = Attribute.AmmoCapacity;
-            }
+            // 从备用弹药里取（原来是无条件加到满 —— 也就是无穷弹药）
+            var aloneTake = Mathf.Clamp(
+                Mathf.Min(Attribute.AloneReloadCount, Attribute.AmmoCapacity - CurrAmmo),
+                0, CurrReserveAmmo);
+            CurrAmmo += aloneTake;
+            CurrReserveAmmo -= aloneTake;
 
 
-            if (!_aloneReloadStop && CurrAmmo != Attribute.AmmoCapacity) //继续装弹
+            //继续装弹 —— 必须同时判断【备用弹药还有剩】。
+            // 少了这一条, 备用弹药为 0 时会无限递归 ReloadHandler:
+            // 每次装 0 发, CurrAmmo 永远到不了上限, 于是永远"继续装弹"。
+            if (!_aloneReloadStop && CurrAmmo != Attribute.AmmoCapacity && CurrReserveAmmo > 0)
             {
                 ReloadHandler();
             }
         }
-        else //换弹结束
+        else //换弹结束: 一次把弹夹填满, 从备用弹药里扣
         {
-            CurrAmmo = Attribute.AmmoCapacity;
+            var take = Mathf.Clamp(Attribute.AmmoCapacity - CurrAmmo, 0, CurrReserveAmmo);
+            CurrAmmo += take;
+            CurrReserveAmmo -= take;
 
             StopReload();
             ReloadFinishHandler();

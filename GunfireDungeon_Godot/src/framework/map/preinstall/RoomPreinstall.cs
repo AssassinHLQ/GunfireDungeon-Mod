@@ -646,9 +646,11 @@ public class RoomPreinstall : IDestroy
             {
                 weapon.SetCurrAmmo(int.Parse(currAmmon));
             }
-            if (activityMark.Attr.TryGetValue("ResidueMana", out var residueMana)) //剩余法力值
+            if (activityMark.Attr.TryGetValue("ResidueMana", out var residueMana)) //剩余弹药量
             {
-                weapon.SetCurrMana(int.Parse(residueMana));
+                // 键名沿用旧的 "ResidueMana"(地图数据里已经写死了这个键),
+                // 但含义已经改成【备用弹药】—— 法力系统不再限制射击。
+                weapon.SetCurrReserveAmmo(int.Parse(residueMana));
             }
         }
         else if (activityMark.ActivityType == ActivityType.Enemy) //敌人类型
@@ -664,9 +666,9 @@ public class RoomPreinstall : IDestroy
                     {
                         weapon.SetCurrAmmo(int.Parse(currAmmon));
                     }
-                    if (activityMark.Attr.TryGetValue("ResidueMana", out var residueMana)) //剩余法力值
+                    if (activityMark.Attr.TryGetValue("ResidueMana", out var residueMana)) //剩余弹药量
                     {
-                        weapon.SetCurrMana(int.Parse(residueMana));
+                        weapon.SetCurrReserveAmmo(int.Parse(residueMana));
                     }
                 }
             }

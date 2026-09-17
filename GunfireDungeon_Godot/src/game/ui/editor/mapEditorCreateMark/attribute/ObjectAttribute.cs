@@ -1,4 +1,4 @@
-﻿using Config;
+using Config;
 
 using DsUi;
 
@@ -89,8 +89,8 @@ public partial class ObjectAttribute : AttributeBase
             //弹药
             _currAmmonAttr.L_NumInput.Instance.MaxValue = weapon.AmmoCapacity;
             _currAmmonAttr.L_NumInput.Instance.Value = weapon.AmmoCapacity;
-            _residueManaAttr.L_NumInput.Instance.MaxValue = weapon.MaxMana;
-            _residueManaAttr.L_NumInput.Instance.Value = weapon.MaxMana;
+            _residueManaAttr.L_NumInput.Instance.MaxValue = weapon.AmmoCapacity * Weapon.ReserveMagazineCount;
+            _residueManaAttr.L_NumInput.Instance.Value = weapon.AmmoCapacity * Weapon.ReserveMagazineCount;
         }
     }
 

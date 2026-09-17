@@ -112,7 +112,10 @@ public partial class Boss : AiRole
                     var item = itemSlot[i];
                     if (item != null)
                     {
-                        total += (int)item.CurrMana;
+                        // 判断"玩家快没子弹了"要用【弹夹 + 备用弹药】。
+                        // 原来累加的是 CurrMana —— 法力系统停用之后 CurrMana 恒等于上限,
+                        // 这个判断会永远为假, BOSS 就再也不会叫援兵了。
+                        total += item.CurrAmmo + item.CurrReserveAmmo;
                         break;
                     }
                 }

@@ -22,6 +22,22 @@ public class Eff_TotalAmmo : EffectFragment
 
     public override void OnUse()
     {
-        
+        // 作用对象是【当前手持武器的备用弹药池】(不是弹夹里的子弹)。
+        // 弹药箱 prop5001 的说明就是"使用后补充当前武器备用弹药"。
+        var weapon = Role?.WeaponPack?.ActiveItem;
+        if (weapon == null)
+        {
+            return;
+        }
+
+        // 带了参数就补充指定数量, 不带参数就补满
+        if (_initParam)
+        {
+            weapon.AddReserveAmmo(_value);
+        }
+        else
+        {
+            weapon.FillReserveAmmo();
+        }
     }
 }

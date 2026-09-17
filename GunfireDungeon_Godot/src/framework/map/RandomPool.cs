@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using Config;
@@ -112,7 +112,9 @@ public class RandomPool
                     var weaponAttribute = Weapon.GetWeaponAttribute(weapon.Id);
                     mark.Attr.Add("Weapon", weapon.Id); //武器id
                     mark.Attr.Add("CurrAmmon", weaponAttribute.AmmoCapacity.ToString()); //弹夹弹药量
-                    mark.Attr.Add("ResidueMana", weaponAttribute.MaxMana.ToString()); //剩余法力值
+                    // 键名沿用旧的 "ResidueMana", 含义已经改成【备用弹药】(见 RoomPreinstall)
+                    mark.Attr.Add("ResidueMana",
+                        (weaponAttribute.AmmoCapacity * Weapon.ReserveMagazineCount).ToString());
                 }
             }
             else if (activityType == ActivityType.Weapon) //武器

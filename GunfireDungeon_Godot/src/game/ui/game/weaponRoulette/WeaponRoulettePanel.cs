@@ -239,8 +239,10 @@ public partial class WeaponRoulettePanel : WeaponRoulette
                 {
                     slotNode.L_SlotUi.L_WeaponUi.Instance.Visible = true;
                     slotNode.L_SlotUi.L_WeaponUi.L_WeaponIcon.Instance.Texture = weapon.GetDefaultTexture();
+                    // 显示「弹夹 / 剩余子弹总量」，和右下角武器栏一致。
+                    // 原来是「法力 / 法力上限」—— 法力系统已经不限制射击了，改成弹药才有意义。
                     slotNode.L_SlotUi.L_WeaponUi.L_AmmoLabel.Instance.Text = 
-                        weapon.CurrMana + "/" + weapon.Attribute.MaxMana;
+                        weapon.CurrAmmo + "/" + (weapon.CurrAmmo + weapon.CurrReserveAmmo);
                     slotNode.Instance.SetWeapon(weapon);
                     slotNode.L_SlotAreaNode.Instance.Monitoring = true;
                 }

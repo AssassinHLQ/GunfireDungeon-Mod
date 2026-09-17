@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Config;
 
@@ -211,7 +211,7 @@ public class MarkObjectCell : UiCell<MapEditorCreateMark.MarkObject, MarkInfoIte
         if (activityObject.Type == ActivityType.Weapon) //武器类型
         {
             var numberBar = CellNode.UiPanel.CreateNumberBar("CurrAmmon", "弹夹弹药量：");
-            var numberBar2 = CellNode.UiPanel.CreateNumberBar("ResidueMana", "剩余法力值：");
+            var numberBar2 = CellNode.UiPanel.CreateNumberBar("ResidueMana", "备用弹药量：");
             _expandPanel.L_ExpandGrid.AddChild(numberBar);
             _expandPanel.L_ExpandGrid.AddChild(numberBar2);
             _attributeBases = new List<AttributeBase>();
@@ -227,7 +227,8 @@ public class MarkObjectCell : UiCell<MapEditorCreateMark.MarkObject, MarkInfoIte
                 if (weapon != null)
                 {
                     numberBar.L_NumInput.Instance.MaxValue = weapon.AmmoCapacity; //弹夹上限
-                    numberBar2.L_NumInput.Instance.MaxValue = weapon.MaxMana; //容量上限
+                    //备用弹药上限 = 弹夹容量 × Weapon.ReserveMagazineCount
+                    numberBar2.L_NumInput.Instance.MaxValue = weapon.AmmoCapacity * Weapon.ReserveMagazineCount;
                 }
 
                 if (markInfoItem.Attr != null)
@@ -236,7 +237,7 @@ public class MarkObjectCell : UiCell<MapEditorCreateMark.MarkObject, MarkInfoIte
                     {
                         numberBar.L_NumInput.Instance.Value = float.Parse(currAmmon);
                     }
-                    if (markInfoItem.Attr.TryGetValue("ResidueMana", out var residueMana)) //剩余法力值
+                    if (markInfoItem.Attr.TryGetValue("ResidueMana", out var residueMana)) //备用弹药量
                     {
                         numberBar2.L_NumInput.Instance.Value = float.Parse(residueMana);
                     }
@@ -256,7 +257,7 @@ public class MarkObjectCell : UiCell<MapEditorCreateMark.MarkObject, MarkInfoIte
             faceBar.Instance.AddItem("右", (int)FaceDirection.Right);
             var weaponBar = CellNode.UiPanel.CreateObjectBar("Weapon", "携带武器：", ActivityType.Weapon);
             var numberBar2 = CellNode.UiPanel.CreateNumberBar("CurrAmmon", "弹夹弹药量：");
-            var numberBar3 = CellNode.UiPanel.CreateNumberBar("ResidueMana", "剩余法力值：");
+            var numberBar3 = CellNode.UiPanel.CreateNumberBar("ResidueMana", "备用弹药量：");
             weaponBar.Instance.SetRelevancyAttr(numberBar2, numberBar3);
             _expandPanel.L_ExpandGrid.AddChild(faceBar);
             _expandPanel.L_ExpandGrid.AddChild(weaponBar);
@@ -287,7 +288,7 @@ public class MarkObjectCell : UiCell<MapEditorCreateMark.MarkObject, MarkInfoIte
                     {
                         numberBar2.L_NumInput.Instance.Value = float.Parse(currAmmon);
                     }
-                    if (markInfoItem.Attr.TryGetValue("ResidueMana", out var residueMana)) //剩余法力值
+                    if (markInfoItem.Attr.TryGetValue("ResidueMana", out var residueMana)) //备用弹药量
                     {
                         numberBar3.L_NumInput.Instance.Value = float.Parse(residueMana);
                     }
