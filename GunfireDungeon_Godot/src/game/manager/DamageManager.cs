@@ -49,12 +49,12 @@ public class DamageManager
             return new DamageCalcResult
             {
                 IsCritical = true,
-                ShieldDamage = (int)shieldDamage,
-                ArmorDamage = Mathf.Max((int)armorDamage, 0),
-                HealthDamage = Mathf.Max((int)healthDamage, 0),
-                SubShieldDamage = Mathf.Min((int)shieldDamage, role.Shield),
-                SubArmorDamage = Mathf.Min(Mathf.Max((int)armorDamage, 0), role.Armor),
-                SubHealthDamage = Mathf.Min(Mathf.Max((int)healthDamage, 0), role.Hp)
+                ShieldDamage = Mathf.RoundToInt(shieldDamage),
+                ArmorDamage = Mathf.Max(Mathf.RoundToInt(armorDamage), 0),
+                HealthDamage = Mathf.Max(Mathf.RoundToInt(healthDamage), 0),
+                SubShieldDamage = Mathf.Min(Mathf.RoundToInt(shieldDamage), role.Shield),
+                SubArmorDamage = Mathf.Min(Mathf.Max(Mathf.RoundToInt(armorDamage), 0), role.Armor),
+                SubHealthDamage = Mathf.Min(Mathf.Max(Mathf.RoundToInt(healthDamage), 0), role.Hp)
             };
         }
         armorDamage = shieldOverflow * armorMultiplier;
@@ -63,12 +63,12 @@ public class DamageManager
         return new DamageCalcResult
         {
             IsCritical = false,
-            ShieldDamage = (int)shieldDamage,
-            ArmorDamage = Mathf.Max((int)armorDamage, 0),
-            HealthDamage = Mathf.Max((int)healthDamage, 0),
-            SubShieldDamage = Mathf.Min((int)shieldDamage, role.Shield),
-            SubArmorDamage = Mathf.Min(Mathf.Max((int)armorDamage, 0), role.Armor),
-            SubHealthDamage = Mathf.Min(Mathf.Max((int)healthDamage, 0), role.Hp)
+            ShieldDamage = Mathf.RoundToInt(shieldDamage),
+            ArmorDamage = Mathf.Max(Mathf.RoundToInt(armorDamage), 0),
+            HealthDamage = Mathf.Max(Mathf.RoundToInt(healthDamage), 0),
+            SubShieldDamage = Mathf.Min(Mathf.RoundToInt(shieldDamage), role.Shield),
+            SubArmorDamage = Mathf.Min(Mathf.Max(Mathf.RoundToInt(armorDamage), 0), role.Armor),
+            SubHealthDamage = Mathf.Min(Mathf.Max(Mathf.RoundToInt(healthDamage), 0), role.Hp)
         };
     }
     
@@ -116,12 +116,12 @@ public class DamageManager
             return new DamageCalcResult
             {
                 IsCritical = true,
-                ShieldDamage = (int)shieldDamage,
-                ArmorDamage = Mathf.Max((int)armorDamage, 0),
-                HealthDamage = Mathf.Max((int)healthDamage, 0),
-                SubShieldDamage = Mathf.Min((int)shieldDamage, roleBase.Shield),
-                SubArmorDamage = Mathf.Min(Mathf.Max((int)armorDamage, 0), roleBase.Armor),
-                SubHealthDamage = Mathf.Min(Mathf.Max((int)healthDamage, 0), roleBase.Hp)
+                ShieldDamage = Mathf.RoundToInt(shieldDamage),
+                ArmorDamage = Mathf.Max(Mathf.RoundToInt(armorDamage), 0),
+                HealthDamage = Mathf.Max(Mathf.RoundToInt(healthDamage), 0),
+                SubShieldDamage = Mathf.Min(Mathf.RoundToInt(shieldDamage), roleBase.Shield),
+                SubArmorDamage = Mathf.Min(Mathf.Max(Mathf.RoundToInt(armorDamage), 0), roleBase.Armor),
+                SubHealthDamage = Mathf.Min(Mathf.Max(Mathf.RoundToInt(healthDamage), 0), roleBase.Hp)
             };
         }
         armorDamage = shieldOverflow * armorMultiplier;
@@ -131,12 +131,12 @@ public class DamageManager
         return new DamageCalcResult
         {
             IsCritical = false,
-            ShieldDamage = (int)shieldDamage,
-            ArmorDamage = Mathf.Max((int)armorDamage, 0),
-            HealthDamage = Mathf.Max((int)healthDamage, 0),
-            SubShieldDamage = Mathf.Min((int)shieldDamage, roleBase.Shield),
-            SubArmorDamage = Mathf.Min(Mathf.Max((int)armorDamage, 0), roleBase.Armor),
-            SubHealthDamage = Mathf.Min(Mathf.Max((int)healthDamage, 0), roleBase.Hp)
+            ShieldDamage = Mathf.RoundToInt(shieldDamage),
+            ArmorDamage = Mathf.Max(Mathf.RoundToInt(armorDamage), 0),
+            HealthDamage = Mathf.Max(Mathf.RoundToInt(healthDamage), 0),
+            SubShieldDamage = Mathf.Min(Mathf.RoundToInt(shieldDamage), roleBase.Shield),
+            SubArmorDamage = Mathf.Min(Mathf.Max(Mathf.RoundToInt(armorDamage), 0), roleBase.Armor),
+            SubHealthDamage = Mathf.Min(Mathf.Max(Mathf.RoundToInt(healthDamage), 0), roleBase.Hp)
         };
     }
     
@@ -212,12 +212,12 @@ public class DamageManager
             return new DamageCalcResult
             {
                 IsCritical = true,
-                ShieldDamage = (int)shieldDamage,
-                ArmorDamage = Mathf.Max((int)armorDamage, 0),
-                HealthDamage = Mathf.Max((int)healthDamage, 0),
-                SubShieldDamage = Mathf.Min((int)shieldDamage, roleBase.Shield),
-                SubArmorDamage = Mathf.Min(Mathf.Max((int)armorDamage, 0), roleBase.Armor),
-                SubHealthDamage = Mathf.Min(Mathf.Max((int)healthDamage, 0), roleBase.Hp)
+                ShieldDamage = Mathf.RoundToInt(shieldDamage),
+                ArmorDamage = Mathf.Max(Mathf.RoundToInt(armorDamage), 0),
+                HealthDamage = Mathf.Max(Mathf.RoundToInt(healthDamage), 0),
+                SubShieldDamage = Mathf.Min(Mathf.RoundToInt(shieldDamage), roleBase.Shield),
+                SubArmorDamage = Mathf.Min(Mathf.Max(Mathf.RoundToInt(armorDamage), 0), roleBase.Armor),
+                SubHealthDamage = Mathf.Min(Mathf.Max(Mathf.RoundToInt(healthDamage), 0), roleBase.Hp)
             };
         }
         GD.Print("未触发暴击。");
@@ -237,12 +237,12 @@ public class DamageManager
         return new DamageCalcResult
         {
             IsCritical = false,
-            ShieldDamage = (int)shieldDamage,
-            ArmorDamage = Mathf.Max((int)armorDamage, 0),
-            HealthDamage = Mathf.Max((int)healthDamage, 0),
-            SubShieldDamage = Mathf.Min((int)shieldDamage, roleBase.Shield),
-            SubArmorDamage = Mathf.Min(Mathf.Max((int)armorDamage, 0), roleBase.Armor),
-            SubHealthDamage = Mathf.Min(Mathf.Max((int)healthDamage, 0), roleBase.Hp)
+            ShieldDamage = Mathf.RoundToInt(shieldDamage),
+            ArmorDamage = Mathf.Max(Mathf.RoundToInt(armorDamage), 0),
+            HealthDamage = Mathf.Max(Mathf.RoundToInt(healthDamage), 0),
+            SubShieldDamage = Mathf.Min(Mathf.RoundToInt(shieldDamage), roleBase.Shield),
+            SubArmorDamage = Mathf.Min(Mathf.Max(Mathf.RoundToInt(armorDamage), 0), roleBase.Armor),
+            SubHealthDamage = Mathf.Min(Mathf.Max(Mathf.RoundToInt(healthDamage), 0), roleBase.Hp)
         };
     }
 }
