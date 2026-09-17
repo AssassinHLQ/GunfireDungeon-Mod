@@ -1840,12 +1840,21 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
             CurrAmmo += aloneTake;
             CurrReserveAmmo -= aloneTake;
 
-
-            //继续装弹 —— 必须同时判断【备用弹药还有剩】。
-            // 少了这一条, 备用弹药为 0 时会无限递归 ReloadHandler:
-            // 每次装 0 发, CurrAmmo 永远到不了上限, 于是永远"继续装弹"。
-            if (!_aloneReloadStop && CurrAmmo != Attribute.AmmoCapacity && CurrReserveAmmo > 0)
+            if (aloneTake <= 0 || CurrReserveAmmo <= 0)
             {
+                // 装不进子弹了(备用弹药取完 / 弹夹已满 / AloneReloadCount 配成 0),
+                // 必须走"提前结束换弹"的通路收尾。
+                //
+                // 单独装弹的前进完全靠这里再调一次 ReloadHandler() 来重置 _reloadTimer。
+                // 如果什么都不做, 外层状态机(状态 2)每帧都会再调一次 ReloadSuccess(),
+                // 但既装不进子弹、计时器也不会重置, 而 _aloneReloadStop 和
+                // "弹夹已满"都不成立 -> 换弹永远结束不了, 玩家直接开不了火。
+                // 置 _aloneReloadStop 就是复用引擎原有的"提前结束换弹"逻辑。
+                _aloneReloadStop = true;
+            }
+            else if (!_aloneReloadStop && CurrAmmo != Attribute.AmmoCapacity)
+            {
+                //继续装弹
                 ReloadHandler();
             }
         }
