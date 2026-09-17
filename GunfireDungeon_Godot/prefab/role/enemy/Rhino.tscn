@@ -1,0 +1,81 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="PackedScene" path="res://prefab/role/template/AiTemplate.tscn" id="1_base"]
+[ext_resource type="Script" path="res://src/game/activity/role/enemy/RhinoEnemy.cs" id="2_script"]
+[ext_resource type="Shader" path="res://resource/shader/Blend.gdshader" id="3_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_shadow"]
+resource_local_to_scene = true
+shader = ExtResource("3_shader")
+shader_parameter/blend = Color(0, 0, 0, 0.470588)
+shader_parameter/schedule = 1.0
+shader_parameter/modulate = Color(1, 1, 1, 1)
+shader_parameter/show_outline = true
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_rainbow = false
+shader_parameter/outline_use_blend = true
+shader_parameter/grey = 0.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_body"]
+resource_local_to_scene = true
+shader = ExtResource("3_shader")
+shader_parameter/blend = Color(1, 1, 1, 1)
+shader_parameter/schedule = 0.0
+shader_parameter/modulate = Color(1, 1, 1, 1)
+shader_parameter/show_outline = true
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_rainbow = false
+shader_parameter/outline_use_blend = true
+shader_parameter/grey = 0.0
+
+; 犀牛: 帧画布 271x77, "脚下中心" 在 (136, 74)。
+; offset = -(74 - 77/2) = -35.5, 取 -36, 让脚下中心落在节点原点上。
+; 受击框 88x56 对准身体(身体实测约 86~90 x 54~60)。
+; RhinoEnemy.OnInit 里会按同样的数值再设一次, 这里写上是为了在编辑器里能直接看到。
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_boss"]
+size = Vector2(88, 56)
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_empty"]
+
+[node name="Rhino" node_paths=PackedStringArray("ViewRay", "NavigationAgent2D", "NavigationPoint", "FirePoint", "HurtArea", "HurtCollision", "InteractiveArea", "InteractiveCollision", "TipRoot", "AnimationPlayer", "MountPoint", "BackMountPoint", "MeleeAttackArea", "MeleeAttackCollision", "ShadowSprite", "AnimatedSprite", "Collision") instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+ViewRay = NodePath("ViewRay")
+NavigationAgent2D = NodePath("NavigationPoint/NavigationAgent2D")
+NavigationPoint = NodePath("NavigationPoint")
+FirePoint = NodePath("FirePoint")
+HurtArea = NodePath("HurtArea")
+HurtCollision = NodePath("HurtArea/HurtCollision")
+InteractiveArea = NodePath("InteractiveArea")
+InteractiveCollision = NodePath("InteractiveArea/InteractiveCollision")
+TipRoot = NodePath("TipRoot")
+AnimationPlayer = NodePath("AnimationPlayer")
+MountPoint = NodePath("MountPoint")
+BackMountPoint = NodePath("BackMountPoint")
+MeleeAttackArea = NodePath("MountPoint/MeleeAttackArea")
+MeleeAttackCollision = NodePath("MountPoint/MeleeAttackArea/MeleeAttackCollision")
+ShadowSprite = NodePath("ShadowSprite")
+AnimatedSprite = NodePath("AnimatedSprite")
+Collision = NodePath("Collision")
+
+[node name="ShadowSprite" parent="." index="0"]
+material = SubResource("ShaderMaterial_shadow")
+
+[node name="AnimatedSprite" parent="." index="2"]
+material = SubResource("ShaderMaterial_body")
+offset = Vector2(0, -36)
+scale = Vector2(1, 1)
+
+[node name="HurtCollision" parent="HurtArea" index="0"]
+position = Vector2(0, -28)
+shape = SubResource("RectangleShape2D_boss")
+
+[node name="MountPoint" parent="." index="7"]
+position = Vector2(4, -18)
+
+[node name="FirePoint" parent="." index="8"]
+position = Vector2(7, -14)
+
+[node name="AnimationPlayer" parent="." index="11"]
+libraries = {
+&"": SubResource("AnimationLibrary_empty")
+}

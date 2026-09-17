@@ -40,5 +40,19 @@
     ],
     "BloodColor": "b03030",
     "__BodyFragment": "enemy_dead0001"
+  },
+  {
+    "Id": "rhino0001",
+    "Remark": "\u7280\u725b BOSS",
+    "AttackInterval": 1.5,
+    "ViewRange": 420,
+    "TailAfterViewRange": 600,
+    "ViewAngleRange": 240,
+    "Gold": [
+      40,
+      80
+    ],
+    "BloodColor": "b03030",
+    "__BodyFragment": "enemy_dead0001"
   }
 ]

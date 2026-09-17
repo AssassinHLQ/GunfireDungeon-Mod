@@ -14,11 +14,16 @@ using Godot;
 /// 但 Boss.OnInit 是给它自己的程序化绘制 boss 用的（隐藏精灵 + 关掉状态机），
 /// 大橘是精灵动画 boss，所以在 override 里要把这两项再打开。
 ///
-/// 四个技能（参数取自 4.2 的 BelialEnemy/Hakimi 分支，未改动）：
-///   0 boss_claw_combo  直线 172 / 半宽 38 / 起手 0.42s / 冲刺 96   伤害 6+层数
-///   1 boss_leap_slam   圆形 128 / 起手 0.54s / 冲刺 48            伤害 6+层数
-///   2 boss_fire_wave   直线 285 / 半宽 46 / 起手 0.72s            伤害 6+层数
-///   3 boss_rage_roar   圆形  92 / 起手 0.82s / 锁定玩家位置        伤害 9+层数
+/// 四个技能（范围/起手取自 4.2 的 BelialEnemy/Hakimi 分支）：
+///   0 boss_claw_combo  直线 172 / 半宽 38 / 起手 0.42s / 冲刺 96   伤害 2
+///   1 boss_leap_slam   圆形 128 / 起手 0.54s / 冲刺 48            伤害 2
+///   2 boss_fire_wave   直线 285 / 半宽 46 / 起手 0.72s            伤害 2
+///   3 boss_rage_roar   圆形  92 / 起手 0.82s / 锁定玩家位置        伤害 3
+///
+/// ⚠️ 2026-09-18 削弱：原来伤害是 6/6/6/9 并且【每层再 +层数-1】，二阶段再 +2。
+/// 玩家只有 Hp 6 + 护盾 4，第 1 层一个技能就 6~9 点，深层直接 14 点秒杀 —— 太离谱。
+/// 现在：层数加成整个去掉，抓挠 2→1，技能 6/6/6/9 → 2/2/2/3，二阶段 +2 → +1。
+/// 数值都集中在 BaseClawDamage 与 ConfigureAttack 里，要调只改这两处。
 ///
 /// 技能释放前会在地面画出【攻击范围预警】(BossAttackWarning)，玩家有时间走位躲开。
 /// </summary>
@@ -27,7 +32,7 @@ public partial class DajuEnemy : Boss
     /// <summary>贴身抓挠的距离（近身普通攻击，不带预警）</summary>
     private const float ClawRange = 105.0f;
     private const float ClawHalfHeight = 44.0f;
-    private const int BaseClawDamage = 2;
+    private const int BaseClawDamage = 1;
 
     /// <summary>
     /// Boss 帧 128x128。
@@ -157,7 +162,7 @@ public partial class DajuEnemy : Boss
         }
 
         target.HurtArea.Hurt(this,
-            new List<AttackStats> { new(BaseClawDamage + FloorBonus(), DamageType.Physical) },
+            new List<AttackStats> { new(BaseClawDamage, DamageType.Physical) },
             null, delta.Angle());
         SpawnAttackEffect(target.GetCenterPosition(), delta.Angle());
     }
@@ -170,12 +175,6 @@ public partial class DajuEnemy : Boss
         }
         _bossAttackPending = true;
         _dajuCoroutine = StartCoroutine(RunBossAttack());
-    }
-
-    private int FloorBonus()
-    {
-        var floor = GameApplication.Instance?.DungeonManager?.CurrentFloor ?? 1;
-        return Mathf.Max(0, floor - 1);
     }
 
     private IEnumerator RunBossAttack()
@@ -258,7 +257,7 @@ public partial class DajuEnemy : Boss
             if (hit)
             {
                 t2.HurtArea.Hurt(this,
-                    new List<AttackStats> { new(damage + FloorBonus(), DamageType.Physical) },
+                    new List<AttackStats> { new(damage, DamageType.Physical) },
                     null, (targetPos - GetCenterPosition()).Angle());
             }
 
@@ -292,34 +291,34 @@ public partial class DajuEnemy : Boss
         halfWidth = 44;
         range = 100;
         windup = 0.5f;
-        damage = 6;
+        damage = 2;
 
         switch (attack)
         {
             case 0:
                 range = 172; halfWidth = 38; windup = 0.42f;
-                damage = 6; isLine = true; dashDistance = 96;
+                damage = 2; isLine = true; dashDistance = 96;
                 break;
             case 1:
                 range = 128; windup = 0.54f;
-                damage = 6; dashDistance = 48;
+                damage = 2; dashDistance = 48;
                 break;
             case 2:
                 range = 285; halfWidth = 46; windup = 0.72f;
-                damage = 6; isLine = true;
+                damage = 2; isLine = true;
                 break;
             default:
                 range = 92; windup = 0.82f;
-                damage = 9; targetCentered = true;
+                damage = 3; targetCentered = true;
                 break;
         }
 
-        // 二阶段：起手缩短、范围略增、伤害提高
+        // 二阶段：起手缩短、范围略增、伤害略提高
         if (_phase == 2)
         {
             windup *= 0.85f;
             range *= 1.1f;
-            damage += 2;
+            damage += 1;
         }
     }
 

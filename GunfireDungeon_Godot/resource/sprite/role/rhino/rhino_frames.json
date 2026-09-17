@@ -1,0 +1,57 @@
+{
+  "cell_w": 271,
+  "cell_h": 77,
+  "anchor_x": 136,
+  "anchor_y": 74,
+  "anims": {
+    "01_move_l": {
+      "file": "RhinoMoveL.png",
+      "frames": 9,
+      "underground": []
+    },
+    "02_move_r": {
+      "file": "RhinoMoveR.png",
+      "frames": 9,
+      "underground": []
+    },
+    "03_charge": {
+      "file": "RhinoCharge.png",
+      "frames": 8,
+      "underground": []
+    },
+    "05_burrow": {
+      "file": "RhinoBurrow.png",
+      "frames": 7,
+      "underground": [
+        3,
+        4,
+        5
+      ]
+    },
+    "06_bite_s": {
+      "file": "RhinoBiteS.png",
+      "frames": 8,
+      "underground": []
+    },
+    "07_bite_l": {
+      "file": "RhinoBiteL.png",
+      "frames": 8,
+      "underground": []
+    },
+    "08_dash": {
+      "file": "RhinoDash.png",
+      "frames": 8,
+      "underground": []
+    },
+    "09_sweep": {
+      "file": "RhinoSweep.png",
+      "frames": 8,
+      "underground": []
+    },
+    "10_slam": {
+      "file": "RhinoSlam.png",
+      "frames": 7,
+      "underground": []
+    }
+  }
+}
