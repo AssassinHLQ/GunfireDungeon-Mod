@@ -167,6 +167,22 @@ public class RoleState
         return damage;
     }
 
+    /// <summary>
+    /// 近战伤害计算。
+    ///
+    /// 【为什么要和子弹分开】CalcDamageEvent 是【子弹】用的: 杀伤弹(+20% 子弹伤害)、
+    /// 分裂子弹(-35% 子弹伤害) 这类道具都挂在它上面。近战挥击以前也走同一个事件,
+    /// 于是"分裂子弹"会把刀/近战攻击的伤害一起减掉 —— 实测反馈"这个道具会导致近战攻击
+    /// 伤害也减半, 应该只影响远程"。
+    ///
+    /// 所以近战单独走这个方法: 不触发子弹类事件(近战目前也没有专属的伤害加成)。
+    /// 以后要加"近战伤害 +X"的道具, 在这里挂一个新的近战事件即可。
+    /// </summary>
+    public int CalcMeleeDamage(int damage, DamageType damageType)
+    {
+        return damage;
+    }
+
     public delegate void CalcHurtDamageEventHandler(int damage, DamageType damageType, RefValue<int> result);
 
     /// <summary>

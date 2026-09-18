@@ -78,8 +78,7 @@ public partial class DajuEnemy : Boss
         FiringStand = true;
         RoleState.CanPickUpWeapon = false;
 
-        MaxHp = 1200;
-        Hp = MaxHp;
+        //血量走 RoleBase.json 里的 daju0001.Hp(现在是 1000), 不在这里写死
         _phase = 1;
 
         AnimatedSprite.SpriteFrames = DajuSpriteFrames.Get();

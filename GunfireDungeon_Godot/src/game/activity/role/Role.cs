@@ -1937,7 +1937,8 @@ public abstract partial class Role : ActivityObject
         if (hurt.CanHurt(Camp))
         {
             var damage = Utils.Random.RandomConfigRange(activeWeapon.Attribute.MeleeAttackDamageRange);
-            damage = RoleState.CalcDamage(damage, DamageType.Physical);
+            //近战走 CalcMeleeDamage: 不吃"子弹伤害"类道具(杀伤弹/分裂子弹)的加成与减值
+            damage = RoleState.CalcMeleeDamage(damage, DamageType.Physical);
 
             var o = hurt.GetActivityObject();
             var pos = hurt.GetPosition();

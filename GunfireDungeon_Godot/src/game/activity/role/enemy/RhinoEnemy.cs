@@ -124,8 +124,7 @@ public partial class RhinoEnemy : Boss
         FiringStand = true;
         RoleState.CanPickUpWeapon = false;
 
-        MaxHp = 1200;
-        Hp = MaxHp;
+        //血量走 RoleBase.json 里的 rhino0001.Hp(1200), 不在这里写死
 
         AnimatedSprite.SpriteFrames = RhinoSpriteFrames.Get();
         AnimatedSprite.Offset = BossSpriteOffset;

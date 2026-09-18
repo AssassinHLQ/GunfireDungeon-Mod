@@ -43,8 +43,9 @@ public partial class Boss : AiRole
         
         FiringStand = true;
 
-        MaxHp = 2000;
-        Hp = MaxHp;
+        //血量不在这里写死 —— Role.OnCreateRoleState 已经从 RoleBase.Hp 读好了。
+        //(以前这里写 MaxHp = 2000, 子类又各自写 1200, 结果改 RoleBase.json 完全不生效;
+        // 图册里的血量说明也因此和实际对不上。现在配置表是唯一来源。)
 
         AnimatedSprite.Visible = false;
         StateController.Enable = false;

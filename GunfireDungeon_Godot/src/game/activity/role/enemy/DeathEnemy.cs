@@ -137,8 +137,7 @@ public partial class DeathEnemy : Boss
         FiringStand = true;
         RoleState.CanPickUpWeapon = false;
 
-        MaxHp = 1200;
-        Hp = MaxHp;
+        //血量走 RoleBase.json 里的 death0001.Hp(现在是 2400), 不在这里写死
 
         AnimatedSprite.SpriteFrames = DeathSpriteFrames.Get();
         AnimatedSprite.Offset = BossSpriteOffset;
