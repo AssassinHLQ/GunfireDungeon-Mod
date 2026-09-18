@@ -109,6 +109,32 @@ public abstract partial class AiRole : Role
     /// </summary>
     public bool HasMoveDesire { get; private set; } = true;
 
+    //─────────────────────────── 登场静止 ───────────────────────────
+
+    /// <summary>
+    /// 登场静止时长(秒): 进 Boss 房后先站着不动, 等 Boss 曲进入高潮再开打。
+    ///
+    /// 用来配合"前奏很长"的 Boss 曲 —— 例如死神配《东风》, 前 23 秒是舒缓段,
+    /// Boss 就静立不动, 到节奏起来的那一刻才开始攻击。
+    /// 子类覆盖它即可(默认 0 = 不静止, 不影响现有 Boss)。
+    /// </summary>
+    public virtual float DormantTime => 0f;
+
+    /// <summary>
+    /// 登场静止期间的减伤百分比(0~1), 默认 50%。
+    ///
+    /// 静止的十几二十秒里 Boss 完全不动, 不给点减伤玩家可以站着把血打空。
+    /// 0 = 不减伤, 1 = 无敌。
+    /// </summary>
+    public virtual float DormantReducePct => 0.5f;
+
+    /// <summary>是否正处在登场静止期(静止期间不移动也不攻击)</summary>
+    public bool IsDormant => _dormantActive;
+
+    //-1 = 还没开始计时(玩家还没进房间)
+    private float _dormantLeft = -1f;
+    private bool _dormantActive;
+
     public override void OnInit()
     {
         base.OnInit();
@@ -132,7 +158,9 @@ public abstract partial class AiRole : Role
     protected override void Process(float delta)
     {
         base.Process(delta);
-        
+
+        UpdateDormant(delta);
+
         if (LookTarget != null)
         {
             if (LookTarget.IsDestroyed)
@@ -155,6 +183,57 @@ public abstract partial class AiRole : Role
 
         //更新视野范围
         ViewRange = StateController.CurrState == AIStateEnum.AiNormal ? DefaultViewRange : TailAfterViewRange;
+    }
+
+    /// <summary>
+    /// 登场静止处理。
+    ///
+    /// 【为什么不在 OnInit 就开始计时】Boss 可能被房间的预加载提前创建出来,
+    /// 那样玩家还在走廊上走, 静止时间就被耗光了, 等他进门时 Boss 已经能动了。
+    /// 所以先用 CalcAttackTarget() 确认"房间里已经有敌人(玩家)"才开始计时 ——
+    /// 也就是玩家真的进门那一刻。
+    ///
+    /// 静止期间的做法: 关掉攻击欲望和移动欲望(AiNormalState 只看这两个开关),
+    /// 并把状态机强制按回 AiNormal —— 因为注释里写明"其他状态都可以移动",
+    /// 不按回去的话残留状态照样会走。
+    /// </summary>
+    private void UpdateDormant(float delta)
+    {
+        if (DormantTime <= 0f)
+        {
+            return;
+        }
+
+        if (!_dormantActive && _dormantLeft < 0f && CalcAttackTarget() != null)
+        {
+            _dormantActive = true;
+            _dormantLeft = DormantTime;
+            //静止期间给临时减伤(默认 50%)
+            RoleState.ExtraReducePct = DormantReducePct;
+        }
+
+        if (!_dormantActive)
+        {
+            return;
+        }
+
+        _dormantLeft -= delta;
+
+        SetAttackDesire(false);
+        SetMoveDesire(false);
+        if (StateController.CurrState != AIStateEnum.AiNormal)
+        {
+            StateController.ChangeStateInstant(AIStateEnum.AiNormal);
+        }
+
+        if (_dormantLeft <= 0f)
+        {
+            _dormantActive = false;
+            SetAttackDesire(true);
+            SetMoveDesire(true);
+            //静止结束, 撤掉临时减伤
+            RoleState.ExtraReducePct = 0f;
+        }
     }
 
     /// <summary>

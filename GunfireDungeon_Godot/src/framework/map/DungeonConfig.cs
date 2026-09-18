@@ -33,6 +33,13 @@ public class DungeonConfig
     /// 当前地牢层级
     /// </summary>
     public int DungeonLayer;
+
+    /// <summary>
+    /// 本层是否要在【出口前面那个房间】放一个 Boss 房(普通模式用)。
+    /// 由 DungeonManager 在每层生成前从 FloorPlan 同步进来 ——
+    /// CurrConfig 是跨层复用的同一个对象, 所以不能只在构造时设一次。
+    /// </summary>
+    public bool BossBeforeExit;
     
     /// <summary>
     /// 地牢组名称

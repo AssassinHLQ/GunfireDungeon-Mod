@@ -21,6 +21,7 @@
       "Kind": "normal",
       "Enemies": true,
       "Explore": false,
+      "BossBeforeExit": true,
       "Note": "风景园林基地 —— 植物 / 沙盘 / 图纸, 画面语言和别的楼层明显不同"
     },
     {
@@ -41,6 +42,7 @@
       "Kind": "normal",
       "Enemies": true,
       "Explore": false,
+      "BossBeforeExit": true,
       "Note": "城乡规划基地 —— 大地图 / 城市沙盘, 可以做俯瞰全楼的地图房"
     },
     {
@@ -61,6 +63,7 @@
       "Kind": "normal",
       "Enemies": true,
       "Explore": false,
+      "BossBeforeExit": true,
       "Note": "第一次到达, 仍有敌人"
     },
     {

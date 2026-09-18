@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -183,7 +183,7 @@ public partial class GameApplication : Node2D, ICoroutine
         //保留 2 个奖励房 + 1 个商店作为喘息, 由 DefaultDungeonRule 按生成顺序插入。
         if (mode == DungeonMode.Erlkoenig)
         {
-            config.BossRoomRatio = 70;      //70% 的战斗格变 Boss 房
+            config.BossRoomRatio = 100;     //魔王模式: 每个战斗格都是 Boss 房(用户要求"全是 boss")
 
             //------------- 降低生成失败率 -------------
             // 生成失败(报"尝试次数过多")的直接原因是【门连不上】:

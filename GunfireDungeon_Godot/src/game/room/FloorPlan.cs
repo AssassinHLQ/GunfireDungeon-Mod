@@ -54,6 +54,13 @@ public class FloorPlan
 
         /// <summary>是否是最终层, 走到它的出口即通关</summary>
         public bool IsFinal => Kind == "final";
+
+        /// <summary>
+        /// 本层是否要在【出口前面那个房间】放一个 Boss 房。
+        /// 普通模式靠它安排中段 Boss(目前是 2 / 4 / 6 层);
+        /// 魔王模式本来就每间都是 Boss, 不受这个开关影响。
+        /// </summary>
+        public bool BossBeforeExit { get; set; }
     }
 
     /// <summary>配置文件结构</summary>

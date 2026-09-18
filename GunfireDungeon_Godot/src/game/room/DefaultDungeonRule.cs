@@ -87,12 +87,31 @@ public class DefaultDungeonRule : DungeonRule
     }
 
     /// <summary>
+    /// 本层是否还要在【出口前】补一个 Boss 房(普通模式的中段 Boss)。
+    ///
+    /// 触发条件(全部满足才放):
+    ///   · 该层在 FloorPlan.json 里标了 BossBeforeExit(F2 / F4 / F6);
+    ///   · 不是"按比例刷 Boss"的魔王模式 —— 那种模式本来就每间都可能是 Boss, 不用再补;
+    ///   · 这一组配了 Boss 房模板;
+    ///   · 这一层还没放过 Boss(<c>BossRoomInfos.Count == 0</c>) —— 同时保证只补一个, 不会连出。
+    ///
+    /// 放在"战斗房已满"那个分支的最前面, 所以生成顺序是:
+    ///   ... 战斗房 x12 -> Boss 房 -> 出口, 也就是玩家在进传送门之前必须先打掉它。
+    /// </summary>
+    private bool ShouldPlaceBossBeforeExit()
+    {
+        return Config.BossBeforeExit
+               && !Config.IsBossRatioMode
+               && RoomGroup.BossList.Count > 0
+               && Generator.BossRoomInfos.Count == 0;
+    }
+
+    /// <summary>
     /// 按比例模式下的"战斗类房间"类型: Boss 或普通战斗
     /// </summary>
     private DungeonRoomType GetCombatRoomType()
     {
-        return ShouldPlaceBossAsCombatRoom() ? DungeonRoomType.Boss : DungeonRoomType.Battle;
-    }
+        return ShouldPlaceBossAsCombatRoom() ? DungeonRoomType.Boss : DungeonRoomType.Battle;    }
 
     public override RoomInfo GetConnectPrevRoom(RoomInfo prevRoom, DungeonRoomType nextRoomType)
     {
@@ -297,6 +316,12 @@ public class DefaultDungeonRule : DungeonRule
 
         if (Generator.BattleRoomInfos.Count >= Config.BattleRoomCount) //战斗房间已满
         {
+            //普通模式: FloorPlan 里标了 BossBeforeExit 的层, 先补一个 Boss 房, 再放出出口。
+            if (ShouldPlaceBossBeforeExit())
+            {
+                return DungeonRoomType.Boss;
+            }
+
             if ((Generator.BattleRoomInfos.Count >= Config.BattleRoomCount + 1 && RoomGroup.BossList.Count == 0) ||
                 Config.BossRoomCount == 0)
             {

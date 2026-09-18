@@ -21,6 +21,15 @@ public class DamageManager
         {
             resist = Mathf.Clamp(roleBase.GetDamageResist(attackStats.Type), damageConfig.MinReduce, damageConfig.MaxReduce);
         }
+
+        //叠加【临时减伤】(Boss 登场静止期的 50%)。
+        //乘算: 原本 20% + 临时 50% => 1-(1-0.2)*(1-0.5) = 60%, 避免加算叠成无敌。
+        var extraReduce = role.RoleState.ExtraReducePct;
+        if (extraReduce > 0f)
+        {
+            resist = 1f - (1f - resist) * (1f - Mathf.Clamp(extraReduce, 0f, 1f));
+        }
+
         var damage = attackStats.BaseDamage * (1 - resist);
         
         // ------------------------- 护盾逻辑

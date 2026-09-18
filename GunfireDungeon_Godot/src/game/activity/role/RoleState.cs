@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Config;
 using Godot;
 
@@ -81,6 +81,17 @@ public class RoleState
     /// 兼容旧配置的近战计时字段。近战现在不再使用固定攻击间隔。
     /// </summary>
     public float MeleeAttackTime = 0;
+
+    /// <summary>
+    /// 临时减伤百分比(0~1), 由运行时逻辑临时设置, 不参与配置。
+    ///
+    /// 目前唯一的用途是 Boss 的【登场静止期】: 死神配《冬风》前 21 秒站着不动,
+    /// 这段时间给 50% 减伤 —— 否则玩家可以站着把 1200 血白打掉。
+    ///
+    /// 计算方式是【乘算】而不是加算: 原本减伤 20% 再叠 50% =>
+    /// 1 - (1-0.2)*(1-0.5) = 60%, 而不是 70%。加算容易叠到 100% 变成无敌。
+    /// </summary>
+    public float ExtraReducePct = 0f;
 
     /// <summary>
     /// 翻滚速度
