@@ -54,6 +54,17 @@ public class BulletPart : PartLogicBase
         if (Bullet != null)
         {
             param.HasBullet = true;
+
+            // 「刀伤害」(BulletBase Type 3)不是真正的弹丸 —— 它存在的意义只是让近战武器
+            // "有子弹", 从而能走到 Weapon.OnFire()(Knife 在那里才启用挥刀判定框,
+            // 真正的伤害由 HitArea 结算)。
+            // 继续往下会调 FireManager 生成弹丸实例, 而那边只支持 Type 1(实体)/2(激光),
+            // 会刷一条"暂未支持的子弹类型: 3"的报错。所以这里直接返回空数组。
+            if (Bullet.Type == 3)
+            {
+                return new IBullet[0];
+            }
+
             if (!param.HasValue(PlanningParam.FirstBullet))
             {
                 param.SetValue(PlanningParam.FirstBullet, Bullet);

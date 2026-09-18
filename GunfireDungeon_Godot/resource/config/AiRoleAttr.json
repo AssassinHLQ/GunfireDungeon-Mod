@@ -24,8 +24,8 @@
       -2,
       4
     ],
-    "BloodColor": "",
-    "__BodyFragment": ""
+    "BloodColor": "b03030",
+    "__BodyFragment": "enemy_dead0002"
   },
   {
     "Id": "daju0001",

@@ -206,5 +206,131 @@
     "ClassType": "RandomPlayBuff",
     "Param": null,
     "Remark": ""
+  },
+  {
+    "Id": "0007",
+    "Name": "\u72D9\u51FB\u67AA\u5B50\u5F39",
+    "__ActivityTemplate": "part_comm0001",
+    "Intro": {
+      "Code": "\u72D9\u51FB[color=#7bc1d5]\u5B50\u5F39[/color]"
+    },
+    "Details": {
+      "Code": "\u5B50\u5F397\u8BE6\u60C5"
+    },
+    "Quality": 3,
+    "Price": 70,
+    "Icon": "res://resource/sprite/prop/part/PartProp0002.png",
+    "Type": 0,
+    "BaseMana": 25,
+    "ClassType": "Bullet",
+    "Param": {
+      "Bullet": "0004"
+    },
+    "Remark": ""
+  },
+  {
+    "Id": "0008",
+    "Name": "\u69B4\u5F39",
+    "__ActivityTemplate": "part_comm0001",
+    "Intro": {
+      "Code": "\u69B4\u5F39[color=#7bc1d5]\u70AE\u5F39[/color]"
+    },
+    "Details": {
+      "Code": "\u5B50\u5F398\u8BE6\u60C5"
+    },
+    "Quality": 3,
+    "Price": 80,
+    "Icon": "res://resource/sprite/prop/part/PartProp0004.png",
+    "Type": 0,
+    "BaseMana": 40,
+    "ClassType": "Bullet",
+    "Param": {
+      "Bullet": "0005"
+    },
+    "Remark": ""
+  },
+  {
+    "Id": "0009",
+    "Name": "\u629B\u7269\u7EBF\u7C98\u6DB2",
+    "__ActivityTemplate": "part_comm0001",
+    "Intro": {
+      "Code": "\u629B\u7269\u7EBF[color=#7bc1d5]\u7C98\u6DB2[/color]"
+    },
+    "Details": {
+      "Code": "\u5B50\u5F399\u8BE6\u60C5"
+    },
+    "Quality": 2,
+    "Price": 60,
+    "Icon": "res://resource/sprite/prop/part/PartProp0005.png",
+    "Type": 0,
+    "BaseMana": 12,
+    "ClassType": "Bullet",
+    "Param": {
+      "Bullet": "0006"
+    },
+    "Remark": ""
+  },
+  {
+    "Id": "0010",
+    "Name": "\u5F13\u7BAD",
+    "__ActivityTemplate": "part_comm0001",
+    "Intro": {
+      "Code": "[color=#7bc1d5]\u7BAD\u77E2[/color]"
+    },
+    "Details": {
+      "Code": "\u5B50\u5F3910\u8BE6\u60C5"
+    },
+    "Quality": 2,
+    "Price": 60,
+    "Icon": "res://resource/sprite/prop/part/PartProp0006.png",
+    "Type": 0,
+    "BaseMana": 12,
+    "ClassType": "Bullet",
+    "Param": {
+      "Bullet": "0010"
+    },
+    "Remark": ""
+  },
+  {
+    "Id": "0011",
+    "Name": "\u6FC0\u5149",
+    "__ActivityTemplate": "part_comm0001",
+    "Intro": {
+      "Code": "[color=#7bc1d5]\u6FC0\u5149[/color]"
+    },
+    "Details": {
+      "Code": "\u5B50\u5F3911\u8BE6\u60C5"
+    },
+    "Quality": 3,
+    "Price": 80,
+    "Icon": "res://resource/sprite/prop/part/PartProp0001.png",
+    "Type": 0,
+    "BaseMana": 15,
+    "ClassType": "Bullet",
+    "Param": {
+      "Bullet": "1001"
+    },
+    "Remark": ""
+  },
+  {
+    "Id": "0012",
+    "Name": "\u5200\u4F24\u5BB3",
+    "__ActivityTemplate": "part_comm0001",
+    "Intro": {
+      "Code": "\u8FD1\u6218[color=#7bc1d5]\u65A9\u51FB[/color]"
+    },
+    "Details": {
+      "Code": "\u5B50\u5F3912\u8BE6\u60C5"
+    },
+    "Quality": 1,
+    "Price": 50,
+    "Icon": "res://resource/sprite/prop/part/PartProp0003.png",
+    "Type": 0,
+    "BaseMana": 5,
+    "ClassType": "Bullet",
+    "Param": {
+      "Bullet": "2001"
+    },
+    "Remark": ""
   }
 ]

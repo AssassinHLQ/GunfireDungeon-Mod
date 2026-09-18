@@ -379,5 +379,235 @@
     "UpliftAngle": 0,
     "__ShootSound": "",
     "FireEffect": ""
+  },
+  {
+    "Id": "0004",
+    "Name": "\u72D9\u51FB\u67AA\u5B50\u5F39",
+    "Type": 1,
+    "Prefab": "bullet0001",
+    "Damage": {
+      "Physical": [
+        20
+      ]
+    },
+    "AbnormalState": null,
+    "CritRate": 0,
+    "CritBonus": 0,
+    "CritArmorPenetration": 0,
+    "RepelRange": [
+      75
+    ],
+    "DeviationAngleRange": [
+      0
+    ],
+    "SpeedRange": [
+      600,
+      600
+    ],
+    "LifeTimeRange": [
+      -1
+    ],
+    "DistanceRange": [
+      600,
+      600
+    ],
+    "VerticalSpeed": [
+      0
+    ],
+    "BounceCount": [
+      0
+    ],
+    "Penetration": [
+      0
+    ],
+    "CameraShake": 0,
+    "BacklashRange": null,
+    "UpliftAngle": 0,
+    "__ShootSound": "",
+    "FireEffect": ""
+  },
+  {
+    "Id": "0005",
+    "Name": "\u69B4\u5F39\u70AE",
+    "Type": 1,
+    "Prefab": "bullet0004",
+    "Damage": {
+      "Physical": [
+        30
+      ]
+    },
+    "AbnormalState": null,
+    "CritRate": 0,
+    "CritBonus": 0,
+    "CritArmorPenetration": 0,
+    "RepelRange": [
+      85
+    ],
+    "DeviationAngleRange": [
+      0
+    ],
+    "SpeedRange": [
+      180,
+      180
+    ],
+    "LifeTimeRange": [
+      -1
+    ],
+    "DistanceRange": [
+      270,
+      360
+    ],
+    "VerticalSpeed": [
+      70
+    ],
+    "BounceCount": [
+      4
+    ],
+    "Penetration": [
+      0
+    ],
+    "CameraShake": 0,
+    "BacklashRange": null,
+    "UpliftAngle": 0,
+    "__ShootSound": "shooting0011",
+    "FireEffect": "res://prefab/effect/weapon/ShotFire0001.tscn"
+  },
+  {
+    "Id": "0006",
+    "Name": "\u629B\u7269\u7EBF\u7C98\u6DB2\u5B50\u5F39",
+    "Type": 1,
+    "Prefab": "bullet0005",
+    "Damage": {
+      "Physical": [
+        5
+      ]
+    },
+    "AbnormalState": null,
+    "CritRate": 0,
+    "CritBonus": 0,
+    "CritArmorPenetration": 0,
+    "RepelRange": [
+      30
+    ],
+    "DeviationAngleRange": [
+      0
+    ],
+    "SpeedRange": [
+      100,
+      100
+    ],
+    "LifeTimeRange": [
+      -1
+    ],
+    "DistanceRange": [
+      270,
+      360
+    ],
+    "VerticalSpeed": [
+      170
+    ],
+    "BounceCount": [
+      0
+    ],
+    "Penetration": [
+      0
+    ],
+    "CameraShake": 0,
+    "BacklashRange": null,
+    "UpliftAngle": 0,
+    "__ShootSound": "",
+    "FireEffect": ""
+  },
+  {
+    "Id": "0011",
+    "Name": "\u5B50\u5F395\uFF08\u5F69\u8272\uFF09",
+    "Type": 1,
+    "Prefab": "bullet0008",
+    "Damage": {
+      "Physical": [
+        4
+      ]
+    },
+    "AbnormalState": null,
+    "CritRate": 0,
+    "CritBonus": 0,
+    "CritArmorPenetration": 0,
+    "RepelRange": [
+      15
+    ],
+    "DeviationAngleRange": [
+      0
+    ],
+    "SpeedRange": [
+      350,
+      380
+    ],
+    "LifeTimeRange": [
+      -1
+    ],
+    "DistanceRange": [
+      400,
+      450
+    ],
+    "VerticalSpeed": [
+      0
+    ],
+    "BounceCount": [
+      0
+    ],
+    "Penetration": [
+      0
+    ],
+    "CameraShake": 0,
+    "BacklashRange": null,
+    "UpliftAngle": 0,
+    "__ShootSound": "",
+    "FireEffect": ""
+  },
+  {
+    "Id": "0010",
+    "Name": "\u5F13\u7BAD",
+    "Type": 1,
+    "Prefab": "bullet0009",
+    "Damage": {
+      "Physical": [
+        15
+      ]
+    },
+    "AbnormalState": null,
+    "CritRate": 0,
+    "CritBonus": 0,
+    "CritArmorPenetration": 0,
+    "RepelRange": [
+      55
+    ],
+    "DeviationAngleRange": [
+      0
+    ],
+    "SpeedRange": [
+      400,
+      400
+    ],
+    "LifeTimeRange": [
+      -1
+    ],
+    "DistanceRange": [
+      250,
+      300
+    ],
+    "VerticalSpeed": [
+      0
+    ],
+    "BounceCount": [
+      0
+    ],
+    "Penetration": [
+      0
+    ],
+    "CameraShake": 0,
+    "BacklashRange": null,
+    "UpliftAngle": 0,
+    "__ShootSound": "",
+    "FireEffect": ""
   }
 ]

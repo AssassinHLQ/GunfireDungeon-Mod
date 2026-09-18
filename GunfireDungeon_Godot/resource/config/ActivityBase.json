@@ -1081,5 +1081,233 @@
     "Icon": "",
     "NotInRandomPool": true,
     "ShowInMapEditor": true
+  },
+  {
+    "Id": "enemy0002",
+    "Name": "\u654C\u4EBA2",
+    "Type": 4,
+    "Quality": 0,
+    "Price": 0,
+    "Intro": {
+      "Code": "\u654C\u4EBA2"
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/role/enemy/Enemy0002.tscn",
+    "Icon": "res://resource/sprite/role/enemy0002/Enemy0002.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0004",
+    "Name": "\u5200",
+    "Type": 5,
+    "Quality": 4,
+    "Price": 28,
+    "Intro": {
+      "Code": ""
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0004.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0004/Weapon0004.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0005",
+    "Name": "\u72D9\u51FB\u67AA",
+    "Type": 5,
+    "Quality": 4,
+    "Price": 28,
+    "Intro": {
+      "Code": ""
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0005.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0005/Weapon0005.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0006",
+    "Name": "\u51B2\u950B\u67AA",
+    "Type": 5,
+    "Quality": 2,
+    "Price": 12,
+    "Intro": {
+      "Code": ""
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0006.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0006/Weapon0006.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0007",
+    "Name": "\u6C64\u59C6\u900A\u51B2\u950B\u67AA",
+    "Type": 5,
+    "Quality": 4,
+    "Price": 28,
+    "Intro": {
+      "Code": ""
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0007.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0007/Weapon0007.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0008",
+    "Name": "\u6FC0\u5149\u624B\u67AA",
+    "Type": 5,
+    "Quality": 3,
+    "Price": 20,
+    "Intro": {
+      "Code": ""
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0008.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0008/Weapon0008.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0009",
+    "Name": "\u69B4\u5F39\u53D1\u5C04\u5668",
+    "Type": 5,
+    "Quality": 4,
+    "Price": 28,
+    "Intro": {
+      "Code": ""
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0009.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0009/weapon0009.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0010",
+    "Name": "M1\u578B\u70ED\u80FD\u72D9\u51FB\u67AA",
+    "Type": 5,
+    "Quality": 5,
+    "Price": 40,
+    "Intro": {
+      "Code": ""
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0010.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0010/Weapon0010.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0011",
+    "Name": "紧凑手枪",
+    "Type": 5,
+    "Quality": 5,
+    "Price": 40,
+    "Intro": {
+      "Code": ""
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0011.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0011/Weapon0011.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0013",
+    "Name": "P90",
+    "Type": 5,
+    "Quality": 4,
+    "Price": 28,
+    "Intro": {
+      "Code": ""
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0013.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0013/Weapon0013.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0014",
+    "Name": "\u5DE6\u8F6E",
+    "Type": 5,
+    "Quality": 2,
+    "Price": 12,
+    "Intro": {
+      "Code": ""
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0014.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0014/Weapon0014.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0016",
+    "Name": "\u6728\u8D28\u77ED\u5F13",
+    "Type": 5,
+    "Quality": 2,
+    "Price": 12,
+    "Intro": {
+      "Code": ""
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0016.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0016/weapon0016.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
   }
 ]
