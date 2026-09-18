@@ -7,6 +7,15 @@ using Godot;
 /// </summary>
 public partial class Enemy : AiRole
 {
+    /// <summary>
+    /// 身体碰撞伤害: 小怪贴到玩家身上就扣 1 点(带 0.75 秒冷却)。
+    ///
+    /// 【为什么放在这里】以前只有两只 Boss 有碰撞伤害, 普通小怪撞上来一点伤害都没有,
+    /// 玩家可以拿小怪当垫脚石贴着站。现在所有普通敌人(含 <see cref="NoWeaponEnemy"/>)都有。
+    /// 判定距离 34 像素, 大约是两个身位。
+    /// </summary>
+    public override int ContactDamage => 1;
+
     public override void OnInit()
     {
         base.OnInit();

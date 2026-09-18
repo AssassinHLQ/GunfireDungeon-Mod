@@ -43,11 +43,16 @@ public partial class DeathEnemy : Boss
     /// <summary>所有技能的伤害。和其他 Boss 一致，全部为 1。</summary>
     private const int SkillDamage = 1;
 
-    /// <summary>常态碰撞伤害的冷却。</summary>
-    private const float ContactCooldown = 0.75f;
+    // 常态碰撞伤害现在用 AiRole 里的通用实现(以前这里和犀牛各抄了一份,
+    // 见 AiRole.ProcessContactDamage), 这里只需要给出数值。
+    /// <summary>身体挨到玩家就扣 1 点。</summary>
+    public override int ContactDamage => SkillDamage;
 
-    /// <summary>常态碰撞判定半径（以双方身体中心算）。</summary>
-    private const float ContactRange = 52.0f;
+    /// <summary>死神体型大，碰撞判定半径比小怪远一些。</summary>
+    public override float ContactDamageRange => 52f;
+
+    /// <summary>常态碰撞伤害的冷却。</summary>
+    public override float ContactDamageCooldown => 0.75f;
 
     /// <summary>钳制回可走区域时，在受击框之外再留多远。</summary>
     private const float WallPad = 20.0f;
@@ -113,7 +118,6 @@ public partial class DeathEnemy : Boss
     private int _skillIndex;
     private bool _attacking;
     private long _coroutine = -1;
-    private float _contactTimer;
     private Rect2? _walkableRect;
 
     public override string BossDisplayName => "Reaper";
@@ -162,12 +166,6 @@ public partial class DeathEnemy : Boss
         HurtCollision.Position = BossHitboxOffset;
     }
 
-    protected override void Process(float delta)
-    {
-        base.Process(delta);
-        UpdateContactDamage(delta);
-    }
-
     public override void HurtHandler(ActivityObject target, AttackStats attackStats, float f)
     {
         base.HurtHandler(target, attackStats, f);
@@ -179,34 +177,6 @@ public partial class DeathEnemy : Boss
             _coroutine = -1;
             _attacking = false;
         }
-    }
-
-    /// <summary>常态碰撞伤害：身体挨到玩家就扣 1 点，带冷却。</summary>
-    private void UpdateContactDamage(float delta)
-    {
-        if (IsDie || IsDormant)
-        {
-            return;
-        }
-
-        if (_contactTimer > 0f)
-        {
-            _contactTimer -= delta;
-            return;
-        }
-
-        if (LookTarget is not Role target || target.IsDie || !IsTargetInSameRoom(target))
-        {
-            return;
-        }
-
-        if (target.GetCenterPosition().DistanceTo(GetCenterPosition()) > ContactRange)
-        {
-            return;
-        }
-
-        Hurt(target);
-        _contactTimer = ContactCooldown;
     }
 
     public override void Attack()

@@ -184,6 +184,11 @@ public abstract partial class Role : ActivityObject
     //近战不再使用额外的固定冷却，只在挥刀动画期间阻止重入。
     private bool _meleeAttackPlaying;
 
+    //近战判定框还要开多久(秒), <= 0 表示已经关掉。
+    //用它做保底关闭: 挥刀动画的补间被打断(换武器 / 死亡 / 节点释放)时,
+    //不会留下一个一直开着的判定框。
+    private float _meleeHitAreaLeft;
+
     /// <summary>
     /// 是否死亡
     /// </summary>
@@ -709,6 +714,18 @@ public abstract partial class Role : ActivityObject
 
     protected override void Process(float delta)
     {
+        //近战判定框保底关闭(见 EnableMeleeHitArea)。
+        //放在 IsDie 判断之前 —— 挥刀挥到一半被打死时也要保证判定框被关掉,
+        //否则尸体会一直挂着一个开着的近战判定框。
+        if (_meleeHitAreaLeft > 0f)
+        {
+            _meleeHitAreaLeft -= delta;
+            if (_meleeHitAreaLeft <= 0f && MeleeAttackCollision != null)
+            {
+                MeleeAttackCollision.Disabled = true;
+            }
+        }
+
         if (IsDie)
         {
             return;
@@ -1872,6 +1889,37 @@ public abstract partial class Role : ActivityObject
                 bullet.Destroy();
             }
         }
+    }
+
+    /// <summary>
+    /// 近战命中结算。给"自带判定框的武器"调用 —— 目前只有刀 <see cref="Knife"/> 的 HitArea。
+    ///
+    /// 【为什么需要它】Knife 里面那段命中代码在上游被整段注释掉了(用的是已经不存在的旧 API
+    /// hurt.Hurt(Role, int, float)), 所以刀能挥、能出特效、能震屏, 但打在敌人身上一点伤害都没有。
+    /// 这里让它复用角色近战攻击的同一套结算: 伤害取 WeaponBase.MeleeAttackDamageRange(刀 = 10),
+    /// 抗性/暴击、击退、命中特效全部一致。
+    /// </summary>
+    public void MeleeHit(IHurt hurt, Weapon activeWeapon)
+    {
+        HandlerCollision(hurt, activeWeapon);
+    }
+
+    /// <summary>
+    /// 打开近战判定框。
+    ///
+    /// 【为什么用计时器而不是动画回调】挥刀动画被加快一倍之后, 原来那个"挥到位才开 0.0125 秒"的
+    /// 判定窗口比一个物理帧(1/60 ≈ 0.0167 秒)还短, 开和关会落在同一个物理帧里被整帧跳过,
+    /// 于是"挥了刀却打不到人"。现在从挥刀开始一直开到收刀结束(约 0.05 秒, 2~3 个物理帧),
+    /// 由 Role.Process 里的 _meleeHitAreaLeft 保底关闭。
+    /// </summary>
+    private void EnableMeleeHitArea(float time)
+    {
+        if (MeleeAttackCollision == null)
+        {
+            return;
+        }
+        MeleeAttackCollision.Disabled = false;
+        _meleeHitAreaLeft = time;
     }
 
     private void HandlerCollision(IHurt hurt, Weapon activeWeapon)

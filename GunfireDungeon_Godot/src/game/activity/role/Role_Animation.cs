@@ -12,6 +12,10 @@ public partial class Role
 	private const float MeleeAttackHoldTime = 0.0125f;
 	private const float MeleeAttackReturnTime = 0.025f;
 
+	//整段挥刀时长 —— 也就是近战判定框需要开着的时长(见 Role.EnableMeleeHitArea)
+	private const float MeleeAttackTotalTime =
+		MeleeAttackWindupTime + MeleeAttackHoldTime + MeleeAttackReturnTime;
+
 	/// <summary>
 	/// 播放近战攻击动画
 	/// </summary>
@@ -57,20 +61,12 @@ public partial class Role
 			sprite.RotationDegrees = r;
 			AddChild(sprite);
 			effect.PlayEffect();
-
-			//启用近战碰撞区域
-			MeleeAttackCollision.Disabled = false;
 		}));
 		tween.Chain();
 		
 		tween.TweenInterval(MeleeAttackHoldTime);
 		tween.Chain();
 
-		tween.TweenCallback(Callable.From(() =>
-		{
-			//关闭近战碰撞区域
-			MeleeAttackCollision.Disabled = true;
-		}));
 		tween.TweenProperty(MountPoint, "rotation_degrees", r, MeleeAttackReturnTime);
 		tween.TweenProperty(MountPoint, "position", p1, MeleeAttackReturnTime);
 		tween.Chain();
@@ -79,6 +75,13 @@ public partial class Role
 		{
 			finish();
 		}));
+
+		//启用近战判定框, 覆盖整段挥刀动画。
+		//【为什么不再放在"挥到位"那个回调里】挥刀动画被加快一倍之后, 那个窗口只剩 0.0125 秒,
+		//比一个物理帧(1/60 ≈ 0.0167 秒)还短 —— 判定框的启用和禁用会落在同一个物理帧里被整帧跳过,
+		//于是"挥了刀却打不到人"。开关细节与保底关闭见 Role.EnableMeleeHitArea()。
+		EnableMeleeHitArea(MeleeAttackTotalTime + 0.02f);
+
 		tween.Play();
 	}
 }

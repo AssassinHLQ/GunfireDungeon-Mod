@@ -137,6 +137,22 @@ public abstract partial class AiRole : Role
     //已经静止过一轮了, 不再进入静止(没有这个标记的话 _dormantLeft 会停在负数, 计时会无限重启)
     private bool _dormantDone;
 
+    //─────────────────────────── 身体碰撞伤害 ───────────────────────────
+
+    /// <summary>
+    /// 身体贴到目标时造成的伤害。0 = 不造成碰撞伤害(默认, 不影响原来任何敌人)。
+    /// 打开它的子类见 <see cref="Enemy.ContactDamage"/> 和两个 Boss。
+    /// </summary>
+    public virtual int ContactDamage => 0;
+
+    /// <summary>碰撞伤害的判定距离(以双方身体中心算)。</summary>
+    public virtual float ContactDamageRange => 34f;
+
+    /// <summary>碰撞伤害的冷却(秒), 避免贴身时每帧都扣血。</summary>
+    public virtual float ContactDamageCooldown => 0.75f;
+
+    private float _contactDamageTimer;
+
     public override void OnInit()
     {
         base.OnInit();
@@ -162,6 +178,7 @@ public abstract partial class AiRole : Role
         base.Process(delta);
 
         UpdateDormant(delta);
+        ProcessContactDamage(delta);
 
         if (LookTarget != null)
         {
@@ -268,6 +285,58 @@ public abstract partial class AiRole : Role
                 StateController.ChangeStateInstant(AIStateEnum.AiNormal);
             }
         }
+    }
+
+    /// <summary>
+    /// 身体碰撞伤害: 目标贴到身上就扣 <see cref="ContactDamage"/> 点血, 带冷却。
+    ///
+    /// 【为什么单独一层】原来只有两只 Boss(犀牛/死神)各自抄了一份这个逻辑, 普通小怪撞上来
+    /// 一点伤害都没有 —— 玩家可以拿小怪当垫脚石站着不动。现在统一放在 AiRole:
+    /// 默认关闭(ContactDamage = 0), 谁需要谁覆盖(Enemy 全部小怪覆盖成 1)。
+    ///
+    /// 目标优先取 AI 当前锁定的目标, 没锁定就退回玩家自己 —— 小怪还没"发现"玩家时撞上也照样算。
+    /// </summary>
+    protected virtual void ProcessContactDamage(float delta)
+    {
+        if (ContactDamage <= 0 || IsDie || IsDormant)
+        {
+            return;
+        }
+
+        if (_contactDamageTimer > 0f)
+        {
+            _contactDamageTimer -= delta;
+            return;
+        }
+
+        var target = LookTarget as Role;
+        if (target == null || target.IsDestroyed)
+        {
+            target = World?.Player;
+        }
+
+        if (target == null || target.IsDie || !IsEnemy(target))
+        {
+            return;
+        }
+
+        //只在同一个房间里生效(隔壁房间坐标可能刚好重叠)
+        if (AffiliationArea == null || target.AffiliationArea != AffiliationArea)
+        {
+            return;
+        }
+
+        var self = GetCenterPosition();
+        var pos = target.GetCenterPosition();
+        if (pos.DistanceTo(self) > ContactDamageRange)
+        {
+            return;
+        }
+
+        target.HurtArea.Hurt(this,
+            new List<AttackStats> { new(ContactDamage, DamageType.Physical) },
+            null, (pos - self).Angle());
+        _contactDamageTimer = ContactDamageCooldown;
     }
 
     /// <summary>
