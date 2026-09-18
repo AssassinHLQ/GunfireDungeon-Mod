@@ -55,7 +55,40 @@ public partial class Boss : AiRole
     {
         var roleState = base.OnCreateRoleState();
         roleState.MoveSpeed = 45;
+
+        // 【为什么 BOSS 以前一个金币都不掉】AiRole.OnDie 里会调
+        // Gold.CreateGold(Position, RoleState.Gold), 但"从 AiRoleAttr.Gold 随机一个数值"
+        // 是写在 Enemy.OnCreateRoleState 里的 —— 而 BOSS 继承的是 AiRole, 不是 Enemy,
+        // 于是 BOSS 的 RoleState.Gold 一直是 0, 死了自然什么都不掉。
+        var gold = roleState.RoleBase?.AiAttr?.Gold;
+        if (gold != null && gold.Length > 0)
+        {
+            roleState.Gold = Utils.Random.RandomConfigRange(gold);
+        }
+
         return roleState;
+    }
+
+    /// <summary>
+    /// BOSS 死亡掉落: 金币 + 一个随机道具(和宝箱房同一个掉落池)。
+    /// 金币由 base.OnDie() 里的 Gold.CreateGold 负责, 这里只管那个道具。
+    /// </summary>
+    protected override void OnDie()
+    {
+        DropRewardItem();
+        base.OnDie();
+    }
+
+    private void DropRewardItem()
+    {
+        var propConfig = World?.RandomPool?.GetRandomProp();
+        if (propConfig == null)
+        {
+            return;
+        }
+
+        var item = Create(propConfig);
+        item.Throw(Position, 8, 40, new Vector2(0, 11), 0);
     }
 
     /// <summary>

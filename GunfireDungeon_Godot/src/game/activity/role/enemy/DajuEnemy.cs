@@ -22,17 +22,26 @@ using Godot;
 ///
 /// ⚠️ 2026-09-18 削弱：原来伤害是 6/6/6/9 并且【每层再 +层数-1】，二阶段再 +2。
 /// 玩家只有 Hp 6 + 护盾 4，第 1 层一个技能就 6~9 点，深层直接 14 点秒杀 —— 太离谱。
-/// 现在：层数加成整个去掉，抓挠 2→1，技能 6/6/6/9 → 2/2/2/3，二阶段 +2 → +1。
-/// 数值都集中在 BaseClawDamage 与 ConfigureAttack 里，要调只改这两处。
+/// 当时改成：层数加成整个去掉，抓挠 2→1，技能 6/6/6/9 → 2/2/2/3，二阶段 +2 → +1。
+///
+/// 🎯 现在的定位是【低血量 + 高攻击】：血量砍到 800(RoleBase.json 里 daju0001.Hp,
+/// 比犀牛/死神的 1200 低三分之一)，伤害用 DamageScale 整体翻倍来换：
+/// 抓挠 2、技能 4/4/4/6、二阶段再 +2。要调手感只改 DamageScale 这一个数。
 ///
 /// 技能释放前会在地面画出【攻击范围预警】(BossAttackWarning)，玩家有时间走位躲开。
 /// </summary>
 public partial class DajuEnemy : Boss
 {
+    /// <summary>
+    /// 大橘所有伤害的倍率 —— 「低血量、高攻击」就靠这个数。
+    /// 1 = 回到削弱后的 2/2/2/3；2 = 现在的 4/4/4/6。
+    /// </summary>
+    private const int DamageScale = 2;
+
     /// <summary>贴身抓挠的距离（近身普通攻击，不带预警）</summary>
     private const float ClawRange = 105.0f;
     private const float ClawHalfHeight = 44.0f;
-    private const int BaseClawDamage = 1;
+    private const int BaseClawDamage = 1 * DamageScale;
 
     /// <summary>
     /// Boss 帧 128x128。
@@ -277,7 +286,7 @@ public partial class DajuEnemy : Boss
         }
     }
 
-    /// <summary>大橘四个技能的参数。数值取自 4.2 原版，未改动。</summary>
+    /// <summary>大橘四个技能的参数。伤害 = 基础值 × DamageScale。</summary>
     private void ConfigureAttack(
         int attack,
         out float range, out float halfWidth, out float windup,
@@ -290,25 +299,25 @@ public partial class DajuEnemy : Boss
         halfWidth = 44;
         range = 100;
         windup = 0.5f;
-        damage = 2;
+        damage = 2 * DamageScale;
 
         switch (attack)
         {
             case 0:
                 range = 172; halfWidth = 38; windup = 0.42f;
-                damage = 2; isLine = true; dashDistance = 96;
+                damage = 2 * DamageScale; isLine = true; dashDistance = 96;
                 break;
             case 1:
                 range = 128; windup = 0.54f;
-                damage = 2; dashDistance = 48;
+                damage = 2 * DamageScale; dashDistance = 48;
                 break;
             case 2:
                 range = 285; halfWidth = 46; windup = 0.72f;
-                damage = 2; isLine = true;
+                damage = 2 * DamageScale; isLine = true;
                 break;
             default:
                 range = 92; windup = 0.82f;
-                damage = 3; targetCentered = true;
+                damage = 3 * DamageScale; targetCentered = true;
                 break;
         }
 
@@ -317,7 +326,7 @@ public partial class DajuEnemy : Boss
         {
             windup *= 0.85f;
             range *= 1.1f;
-            damage += 1;
+            damage += 1 * DamageScale;
         }
     }
 
