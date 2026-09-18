@@ -134,6 +134,8 @@ public abstract partial class AiRole : Role
     //-1 = 还没开始计时(玩家还没进房间)
     private float _dormantLeft = -1f;
     private bool _dormantActive;
+    //已经静止过一轮了, 不再进入静止(没有这个标记的话 _dormantLeft 会停在负数, 计时会无限重启)
+    private bool _dormantDone;
 
     public override void OnInit()
     {
@@ -193,9 +195,9 @@ public abstract partial class AiRole : Role
     /// 所以先用 CalcAttackTarget() 确认"房间里已经有敌人(玩家)"才开始计时 ——
     /// 也就是玩家真的进门那一刻。
     ///
-    /// 静止期间的做法: 关掉攻击欲望和移动欲望(AiNormalState 只看这两个开关),
-    /// 并把状态机强制按回 AiNormal —— 因为注释里写明"其他状态都可以移动",
-    /// 不按回去的话残留状态照样会走。
+    /// 静止期间的做法: 直接关掉 AI 状态机(StateController.Enable = false),
+    /// 并把速度和外力清零, 保证它是一尊雕像。
+    /// ⚠️ 只关"攻击欲望/移动欲望"是拦不住的, 原因见方法里的注释。
     /// </summary>
     private void UpdateDormant(float delta)
     {
@@ -204,7 +206,7 @@ public abstract partial class AiRole : Role
             return;
         }
 
-        if (!_dormantActive && _dormantLeft < 0f && CalcAttackTarget() != null)
+        if (!_dormantActive && !_dormantDone && CalcAttackTarget() != null)
         {
             _dormantActive = true;
             _dormantLeft = DormantTime;
@@ -217,22 +219,54 @@ public abstract partial class AiRole : Role
             return;
         }
 
+        //静止期里被击杀(1200 血 + 50% 减伤, 玩家够狠是能做到的): 这里必须收手,
+        //否则下面每帧一次 Play(idle) 会把死亡动画覆盖掉, 尸体就定在 idle 上。
+        if (IsDie)
+        {
+            return;
+        }
+
         _dormantLeft -= delta;
 
+        // ── 静止期必须"真的动不了" ──
+        // 光把攻击欲望/移动欲望关掉是拦不住的:
+        //   1) AiNormalState.Process 第一句就是 `LookTarget != null → AiTailAfter`, 根本不看这两个开关;
+        //   2) Boss.Process 每帧又把 LookTarget 强制设成玩家, 于是那一句永远成立;
+        //   3) AiTailAfter / AiFollowUp / AiSurround 也都不看开关, 只要目标还在就 DoMove()。
+        // 结果 Boss 会在静止期里一帧一帧往玩家那边挪 —— 玩家看到的就是"站着不动, 却一直在平移"。
+        // 另外中弹会通过 AddRepelForce 给一点击退力, 站着挨打也会被慢慢推走, 一并清掉。
+        if (StateController != null && StateController.Enable)
+        {
+            StateController.Enable = false;
+        }
         SetAttackDesire(false);
         SetMoveDesire(false);
-        if (StateController.CurrState != AIStateEnum.AiNormal)
+        BasisVelocity = Vector2.Zero;
+        MoveController?.ClearForce();
+        if (AnimatedSprite != null && AnimatedSprite.SpriteFrames != null &&
+            AnimatedSprite.SpriteFrames.HasAnimation(AnimatorNames.Idle))
         {
-            StateController.ChangeStateInstant(AIStateEnum.AiNormal);
+            AnimatedSprite.Play(AnimatorNames.Idle);
         }
 
         if (_dormantLeft <= 0f)
         {
             _dormantActive = false;
+            //【必须记下"已经醒过"】以前只把 _dormantActive 置 false, _dormantLeft 会停在 -0.0x,
+            // 下一帧开头的 `_dormantLeft < 0f` 又成立 —— 21.1 秒从头再计时, 永远醒不过来:
+            // Boss 全程站着不动、一个技能都不放, 只会一点点平移(就是实测到的那个问题)。
+            _dormantDone = true;
+            _dormantLeft = 0f;
             SetAttackDesire(true);
             SetMoveDesire(true);
             //静止结束, 撤掉临时减伤
             RoleState.ExtraReducePct = 0f;
+            //把 AI 状态机交还回去
+            if (StateController != null && !IsDie)
+            {
+                StateController.Enable = true;
+                StateController.ChangeStateInstant(AIStateEnum.AiNormal);
+            }
         }
     }
 
