@@ -81,7 +81,9 @@ public static class DeathSpriteFrames
         AddStrip(frames, AnimCast, "cast.png", 12, false, 10);
         AddStrip(frames, AnimCast2, "cast2.png", 13, false, 10);
         AddStrip(frames, AnimVortex, "vortex.png", 12, false, 12);
-        AddStrip(frames, AnimShadow, "shadow_burst.png", 16, false, 12);
+        // ⚠️ 暗影突袭实测只有 15 帧: 源图这一行第 16 格是全透明的
+        //    (把 16 帧全登进来, 技能最后 1/12 秒 BOSS 会整个消失一下)。
+        AddStrip(frames, AnimShadow, "shadow_burst.png", 15, false, 12);
         AddStrip(frames, AnimSummon, "summon.png", 11, false, 10);
         AddStrip(frames, AnimHarvest, "cast3.png", 11, false, 10);
         AddStrip(frames, AnimBoneRain, "bone_rain.png", 11, false, 10);
