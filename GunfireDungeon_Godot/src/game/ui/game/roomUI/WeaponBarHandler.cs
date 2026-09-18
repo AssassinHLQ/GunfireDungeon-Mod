@@ -24,14 +24,13 @@ public partial class WeaponBarHandler : Control, IUiNodeScript
         if (weapon != null)
         {
             SetWeaponTexture(weapon.GetCurrentTexture());
-            // 第二个数字给【剩余子弹总量】= 弹夹 + 备用弹药。
-            // 原来传的是 Attribute.AmmoCapacity(弹夹容量), 满弹时永远显示 "12/12",
-            // 玩家看不出还剩多少子弹。
+            // 显示「弹夹 / 备用弹药」—— 后面这个数字是【只算备用弹药】, 不含弹夹里那几发。
+            // 总弹药 = 前面的数字 + 后面的数字, 玩家自己一眼能加出来。
             //
-            // 备用弹药就是 Weapon.CurrReserveAmmo(含义见 Weapon.cs 里的说明),
-            // 换弹会从它里面扣, 它和弹夹都空了才是真的打不出子弹。
-            // 不再从法力池换算 —— 法力系统已经不再限制射击。
-            SetWeaponAmmunition(weapon.CurrAmmo, weapon.CurrAmmo + weapon.CurrReserveAmmo);
+            // 【为什么不是"弹夹+备用"的总量】之前两个数字都是总量, 结果开一枪两个数一起掉,
+            // 而且换弹时数字几乎不动, 看不出消耗。
+            // 现在: 开枪只减前一个数, 换弹只从后一个数里扣, 两个数字各自只反映一件事。
+            SetWeaponAmmunition(weapon.CurrAmmo, weapon.CurrReserveAmmo);
         }
         else
         {
@@ -62,7 +61,7 @@ public partial class WeaponBarHandler : Control, IUiNodeScript
     /// 填充条（原来的黄色/蓝色那条）与子弹图标列都已经去掉，只留数字。
     /// </summary>
     /// <param name="currAmmo">当前弹夹里的子弹数</param>
-    /// <param name="totalAmmo">剩余子弹总量（弹夹 + 储备池）</param>
+    /// <param name="totalAmmo">备用弹药量(不含弹夹)</param>
     public void SetWeaponAmmunition(int currAmmo, int totalAmmo)
     {
         // 法力缓冲条与法力图标已经没有对应数值了，保持隐藏
