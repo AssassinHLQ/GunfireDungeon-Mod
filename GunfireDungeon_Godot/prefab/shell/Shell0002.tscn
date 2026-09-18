@@ -37,7 +37,8 @@ script = ExtResource("1_qi64y")
 ShadowSprite = NodePath("ShadowSprite")
 AnimatedSprite = NodePath("AnimatedSprite")
 Collision = NodePath("Collision")
-ShadowOffset = Vector2(0, 1)
+ShadowOffset = Vector2(0, 1)
+AutoDestroyDelay = 3.0
 
 [node name="ShadowSprite" type="Sprite2D" parent="."]
 z_index = -1
