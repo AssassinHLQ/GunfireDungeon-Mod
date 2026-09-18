@@ -26,6 +26,9 @@ public partial class Player : Role
     
     //翻滚冷却计时器
     private float _rollCoolingTimer = 0;
+
+    //毒液伤害的冷却计时器
+    private float _liquidHurtTimer = 0;
     
     private BrushImageData _brushData;
     private List<KeyValuePair<long, int>> _hurtList = new List<KeyValuePair<long, int>>();
@@ -55,7 +58,7 @@ public partial class Player : Role
         
         _brushData = LiquidBrushManager.GetBrush("0001");
         PickUpWeapon(Create<Weapon>(Ids.Id_weapon0003));
-        PickUpWeapon(Create<Weapon>(Ids.Id_weapon0002));
+        PickUpWeapon(Create<Weapon>(Ids.Id_weapon0002));
 
         // this.CallDelay(1f, () =>
         // {
@@ -137,6 +140,9 @@ public partial class Player : Role
         {
             _rollCoolingTimer -= delta;
         }
+
+        //站在毒液里会掉血(见 UpdateLiquidDamage)
+        UpdateLiquidDamage(delta);
         
         if (MountLookTarget) //看向目标
         {
@@ -508,6 +514,51 @@ public partial class Player : Role
         {
             SoundManager.PlaySoundByConfig("role_hurt", Position);
         }
+    }
+
+    /// <summary>
+    /// 站在毒液(绿色液体)里会持续掉血。
+    ///
+    /// 毒液是 NoWeaponEnemy(那只边走边留绿色液体的徒手怪)画在房间液体画布上的
+    /// (见 NoWeaponEnemy.Process 里的 DrawLiquid), 原版它只是纯装饰, 踩上去一点事都没有。
+    /// 这里补上它的伤害: 站在毒液上每 0.8 秒扣 1 点。
+    ///
+    /// · 只看"毒液"层(LiquidLayer 0002), 水层不伤人
+    /// · 伤害用物理类型: 化学类型有 0.5 的护盾倍率, 1 点会被四舍五入抹成 0
+    /// · 翻滚期间受击框是关掉的, 所以翻滚穿过毒液不会掉血(Role.HurtHandler 里挡掉了)
+    /// </summary>
+    private void UpdateLiquidDamage(float delta)
+    {
+        if (_liquidHurtTimer > 0f)
+        {
+            _liquidHurtTimer -= delta;
+            return;
+        }
+
+        var canvas = AffiliationArea?.RoomInfo?.LiquidCanvas;
+        if (canvas == null)
+        {
+            return;
+        }
+
+        //脚下和身体中心各采一个点, 任意一个踩在毒液上就算
+        if (!IsStandingInDamageLiquid(canvas, Position) &&
+            !IsStandingInDamageLiquid(canvas, GetCenterPosition()))
+        {
+            return;
+        }
+
+        _liquidHurtTimer = GameConfig.LiquidHurtCooldown;
+        HurtArea.Hurt(null,
+            new List<AttackStats> { new(GameConfig.LiquidHurtDamage, DamageType.Physical) },
+            null, 0f);
+    }
+
+    private static bool IsStandingInDamageLiquid(LiquidCanvas canvas, Vector2 worldPosition)
+    {
+        var cell = canvas.ToLiquidCanvasPosition(worldPosition);
+        var pixel = canvas.GetPixelData(cell.X, cell.Y);
+        return pixel?.Layer != null && pixel.Layer.Id == GameConfig.DamageLiquidLayerId;
     }
 
     protected override void ChangeInteractiveItem(CheckInteractiveResult prev, CheckInteractiveResult result)

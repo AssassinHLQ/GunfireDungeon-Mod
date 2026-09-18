@@ -40,6 +40,18 @@ public static class GameConfig
     /// 液体画布可绘制区域边距
     /// </summary>
     public const int LiquidMargin = 1;
+
+    /// <summary>
+    /// 会伤人的液体层(= 毒液)。对应 LiquidLayer.json 里 Id 为 0002 的"毒液"层;
+    /// 0001 是水层, 只是装饰, 踩上去不掉血。
+    /// </summary>
+    public const string DamageLiquidLayerId = "0002";
+
+    /// <summary>
+    /// 站在毒液里每次扣多少血 / 两次之间隔多久(秒)
+    /// </summary>
+    public const int LiquidHurtDamage = 1;
+    public const float LiquidHurtCooldown = 0.8f;
     
     /// <summary>
     /// 连接房间的过道宽度
