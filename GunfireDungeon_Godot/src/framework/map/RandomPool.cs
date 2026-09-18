@@ -106,16 +106,16 @@ public class RandomPool
                 mark.Attr.Add("Face", "0");
                 mark.DerivedAttr = new Dictionary<string, string>();
                 mark.DerivedAttr.Add("Face", World.Random.RandomChoose((int)FaceDirection.Left, (int)FaceDirection.Right).ToString()); //链朝向
-                if (World.Random.RandomBoolean(0.8f)) //手持武器
-                {
-                    var weapon = GetRandomWeapon();
-                    var weaponAttribute = Weapon.GetWeaponAttribute(weapon.Id);
-                    mark.Attr.Add("Weapon", weapon.Id); //武器id
-                    mark.Attr.Add("CurrAmmon", weaponAttribute.AmmoCapacity.ToString()); //弹夹弹药量
-                    // 键名沿用旧的 "ResidueMana", 含义已经改成【备用弹药】(见 RoomPreinstall)
-                    mark.Attr.Add("ResidueMana",
-                        (weaponAttribute.AmmoCapacity * Weapon.ReserveMagazineCount).ToString());
-                }
+                // 小怪一律手持武器。
+                // 原来这里是 `if (World.Random.RandomBoolean(0.8f))`, 也就是有 20% 的小怪光着手出生 ——
+                // 空手的小怪既打不到人、死了也掉不出武器, 实测看上去就是"这个小怪出生没有武器"。
+                var weapon = GetRandomWeapon();
+                var weaponAttribute = Weapon.GetWeaponAttribute(weapon.Id);
+                mark.Attr.Add("Weapon", weapon.Id); //武器id
+                mark.Attr.Add("CurrAmmon", weaponAttribute.AmmoCapacity.ToString()); //弹夹弹药量
+                // 键名沿用旧的 "ResidueMana", 含义已经改成【备用弹药】(见 RoomPreinstall)
+                mark.Attr.Add("ResidueMana",
+                    (weaponAttribute.AmmoCapacity * Weapon.ReserveMagazineCount).ToString());
             }
             else if (activityType == ActivityType.Weapon) //武器
             {

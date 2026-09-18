@@ -229,6 +229,9 @@ public abstract partial class AiRole : Role
             _dormantLeft = DormantTime;
             //静止期间给临时减伤(默认 50%)
             RoleState.ExtraReducePct = DormantReducePct;
+            SetDormantTint(true);
+            Debug.Log($"[{RoleState?.RoleBase?.Id}] 登场静止开始: {DormantTime:0.#} 秒, 减伤 {(int)(DormantReducePct * 100)}%" +
+                      $" (ExtraReducePct={RoleState?.ExtraReducePct})");
         }
 
         if (!_dormantActive)
@@ -236,10 +239,13 @@ public abstract partial class AiRole : Role
             return;
         }
 
-        //静止期里被击杀(1200 血 + 50% 减伤, 玩家够狠是能做到的): 这里必须收手,
+        //静止期里被击杀(1200 血 + 减伤, 玩家够狠是能做到的): 这里必须收手,
         //否则下面每帧一次 Play(idle) 会把死亡动画覆盖掉, 尸体就定在 idle 上。
         if (IsDie)
         {
+            _dormantActive = false;
+            RoleState.ExtraReducePct = 0f;
+            SetDormantTint(false);
             return;
         }
 
@@ -276,8 +282,10 @@ public abstract partial class AiRole : Role
             _dormantLeft = 0f;
             SetAttackDesire(true);
             SetMoveDesire(true);
-            //静止结束, 撤掉临时减伤
+            //静止结束, 撤掉临时减伤 + 去掉冷色调
             RoleState.ExtraReducePct = 0f;
+            SetDormantTint(false);
+            Debug.Log($"[{RoleState?.RoleBase?.Id}] 登场静止结束, 减伤已撤销(现在开始正常掉血)");
             //把 AI 状态机交还回去
             if (StateController != null && !IsDie)
             {
@@ -285,6 +293,23 @@ public abstract partial class AiRole : Role
                 StateController.ChangeStateInstant(AIStateEnum.AiNormal);
             }
         }
+    }
+
+    /// <summary>
+    /// 登场静止期的冷色调 —— 这是个【视觉提示】:
+    /// 静止期有减伤, 但玩家看不到任何反馈, 就会以为"免伤没有生效"
+    /// (尤其是减伤已经结束、自己在打满伤害的时候)。
+    /// 现在只要 Boss 还是冷色, 就说明减伤还挂着; 颜色一恢复 = 减伤结束。
+    /// </summary>
+    private static readonly Color DormantTint = new(0.62f, 0.68f, 1f);
+
+    private void SetDormantTint(bool dormant)
+    {
+        if (AnimatedSprite == null)
+        {
+            return;
+        }
+        AnimatedSprite.Modulate = dormant ? DormantTint : Colors.White;
     }
 
     /// <summary>
