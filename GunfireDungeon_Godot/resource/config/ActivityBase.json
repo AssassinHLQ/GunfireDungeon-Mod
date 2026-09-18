@@ -1309,5 +1309,24 @@
     "Icon": "res://resource/sprite/weapon/weapon0016/weapon0016.png",
     "NotInRandomPool": false,
     "ShowInMapEditor": true
+  },
+  {
+    "Id": "death0001",
+    "Name": "Reaper",
+    "Type": 12,
+    "Quality": 0,
+    "Price": 0,
+    "Intro": {
+      "Code": "\u6b7b\u795e"
+    },
+    "Details": {
+      "Code": "\u6700\u7ec8 BOSS"
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/role/enemy/Death.tscn",
+    "Icon": "",
+    "NotInRandomPool": true,
+    "ShowInMapEditor": true
   }
 ]

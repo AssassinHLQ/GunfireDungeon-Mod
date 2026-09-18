@@ -209,7 +209,7 @@ public partial class DungeonManager : Node2D
     private static readonly Dictionary<string, string> BossBgmIdMap = new Dictionary<string, string>
     {
         { "rhino0001", RhinoBossBgmId },
-        //死神还没建出来, 这里先把 id 定成 death0001; 建 Boss 房时 Preinstall 里的标记要用同一个 id
+        //死神的 Boss 房是 Boss4, 预设里的标记 id 就是 death0001
         { "death0001", DeathBossBgmId },
     };
 

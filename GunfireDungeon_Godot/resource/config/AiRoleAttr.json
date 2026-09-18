@@ -54,5 +54,19 @@
     ],
     "BloodColor": "b03030",
     "__BodyFragment": "enemy_dead0001"
+  },
+  {
+    "Id": "death0001",
+    "Remark": "\u6b7b\u795e BOSS",
+    "AttackInterval": 1.4,
+    "ViewRange": 460,
+    "TailAfterViewRange": 640,
+    "ViewAngleRange": 260,
+    "Gold": [
+      60,
+      120
+    ],
+    "BloodColor": "b03030",
+    "__BodyFragment": "enemy_dead0001"
   }
 ]
