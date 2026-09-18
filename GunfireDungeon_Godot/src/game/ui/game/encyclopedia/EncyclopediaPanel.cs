@@ -27,6 +27,10 @@ public partial class EncyclopediaPanel : Encyclopedia
         _tab.Add(new TabData(ResourcePath.resource_sprite_ui_encyclopedia_TabIcon1_png, ActivityType.Weapon));
         _tab.Add(new TabData(ResourcePath.resource_sprite_ui_encyclopedia_TabIcon1_png, ActivityType.Prop));
         _tab.Add(new TabData(ResourcePath.resource_sprite_ui_encyclopedia_TabIcon1_png, ActivityType.Enemy));
+
+        // 说明文字里用了 BBCode(例如武器零件的 "水[color=#7bc1d5]子弹[/color]")。
+        // RichTextLabel 的 bbcode_enabled 默认是 false, 不开这个开关就会把标签原样显示出来。
+        S_ItemDes.Instance.BbcodeEnabled = true;
         
         _grid = CreateUiGrid<ObjectButton, ExcelConfig.ActivityBase, ItemCell>(S_ObjectButton);
         _grid.SetHorizontalExpand(true);
@@ -72,8 +76,15 @@ public partial class EncyclopediaPanel : Encyclopedia
         //         ExcelConfig.ActivityBase_List.Where(data => data.Type == type).ToArray()
         //     )
         // );
+        // 敌人页签里连 Boss 一起列出来。
+        // Boss 用"有没有图标"再过滤一道: boss0001 是上游留下的空壳配置
+        // (名字就叫 Boss, 预制体文件 prefab/role/boss/Boss0001.tscn 根本不存在), 不该出现在图册里。
         _grid.SetDataList(
-            ExcelConfig.ActivityBase_List.Where(data => data.Type == type).ToArray()
+            type == ActivityType.Enemy
+                ? ExcelConfig.ActivityBase_List.Where(data =>
+                    data.Type == ActivityType.Enemy ||
+                    (data.Type == ActivityType.Boss && !string.IsNullOrEmpty(data.Icon))).ToArray()
+                : ExcelConfig.ActivityBase_List.Where(data => data.Type == type).ToArray()
         );
         SelectItem(null);
     }

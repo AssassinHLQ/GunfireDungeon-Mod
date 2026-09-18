@@ -57,6 +57,18 @@ public partial class Boss : AiRole
         return roleState;
     }
 
+    /// <summary>
+    /// 移动时精灵的倾斜角度(度)。
+    ///
+    /// 【为什么会"左右摇摆大约 10 度"】原版这里写死 ±10: 按 BasisVelocity.X 的方向把
+    /// AnimatedSprite 转过去, 再用 Mathf.MoveToward(..., 25 * delta) 平滑过渡。
+    /// Boss 是绕着玩家随机走位(AiSurround), 速度方向一直在变, 于是精灵就一直在 ±10 度之间来回摆 ——
+    /// 俯视视角的像素游戏里角色整体倾斜很容易被当成穿帮, 所以默认改成 0(完全不摇摆)。
+    ///
+    /// 想要原版那种"走路带点倾斜"的手感, 把这个值改回 10 即可(子类也可以各自覆盖)。
+    /// </summary>
+    protected virtual float MoveLeanDegrees => 0f;
+
     protected override void Process(float delta)
     {
         if (Hp <= 0)
@@ -67,14 +79,19 @@ public partial class Boss : AiRole
         LookTarget = World.Player;
         //UpdateFace();
 
+        var lean = MoveLeanDegrees;
         var velocity = BasisVelocity;
-        if ((Face == FaceDirection.Right && velocity.X > 0) || (Face == FaceDirection.Left && velocity.X < 0))
+        if (lean <= 0f)
         {
-            _targetRotation = 10;
+            _targetRotation = 0f;
+        }
+        else if ((Face == FaceDirection.Right && velocity.X > 0) || (Face == FaceDirection.Left && velocity.X < 0))
+        {
+            _targetRotation = lean;
         }
         else if ((Face == FaceDirection.Right && velocity.X < 0) || (Face == FaceDirection.Left && velocity.X > 0))
         {
-            _targetRotation = -10;
+            _targetRotation = -lean;
         }
         else
         {

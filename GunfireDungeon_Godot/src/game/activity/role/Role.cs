@@ -1133,6 +1133,16 @@ public abstract partial class Role : ActivityObject
             return;
         }
 
+        //【翻滚/遁地等"关掉受击框"的状态必须真的免伤】
+        //子弹打的是 HurtArea 的碰撞体, 受击框关掉就打不到; 但 Boss 技能的伤害是代码里
+        //直接调 target.HurtArea.Hurt(...) 的, 根本不走碰撞检测 —— 所以以前翻滚躲不掉任何技能,
+        //玩家看到的就是"红圈判定太离谱, 怎么翻滚都免不了伤"。
+        //这里统一挡一道: 受击框被关掉 = 这一帧不吃任何伤害。
+        if (HurtCollision != null && HurtCollision.Disabled)
+        {
+            return;
+        }
+
         //计算角色抗性后受到的伤害
         var damageResult = DamageManager.ApplyDamage(this, attackStats);
 
