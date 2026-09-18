@@ -394,5 +394,11 @@
     "Path": "res://resource/sound/bgm/Erlkoenig_Piano.ogg",
     "Volume": 1,
     "Remark": "Rhino Boss BGM - \u9b54\u738b D.328 \u94a2\u7434\u7248 (\u8212\u4f2f\u7279\u4f5c\u66f2, \u516c\u6709\u9886\u57df; \u672c\u9879\u76ee\u6e32\u67d3)"
+  },
+  {
+    "Id": "bgm_boss_death",
+    "Path": "res://resource/sound/bgm/WinterWind.ogg",
+    "Volume": 1,
+    "Remark": "\u6b7b\u795e Boss BGM - \u8096\u90a6 \u51ac\u98ce\u7ec3\u4e60\u66f2 Op.25 No.11 (European Archive, Musopen CC PD); \u524d 21.1 \u79d2\u662f\u5f15\u5b50, Boss \u5728\u90a3\u91cc\u8d77\u8eab"
   }
 ]

@@ -187,6 +187,17 @@ public partial class DungeonManager : Node2D
     public const string RhinoBossBgmId = "bgm_boss_rhino";
 
     /// <summary>
+    /// 死神(最终 Boss)专用 BGM: 肖邦《冬风》练习曲 Op.25 No.11。
+    ///
+    /// 【为什么要专门记时间】这首曲子前 21.1 秒是引子(实测平均 −32 dB),
+    /// 21.1 秒主部才爆发(直接跳到 −16 dB)。死神的登场静止时长就是按这个数配的
+    /// (见 <see cref="AiRole.DormantTime"/>, 死神那边写 21.1f),
+    /// 所以【这个音频文件绝对不能裁头, 也不要做交叉淡化循环】——
+    /// 一动首尾, 21.1 秒这个时刻就移位, Boss 起身的时机就错开了。
+    /// </summary>
+    public const string DeathBossBgmId = "bgm_boss_death";
+
+    /// <summary>
     /// 特定 Boss 的专属 BGM: key = 房间预设里那个 Boss 标记的 Id,
     /// value = Sound.json 里的 BGM Id。不在表里的 Boss 用默认 Boss 曲。
     ///
@@ -198,6 +209,8 @@ public partial class DungeonManager : Node2D
     private static readonly Dictionary<string, string> BossBgmIdMap = new Dictionary<string, string>
     {
         { "rhino0001", RhinoBossBgmId },
+        //死神还没建出来, 这里先把 id 定成 death0001; 建 Boss 房时 Preinstall 里的标记要用同一个 id
+        { "death0001", DeathBossBgmId },
     };
 
     /// <summary>
@@ -647,7 +660,12 @@ public partial class DungeonManager : Node2D
             {
                 random = new SeedRandom();
             }
-       
+
+            //把"本层要不要在出口前放 Boss 房"从楼层计划同步进配置。
+            //CurrConfig 是跨层复用的同一个对象(AdvanceToNextFloor 直接把它传回来),
+            //所以必须每层生成前重新同步一次, 不能只在构造时设。
+            CurrConfig.BossBeforeExit = CurrentFloorDef?.BossBeforeExit ?? false;
+
             var dungeonGenerator = new DungeonGenerator(CurrConfig, random);
             var rule = new DefaultDungeonRule(dungeonGenerator);
             if (!dungeonGenerator.Generate(rule)) //生成房间失败
