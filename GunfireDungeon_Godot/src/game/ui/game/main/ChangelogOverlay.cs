@@ -91,8 +91,8 @@ public partial class ChangelogOverlay : Control
         "\n" +
         "【六】音乐\n" +
         "· 全部换成公有领域的古典曲目，AI 生成的音乐已全部移除\n" +
-        "· 除《魔王》为本项目自行渲染外，其余曲目来自 Musopen，录音授权为 CC0 1.0\n" +
-        "  （CC0 不要求署名，这里仍然逐首列出演奏者）\n" +
+        "· 除《魔王》为本项目自行渲染外，其余曲目来自 Musopen，录音授权为 CC PD\n" +
+        "  （Creative Commons Public Domain Mark，不要求署名，这里仍然逐首列出演奏者）\n" +
         "· 主菜单：肖邦 夜曲 Op.55 No.1 —— Luke Faulkner 演奏\n" +
         "· 大厅：肖邦 夜曲 Op. posth. 72 No.1，1.1 倍速 —— Anonymous 演奏\n" +
         "· 普通房间 第 1 层：贝多芬 悲怆奏鸣曲 第三乐章 —— Paul Pitman 演奏\n" +
