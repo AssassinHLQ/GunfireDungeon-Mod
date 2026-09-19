@@ -5,7 +5,11 @@ using DsUi;      // 项目自定义的 WaitForSeconds 在这个命名空间里�
 using Godot;
 
 /// <summary>
-/// 死神(Reaper) —— 最终 BOSS，十个技能。
+/// 死神 —— 最终 BOSS，十个技能。
+///
+/// 【名字】对外显示名叫「甲方」(<see cref="BossDisplayName"/>)。
+///   类名/资源 id 仍然是 Death / death0001，只有玩家看得到的名字改了口径，
+///   所以要找这个 BOSS 的代码请看 Death，要找它的显示名请看 BossDisplayName。
 ///
 /// 继承 <see cref="Boss"/>（和大橘 / 犀牛同一条路线）：
 ///   · BossDisplayName / Weight 定义在 Boss/AiRole 这条链上
@@ -120,7 +124,9 @@ public partial class DeathEnemy : Boss
     private long _coroutine = -1;
     private Rect2? _walkableRect;
 
-    public override string BossDisplayName => "Reaper";
+    // BOSS 登场横幅上显示的名字（GameNotificationOverlay 读它）。
+    // 2026-09-19 由 "Reaper" 改为「甲方」—— 类名和资源 id 不动。
+    public override string BossDisplayName => "甲方";
 
     public override void OnInit()
     {
