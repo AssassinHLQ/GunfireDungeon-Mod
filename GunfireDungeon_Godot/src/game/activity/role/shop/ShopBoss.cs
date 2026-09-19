@@ -114,10 +114,10 @@ public partial class ShopBoss : AiRole
             var name = ActivityBase?.Name ?? "商店";
             if (RefreshCostGold <= 0)
             {
-                return $"{name}（刷新免费）";
+                return $"{name}（按 E 刷新商品 · 免费）";
             }
 
-            return $"{name}（刷新商品 {CurrentRefreshCost} 金币）";
+            return $"{name}（按 E 刷新商品 · {CurrentRefreshCost} 金币）";
         }
     }
 
@@ -143,6 +143,27 @@ public partial class ShopBoss : AiRole
         base.OnInit();
         SetAttackDesire(false); //默认不攻击
         SetMoveDesire(false); //默认不移动
+
+        // ── 让玩家的交互区域能探测到店主 ──
+        //
+        // 【踩坑记录】玩家 RoleTemplate.tscn 里那个 InteractiveArea 的
+        //   collision_layer = 0, collision_mask = 4(Prop)
+        // 而 ShopBoss0001.tscn 把本节点根部的 collision_layer 覆盖成了
+        //   1024(HurtArea)
+        // 两个值按位与是 0 —— 所以玩家走近店主【根本不会弹交互提示】,
+        // 也就没法按 E 对话刷新。之前"商店老板无法交互"就是这个原因。
+        //
+        // 把 Prop 位并进去(1024 | 4 = 1028)即可。
+        //
+        // 【为什么安全】店主 Camp = Peace(1)。Role.IsEnemy() 里有
+        //   if (other.Camp == Camp || other.Camp == Peace || Camp == Peace) return false;
+        // 所以哪怕房间归属区域(AffiliationArea 的 mask 含 Prop)探测到了店主,
+        // DungeonManager.OnCheckEnemy 的 IsEnemyWithPlayer() 也是 false,
+        // 不会把它当成"房间还没清空"而卡住门。
+        CollisionLayer |= PhysicsLayer.Prop;
+
+        Debug.Log($"[商店] 店主交互层已修正: CollisionLayer={CollisionLayer} " +
+                  $"(Prop={PhysicsLayer.Prop}, HurtArea={PhysicsLayer.HurtArea})");
     }
 
     public override void OnCreateWithMark(RoomPreinstall roomPreinstall, ActivityMark activityMark)

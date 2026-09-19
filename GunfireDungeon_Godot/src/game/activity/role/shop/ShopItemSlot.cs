@@ -239,7 +239,26 @@ public partial class ShopItemSlot : Area2D, IInteractive, IOutline
 
     public CheckInteractiveResult CheckInteractive(ActivityObject master)
     {
-        return new CheckInteractiveResult(this, _config != null && master is Role);
+        if (_config == null || master is not Role role)
+        {
+            return new CheckInteractiveResult(this, false);
+        }
+
+        // 【让店主优先】
+        // Role.Process() 选互动对象的方式是"取列表里第一个 CheckInteractive 返回 true 的",
+        // 而 InteractiveItemList 是按【进入交互区域的先后】排的, 不是按距离。
+        // 货架在店主下方 34px、碰撞体又比店主的大, 玩家走过来通常先碰到货架 ——
+        // 于是按 E 永远只能买商品, 根本选不到店主, 也就刷不了新。
+        // 所以只要店主也在交互范围内, 货架就主动让位。
+        foreach (var interactive in role.InteractiveItemList)
+        {
+            if (interactive is ShopBoss)
+            {
+                return new CheckInteractiveResult(this, false);
+            }
+        }
+
+        return new CheckInteractiveResult(this, true);
     }
 
     public void Interactive(ActivityObject master)
