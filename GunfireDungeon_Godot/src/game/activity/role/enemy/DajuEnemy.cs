@@ -24,24 +24,36 @@ using Godot;
 /// 玩家只有 Hp 6 + 护盾 4，第 1 层一个技能就 6~9 点，深层直接 14 点秒杀 —— 太离谱。
 /// 当时改成：层数加成整个去掉，抓挠 2→1，技能 6/6/6/9 → 2/2/2/3，二阶段 +2 → +1。
 ///
-/// 🎯 现在的定位是【低血量 + 高攻击】：血量砍到 800(RoleBase.json 里 daju0001.Hp,
-/// 比犀牛/死神的 1200 低三分之一)，伤害用 DamageScale 整体翻倍来换：
-/// 抓挠 2、技能 4/4/4/6、二阶段再 +2。要调手感只改 DamageScale 这一个数。
+/// 🎯 现在的定位是【低血量 + 略高攻击】：血量 800(RoleBase.json 里 daju0001.Hp,
+/// 比犀牛/死神的 1200 低三分之一)，伤害比它们高一档来换。
+///
+/// ⚠️ 2026-09-19 回调：曾经把 DamageScale 设成 2（抓挠 2、技能 4/4/4/6、二阶段 +2），
+/// 结果玩家 Hp 只有 6 + 护盾 4，一个技能打掉 3~4 点、二阶段 5~6 点，
+/// 也就是挨 2~3 下就死，根本打不过。现在回到 1.0。
+///
+/// 【伤害标尺】另外两个 BOSS 的技能伤害都只有 1（RhinoEnemy / DeathEnemy 的 SkillDamage），
+/// 所以大橘 2/2/2/3 已经是全场最高，不需要再翻倍。
 ///
 /// 技能释放前会在地面画出【攻击范围预警】(BossAttackWarning)，玩家有时间走位躲开。
 /// </summary>
 public partial class DajuEnemy : Boss
 {
     /// <summary>
-    /// 大橘所有伤害的倍率 —— 「低血量、高攻击」就靠这个数。
-    /// 1 = 回到削弱后的 2/2/2/3；2 = 现在的 4/4/4/6。
+    /// 大橘所有伤害的倍率 —— 「低血量、略高攻击」就靠这个数，改它一个就够了。
+    /// 基准是 抓挠 1 / 技能 2-2-2-3 / 二阶段每下 +1，实际取值 = (int)(基准 × DamageScale)。
+    ///
+    ///   1.0 → 抓挠 1、技能 2/2/2/3、二阶段 3/3/3/4   ← 现在（玩家约能扛 5~6 下）
+    ///   1.5 → 抓挠 1、技能 3/3/3/4、二阶段 4/4/4/5   （玩家约能扛 4 下，偏硬）
+    ///   2.0 → 抓挠 2、技能 4/4/4/6、二阶段 6/6/6/8   （玩家 2~3 下就死，已证实不可玩）
     /// </summary>
-    private const int DamageScale = 2;
+    private const float DamageScale = 1.0f;
+
+    /// <summary>基准伤害 × DamageScale，向下取整。</summary>
+    private static int Dmg(int baseDamage) => (int)(baseDamage * DamageScale);
 
     /// <summary>贴身抓挠的距离（近身普通攻击，不带预警）</summary>
     private const float ClawRange = 105.0f;
     private const float ClawHalfHeight = 44.0f;
-    private const int BaseClawDamage = 1 * DamageScale;
 
     /// <summary>
     /// Boss 帧 128x128。
@@ -170,7 +182,7 @@ public partial class DajuEnemy : Boss
         }
 
         target.HurtArea.Hurt(this,
-            new List<AttackStats> { new(BaseClawDamage, DamageType.Physical) },
+            new List<AttackStats> { new(Dmg(1), DamageType.Physical) },
             null, delta.Angle());
         SpawnAttackEffect(target.GetCenterPosition(), delta.Angle());
     }
@@ -286,7 +298,10 @@ public partial class DajuEnemy : Boss
         }
     }
 
-    /// <summary>大橘四个技能的参数。伤害 = 基础值 × DamageScale。</summary>
+    /// <summary>
+    /// 大橘四个技能的参数。伤害 = 基准值 × DamageScale（见 <see cref="Dmg"/>）。
+    /// 基准：技能 0/1/2 = 2，技能 3（怒火咆哮）= 3，二阶段每下 +1。
+    /// </summary>
     private void ConfigureAttack(
         int attack,
         out float range, out float halfWidth, out float windup,
@@ -299,25 +314,25 @@ public partial class DajuEnemy : Boss
         halfWidth = 44;
         range = 100;
         windup = 0.5f;
-        damage = 2 * DamageScale;
+        damage = Dmg(2);
 
         switch (attack)
         {
             case 0:
                 range = 172; halfWidth = 38; windup = 0.42f;
-                damage = 2 * DamageScale; isLine = true; dashDistance = 96;
+                damage = Dmg(2); isLine = true; dashDistance = 96;
                 break;
             case 1:
                 range = 128; windup = 0.54f;
-                damage = 2 * DamageScale; dashDistance = 48;
+                damage = Dmg(2); dashDistance = 48;
                 break;
             case 2:
                 range = 285; halfWidth = 46; windup = 0.72f;
-                damage = 2 * DamageScale; isLine = true;
+                damage = Dmg(2); isLine = true;
                 break;
             default:
                 range = 92; windup = 0.82f;
-                damage = 3 * DamageScale; targetCentered = true;
+                damage = Dmg(3); targetCentered = true;
                 break;
         }
 
@@ -326,7 +341,7 @@ public partial class DajuEnemy : Boss
         {
             windup *= 0.85f;
             range *= 1.1f;
-            damage += 1 * DamageScale;
+            damage += Dmg(1);
         }
     }
 
