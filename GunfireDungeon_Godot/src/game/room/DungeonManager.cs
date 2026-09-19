@@ -158,11 +158,18 @@ public partial class DungeonManager : Node2D
     /// <summary>
     /// 按当前地牢模式调整【BOSS】的血量。目前只有魔王模式要减半。
     ///
-    /// 【为什么必须单独一个函数】
-    /// 减半逻辑本来写在 <see cref="ApplyFloorDifficulty"/> 里, 但那个函数的参数是
-    /// <c>Enemy</c> —— 而 BOSS 继承的是 <see cref="Boss"/>, 和 Enemy 是【兄弟类】
-    /// (两者都直接继承 AiRole)。调用点写的是 <c>activityObject is Enemy</c>,
-    /// 所以 BOSS 永远进不去那个函数, 魔王模式的 0.5 倍从来没生效过。
+    /// 【为什么必须单独一个函数】两层原因, 缺一不可:
+    ///
+    /// 1) <see cref="ApplyFloorDifficulty"/> 的参数类型是 <c>Enemy</c>, 而 BOSS 继承的是
+    ///    <see cref="Boss"/> —— 两者都直接继承 AiRole, 是【兄弟类】。
+    ///    调用点写的是 <c>activityObject is Enemy</c>, 所以 BOSS 永远进不去那个函数。
+    ///
+    /// 2) 就算把类型改宽也没用: BOSS 是【预设标记】, 全在第 0 波(WaveList[0]),
+    ///    由 RoomPreinstall.OnReady() 创建; 而 ApplyFloorDifficulty 是在
+    ///    RoomPreinstall.RunMark() 里调的, 那个函数只跑第 1 波及以后。
+    ///    BOSS 房只有 1 波, RunMark 根本不会执行。
+    ///
+    /// 所以本函数是在 RoomPreinstall.OnReady() 的 Boss 分支里调的。
     ///
     /// 【为什么只套模式倍率, 不套楼层倍率】
     /// BOSS 目前完全不吃 FloorPlan 里的 HpMultiplier。要不要让 BOSS 也随楼层变强

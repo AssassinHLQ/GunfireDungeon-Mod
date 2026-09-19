@@ -358,6 +358,12 @@ public class RoomPreinstall : IDestroy
 
                     if (activityObject is Boss boss)
                     {
+                        //【必须在这里做, 不能放到 RunMark 里】
+                        //BOSS 是【预设标记】, 全在第 0 波(WaveList[0]), 由本函数(OnReady)创建;
+                        //而 RunMark() 处理的是第 1 波及以后(StartWave 里 _currWaveIndex = 1)。
+                        //BOSS 房只有 1 波, RunMark 根本不会执行 ——
+                        //所以 ApplyFloorDifficulty 那一套对 BOSS 完全无效。
+                        GameApplication.Instance.DungeonManager?.ApplyBossModeHp(boss);
                         BossList.Add(boss);
                     }
                 }
