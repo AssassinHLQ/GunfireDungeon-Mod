@@ -1858,10 +1858,29 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     }
     
     /// <summary>
+    /// 是否免疫击退。默认 false，BOSS 这类大体型单位可以覆写成 true。
+    ///
+    /// 【为什么需要这个开关】中弹 / 被近战命中时，子弹和武器会把 Repel 值当作外力
+    /// 通过 <see cref="AddRepelForce"/> 加到 MoveController 上，表现就是"被推着走"。
+    /// 对玩家和小怪这是手感；对 BOSS 是灾难 —— 体型大、受击面积大，
+    /// 玩家拿霰弹或爆炸能把 BOSS 一路顶到墙角，技能动画也跟着错位。
+    ///
+    /// ⚠️ 只挡【击退力】（子弹 / 激光 / 爆炸 / 近战武器的那份 Repel），
+    ///    不影响 Velocity、BasisVelocity 或其它外力。
+    /// </summary>
+    public virtual bool ImmuneToRepel => false;
+
+    /// <summary>
     /// 添加一个击退力
     /// </summary>
     public void AddRepelForce(Vector2 velocity)
     {
+        // 免疫击退的单位直接丢弃，连 _repelForce 都不创建
+        if (ImmuneToRepel)
+        {
+            return;
+        }
+
         if (_repelForce == null)
         {
             _repelForce = new ExternalForce(ForceNames.Repel);

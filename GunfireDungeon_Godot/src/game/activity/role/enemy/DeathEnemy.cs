@@ -128,6 +128,18 @@ public partial class DeathEnemy : Boss
     // 2026-09-19 由 "Reaper" 改为「甲方」—— 类名和资源 id 不动。
     public override string BossDisplayName => "甲方";
 
+    /// <summary>
+    /// 免疫击退。
+    ///
+    /// 甲方体型 56x100（受击框比小怪大得多），霰弹 / 爆炸 / 近战每一下都会给一份
+    /// Repel 外力，不挡的话玩家能把它一路顶到墙角 —— 技能动画会跟着错位，
+    /// 而且"重量级最终 BOSS 被推着走"本身就不合理。
+    ///
+    /// 实现见 <see cref="ActivityObject.AddRepelForce"/> 里的 ImmuneToRepel 判断，
+    /// 子弹 / 激光 / 爆炸 / 近战四个来源全部走那一个入口，所以这里一处就够了。
+    /// </summary>
+    public override bool ImmuneToRepel => true;
+
     public override void OnInit()
     {
         base.OnInit();
@@ -143,7 +155,7 @@ public partial class DeathEnemy : Boss
         FiringStand = true;
         RoleState.CanPickUpWeapon = false;
 
-        //血量走 RoleBase.json 里的 death0001.Hp(现在是 2400), 不在这里写死
+        //血量走 RoleBase.json 里的 death0001.Hp(现在是 2000), 不在这里写死
 
         AnimatedSprite.SpriteFrames = DeathSpriteFrames.Get();
         AnimatedSprite.Offset = BossSpriteOffset;
