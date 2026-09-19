@@ -344,15 +344,31 @@ public class DungeonGenerator
             {
                 //原代码
                 //roomSplit = RoomGroup.GetRandomRoom(roomType);
-                
-                //临时处理, 不生成相同的战斗房间
-                if (roomType == DungeonRoomType.Battle && _battleRoomList.Count > 0)
+
+                //【Boss 房指定模板】楼层计划里写了 BossRoom 就用它, 不再随机。
+                //不这么做的话 Boss 房是按权重随机抽的, 而 4 个 Boss 房权重都是 100,
+                //结果是二层可能刷出最终 BOSS、四层可能刷出第一关的大橘。
+                roomSplit = null;
+                if (roomType == DungeonRoomType.Boss && !string.IsNullOrEmpty(Config.BossRoomName))
                 {
-                    roomSplit = Random.RandomChooseAndRemove(_battleRoomList);
+                    roomSplit = RoomGroup.GetRoomByName(DungeonRoomType.Boss, Config.BossRoomName);
+                    if (roomSplit == null)
+                    {
+                        GD.PushWarning($"[地牢] 楼层计划指定的 Boss 房 \"{Config.BossRoomName}\" 不存在, 退回随机");
+                    }
                 }
-                else
+
+                if (roomSplit == null)
                 {
-                    roomSplit = RoomGroup.GetRandomRoom(roomType);
+                    //临时处理, 不生成相同的战斗房间
+                    if (roomType == DungeonRoomType.Battle && _battleRoomList.Count > 0)
+                    {
+                        roomSplit = Random.RandomChooseAndRemove(_battleRoomList);
+                    }
+                    else
+                    {
+                        roomSplit = RoomGroup.GetRandomRoom(roomType);
+                    }
                 }
             }
         }

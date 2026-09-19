@@ -98,6 +98,13 @@ public class DungeonConfig
     /// Boss房间数量
     /// </summary>
     public int BossRoomCount = 1;
+
+    /// <summary>
+    /// 本层 Boss 房固定用哪个房间模板(房间名, 例如 "Boss1")。
+    /// 由 DungeonManager 在每层生成前从 FloorPlan.json 的 FloorDef.BossRoom 同步进来。
+    /// 为空表示不指定 —— 退回按权重随机抽(魔王模式那种"每间都可能是 Boss"仍然走随机)。
+    /// </summary>
+    public string BossRoomName = "";
     
     /// <summary>
     /// 房间数量

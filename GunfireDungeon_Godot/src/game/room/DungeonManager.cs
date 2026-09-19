@@ -665,6 +665,8 @@ public partial class DungeonManager : Node2D
             //CurrConfig 是跨层复用的同一个对象(AdvanceToNextFloor 直接把它传回来),
             //所以必须每层生成前重新同步一次, 不能只在构造时设。
             CurrConfig.BossBeforeExit = CurrentFloorDef?.BossBeforeExit ?? false;
+            //本层 Boss 房用哪个模板也一起同步(为空=不指定, 走随机)
+            CurrConfig.BossRoomName = CurrentFloorDef?.BossRoom ?? "";
 
             var dungeonGenerator = new DungeonGenerator(CurrConfig, random);
             var rule = new DefaultDungeonRule(dungeonGenerator);

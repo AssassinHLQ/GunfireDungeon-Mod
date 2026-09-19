@@ -22,6 +22,7 @@
       "Enemies": true,
       "Explore": false,
       "BossBeforeExit": true,
+      "BossRoom": "Boss1",
       "Note": "风景园林基地 —— 植物 / 沙盘 / 图纸, 画面语言和别的楼层明显不同"
     },
     {
@@ -43,6 +44,7 @@
       "Enemies": true,
       "Explore": false,
       "BossBeforeExit": true,
+      "BossRoom": "Boss3",
       "Note": "城乡规划基地 —— 大地图 / 城市沙盘, 可以做俯瞰全楼的地图房"
     },
     {
@@ -64,7 +66,8 @@
       "Enemies": true,
       "Explore": false,
       "BossBeforeExit": true,
-      "Note": "第一次到达, 仍有敌人"
+      "BossRoom": "Boss2",
+      "Note": "第一次到达, 仍有敌人 —— 大橘第二次登场, 血量倍率更高"
     },
     {
       "Id": "F7",
@@ -94,7 +97,9 @@
       "Kind": "final",
       "Enemies": true,
       "Explore": false,
-      "Note": "终章。折返五楼, 用神器破坏 505 的门锁, 最终战斗"
+      "BossBeforeExit": true,
+      "BossRoom": "Boss4",
+      "Note": "终章。折返五楼, 用神器破坏 505 的门锁, 最终战斗 —— 必须给 BossBeforeExit, 否则这层根本不放 Boss 房, 最终 BOSS「甲方」就打不到"
     }
   ],
   "Hidden": {

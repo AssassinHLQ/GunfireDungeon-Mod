@@ -61,6 +61,18 @@ public class FloorPlan
         /// 魔王模式本来就每间都是 Boss, 不受这个开关影响。
         /// </summary>
         public bool BossBeforeExit { get; set; }
+
+        /// <summary>
+        /// 本层 Boss 房用哪一个房间模板(填 tileMaps 里的房间名, 例如 "Boss1")。
+        ///
+        /// 【为什么需要它】原来 Boss 房是从 RoomGroup.BossList 里【按权重随机】抽的,
+        /// 而 4 个 Boss 房权重都是 100 —— 于是二层可能抽到最终 BOSS「甲方」,
+        /// 四层可能抽到大橘, 完全看运气。
+        ///
+        /// 填了这个字段后, 本层的 Boss 房就固定用指定的那个模板;
+        /// 留空则退回原来的随机行为(魔王模式那种"每间都可能是 Boss"仍然走随机)。
+        /// </summary>
+        public string BossRoom { get; set; } = "";
     }
 
     /// <summary>配置文件结构</summary>

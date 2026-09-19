@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
@@ -210,6 +210,36 @@ public class DungeonRoomGroup : IClone<DungeonRoomGroup>
         if (_weightRandomMap.TryGetValue(roomType, out var weightRandom))
         {
             return GetRoomList(roomType)[weightRandom.GetRandomIndex()];
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 按房间名取指定类型的房间(不随机)。
+    /// 用于"本层 Boss 房固定用某个模板"—— 见 FloorPlan.FloorDef.BossRoom。
+    /// 找不到时返回 null, 调用方应退回随机。
+    /// </summary>
+    public DungeonRoomSplit GetRoomByName(DungeonRoomType roomType, string roomName)
+    {
+        if (string.IsNullOrEmpty(roomName))
+        {
+            return null;
+        }
+
+        var list = GetRoomList(roomType);
+        if (list == null)
+        {
+            return null;
+        }
+
+        foreach (var roomSplit in list)
+        {
+            if (roomSplit?.RoomInfo != null &&
+                string.Equals(roomSplit.RoomInfo.RoomName, roomName, StringComparison.Ordinal))
+            {
+                return roomSplit;
+            }
         }
 
         return null;
