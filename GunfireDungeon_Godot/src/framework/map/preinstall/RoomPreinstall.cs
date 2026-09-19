@@ -488,6 +488,12 @@ public class RoomPreinstall : IDestroy
                         //出生调用
                         enemy.OnBornFromMark();
                     }
+                    else if (activityObject is Boss boss)
+                    {
+                        //BOSS 不走 ApplyFloorDifficulty(参数是 Enemy, 收不到 Boss),
+                        //魔王模式的"BOSS 血量减半"要单独处理 —— 见 ApplyBossModeHp 的说明。
+                        GameApplication.Instance.DungeonManager?.ApplyBossModeHp(boss);
+                    }
                     
                     //出生特效
                     var effect = ObjectManager.GetPoolItem<IEffect>(ResourcePath.prefab_effect_common_Effect1_tscn);

@@ -154,6 +154,38 @@ public partial class DungeonManager : Node2D
         enemy.MaxHp = Mathf.Max(1, Mathf.RoundToInt(enemy.MaxHp * multiplier));
         enemy.Hp = enemy.MaxHp;
     }
+
+    /// <summary>
+    /// 按当前地牢模式调整【BOSS】的血量。目前只有魔王模式要减半。
+    ///
+    /// 【为什么必须单独一个函数】
+    /// 减半逻辑本来写在 <see cref="ApplyFloorDifficulty"/> 里, 但那个函数的参数是
+    /// <c>Enemy</c> —— 而 BOSS 继承的是 <see cref="Boss"/>, 和 Enemy 是【兄弟类】
+    /// (两者都直接继承 AiRole)。调用点写的是 <c>activityObject is Enemy</c>,
+    /// 所以 BOSS 永远进不去那个函数, 魔王模式的 0.5 倍从来没生效过。
+    ///
+    /// 【为什么只套模式倍率, 不套楼层倍率】
+    /// BOSS 目前完全不吃 FloorPlan 里的 HpMultiplier。要不要让 BOSS 也随楼层变强
+    /// 是另一个平衡问题, 没有明确要求之前不动它 —— 这里只处理"魔王模式减半"。
+    /// </summary>
+    public void ApplyBossModeHp(Role boss)
+    {
+        if (boss == null || boss.IsDie)
+        {
+            return;
+        }
+
+        if (CurrConfig == null || CurrConfig.Mode != DungeonMode.Erlkoenig)
+        {
+            return;
+        }
+
+        //先设 MaxHp 再设 Hp —— Hp 的 setter 会把值夹到 _maxHp, 顺序反了会先被夹一次
+        boss.MaxHp = Mathf.Max(1, Mathf.RoundToInt(boss.MaxHp * ErlkoenigHpMultiplier));
+        boss.Hp = boss.MaxHp;
+
+        Debug.Log($"[魔王模式] BOSS 血量减半 → {boss.MaxHp}");
+    }
     
     private UiBase _prevUi;
     private DungeonTileMap _dungeonTileMap;
