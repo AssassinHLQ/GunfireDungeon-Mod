@@ -32,6 +32,23 @@ public partial class Role
 		MeleeAttackWindupTime + MeleeAttackHoldTime + MeleeAttackReturnTime;
 
 	/// <summary>
+	/// 正在播放的挥击 tween。下一次挥击会把它 Kill 掉。
+	/// 不 Kill 的话两个 tween 会同时写 MountPoint.Position, 武器会抖成一团。
+	/// </summary>
+	private Tween _meleeTween;
+
+	/// <summary>
+	/// 挥击的"静止位置"(相对 MountPoint 的挂载偏移)。
+	///
+	/// 【为什么要缓存】原来每次挥击都取 <c>MountPoint.Position</c> 当静止点。
+	/// 现在允许在上一次收回动画没播完时再次挥击, 那时候 MountPoint 还停在半路 ——
+	/// 直接拿它当静止点, 每连击一次起手点就往前漂 6 像素。
+	/// 所以只有在【没有挥击动画在播】时才重新采样。
+	/// </summary>
+	private Vector2 _meleeRestPos;
+	private bool _meleeRestPosValid;
+
+	/// <summary>
 	/// 播放近战攻击动画
 	/// </summary>
 	public virtual void PlayAnimation_MeleeAttack(Action finish)
@@ -46,9 +63,24 @@ public partial class Role
 		var returnTime = MeleeAttackReturnTime * scale;
 		var totalTime = windupTime + holdTime + returnTime;
 
+		//上一次的收回动画还没播完就又挥了一刀 -> 直接砍掉, 从静止姿势重新起手
+		var interrupted = _meleeTween != null && _meleeTween.IsValid();
+		if (interrupted)
+		{
+			_meleeTween.Kill();
+		}
+
+		if (!interrupted || !_meleeRestPosValid)
+		{
+			_meleeRestPos = MountPoint.Position;
+			_meleeRestPosValid = true;
+		}
+		MountPoint.Position = _meleeRestPos;
+
+		//旋转不用缓存: 出招+判定结束就会把 MountLookTarget 交回瞄准(见下面 finish 的时机),
+		//所以打断时 MountPoint.RotationDegrees 已经是当前瞄准角度了。
 		var r = MountPoint.RotationDegrees;
-		//var gp = MountPoint.GlobalPosition;
-		var p1 = MountPoint.Position;
+		var p1 = _meleeRestPos;
 		var p2 = p1 + new Vector2(6, 0).Rotated(Mathf.DegToRad(r - MeleeAttackAngle / 2f));
 		var p3 = p1 + new Vector2(6, 0).Rotated(Mathf.DegToRad(r + MeleeAttackAngle / 2f));
 		
@@ -92,14 +124,19 @@ public partial class Role
 		tween.TweenInterval(holdTime);
 		tween.Chain();
 
-		tween.TweenProperty(MountPoint, "rotation_degrees", r, returnTime);
+		// ── 关键改动: 【出招 + 判定结束就解锁下一次攻击】 ──
+		// 原来 finish() 挂在整段动画的最后, 于是"必须等收回动画播完才能再挥一刀",
+		// 收回时长直接变成了硬直。现在把它提到收回之前:
+		//   · finish() 里会把 _meleeAttackPlaying 置回 false, 并让 MountLookTarget 恢复
+		//     -> 下一刀随时可以挥, 而且瞄准立刻重新跟手
+		//   · 收回只剩"把前送的 6 像素拉回来"这一个纯表现动作, 不再阻塞
+		// 旋转也交回 MountLookTarget(SetLookAt 每帧重设), 所以收回不再补间旋转,
+		// 免得和瞄准抢同一个属性。
+		tween.TweenCallback(Callable.From(() => finish()));
+		tween.Chain();
+
 		tween.TweenProperty(MountPoint, "position", p1, returnTime);
 		tween.Chain();
-		
-		tween.TweenCallback(Callable.From(() =>
-		{
-			finish();
-		}));
 
 		//启用近战判定框, 覆盖整段挥刀动画。
 		//【为什么不再放在"挥到位"那个回调里】挥刀动画被加快一倍之后, 那个窗口只剩 0.0125 秒,
@@ -110,6 +147,7 @@ public partial class Role
 		//   加上 0.02 秒余量 = 0.05 秒, 仍然覆盖得住至少一个物理帧。
 		EnableMeleeHitArea(totalTime + 0.02f);
 
+		_meleeTween = tween;
 		tween.Play();
 	}
 }
