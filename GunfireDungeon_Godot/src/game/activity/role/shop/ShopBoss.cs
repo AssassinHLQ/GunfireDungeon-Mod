@@ -65,13 +65,61 @@ public partial class ShopBoss : AiRole
     public float SlotIconSize = 14f;
 
     /// <summary>
-    /// 刷新一次商品要花多少金币。0 = 免费。
+    /// 刷新商品的【基础】价格(金币)。实际价格每刷一次翻一倍:
+    /// 5 → 10 → 20 → 40 → 80 ... 所以基础价就是第一次刷新的价格。
+    /// 设成 0 表示免费(不再翻倍)。
     ///
-    /// 2026-09-20 定 5 金币(用户要求"收少量金币")。
+    /// 2026-09-20 由用户要求定为 5 金币起、逐次翻倍。
     /// 想调价直接改这个字段(或在 ShopBoss0001.tscn 里覆盖), 不用动代码。
     /// </summary>
     [Export]
     public int RefreshCostGold = 5;
+
+    /// <summary>
+    /// 本次进商店已经刷新过几次。每创建一次商店 NPC 从 0 开始。
+    /// </summary>
+    private int _refreshCount;
+
+    /// <summary>
+    /// 【下一次】刷新要花多少金币 = 基础价 x 2^已刷新次数。
+    ///
+    /// 5 → 10 → 20 → 40 → 80 → ...
+    /// 用 long 算再夹到 int 上界 —— 玩家一直刷的话 5 &lt;&lt; 31 会溢出成负数,
+    /// 那样反而变成"刷新给钱"。
+    /// </summary>
+    public int CurrentRefreshCost
+    {
+        get
+        {
+            if (RefreshCostGold <= 0)
+            {
+                return 0;
+            }
+
+            // 移位上限 20 次(5 * 2^20 ≈ 524 万), 早就远超玩家能付得起的量
+            var shift = Mathf.Min(_refreshCount, 20);
+            var cost = (long)RefreshCostGold << shift;
+            return cost > int.MaxValue ? int.MaxValue : (int)cost;
+        }
+    }
+
+    /// <summary>
+    /// 互动提示条上显示的文案。把"下次刷新多少钱"直接写进去,
+    /// 否则玩家不知道按 E 会扣钱(见 InteractiveTipBarHandler.GetDisplayName)。
+    /// </summary>
+    public string InteractiveTipText
+    {
+        get
+        {
+            var name = ActivityBase?.Name ?? "商店";
+            if (RefreshCostGold <= 0)
+            {
+                return $"{name}（刷新免费）";
+            }
+
+            return $"{name}（刷新商品 {CurrentRefreshCost} 金币）";
+        }
+    }
 
     private readonly List<ShopItemSlot> _slot = new List<ShopItemSlot>();
 
@@ -225,6 +273,9 @@ public partial class ShopBoss : AiRole
 
     /// <summary>
     /// 按下互动键(默认 E) → 重新抽一遍商品。
+    ///
+    /// 价格逐次翻倍: 第 1 次 5、第 2 次 10、第 3 次 20 …… (见 <see cref="CurrentRefreshCost"/>)。
+    /// 每次都先扣钱再重抽, 金币不够就直接取消, 不扣钱也不刷新。
     /// </summary>
     public override void Interactive(ActivityObject master)
     {
@@ -233,20 +284,29 @@ public partial class ShopBoss : AiRole
             return;
         }
 
-        if (RefreshCostGold > 0)
+        var cost = CurrentRefreshCost;
+        if (cost > 0)
         {
-            if (role.RoleState.Gold < RefreshCostGold)
+            if (role.RoleState.Gold < cost)
             {
-                TempDebug.LogShop($"[商店] 刷新需要 {RefreshCostGold} 金币, 玩家只有 {role.RoleState.Gold}, 已取消");
+                TempDebug.LogShop($"[商店] 第 {_refreshCount + 1} 次刷新需要 {cost} 金币, " +
+                                  $"玩家只有 {role.RoleState.Gold}, 已取消");
                 return;
             }
 
-            role.UseGold(RefreshCostGold);
+            role.UseGold(cost);
         }
 
         BuildSlots();
-        TempDebug.LogShop($"[商店] 刷新完成, 新上架 {_slot.Count} 个商品" +
-                          (RefreshCostGold > 0 ? $" (花费 {RefreshCostGold} 金币)" : " (免费)"));
+        _refreshCount++;
+
+        //提示条上的价格要跟着变成下一次的价(5 → 10 → 20)。
+        //走的是玩家切换互动对象时用的同一个事件, 见 InteractiveTipBarHandler.OnPlayerChangeInteractiveItem。
+        EventManager.EmitEvent(EventEnum.OnPlayerChangeInteractiveItem,
+            new CheckInteractiveResult(this, true));
+
+        TempDebug.LogShop($"[商店] 第 {_refreshCount} 次刷新完成, 花费 {cost} 金币, " +
+                          $"新上架 {_slot.Count} 个商品, 下次刷新 {CurrentRefreshCost} 金币");
     }
 
     protected override void OnDestroy()

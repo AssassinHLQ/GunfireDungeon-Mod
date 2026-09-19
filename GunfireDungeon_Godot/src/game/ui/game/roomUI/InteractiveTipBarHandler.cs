@@ -113,9 +113,15 @@ public partial class InteractiveTipBarHandler : Control, IUiNodeScript
     /// <summary>
     /// 取互动物体在提示条上显示的名字。
     /// ActivityObject 用配置表里的名字; ShopItemSlot 不是 ActivityObject, 走它自己的 DisplayName。
+    /// ShopBoss 额外要把"下次刷新多少钱"带上, 否则玩家不知道按 E 会扣钱。
     /// </summary>
     private static string GetDisplayName(IInteractive target)
     {
+        if (target is ShopBoss shopBoss)
+        {
+            return shopBoss.InteractiveTipText;
+        }
+
         if (target is ActivityObject ao)
         {
             return ao.ActivityBase?.Name ?? "";
