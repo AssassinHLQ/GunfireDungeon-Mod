@@ -349,6 +349,17 @@ public class MoveController : Component
         //处理移动
         if (finallyVelocity != Vector2.Zero)
         {
+            //【保底】物体不在场景树里时, 它的物理空间是空的 ——
+            //这时候调 MoveAndSlide() 会让 Godot 每物理帧报一次
+            //  ERROR: Parameter "body->get_space()" is null.
+            //实测(2026-09-20)这条错误把 godot.log 刷到了 705 MB / 十几万次。
+            //正常流程不该走到这里; 真走到了, 说明"物体已经被移出场景但组件还在跑",
+            //跳过移动即可, 不要再去撞物理服务器。
+            if (!Master.IsInsideTree())
+            {
+                return;
+            }
+
             //计算移动
             Master.Velocity = finallyVelocity;
             Master.MoveAndSlide();

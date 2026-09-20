@@ -52,19 +52,20 @@ public partial class SoundManager
 
         public void PlaySoundByResource(string path)
         {
+            //正在播同一个音源就直接忽略。
+            //(原来这里是一句 Debug.Log("重复播放: ...") —— 已删:
+            // 捡金币时每帧都会命中这条分支, 日志会被刷爆。)
             if (_playingSoundResourceList.Contains(path))
             {
-                Debug.Log("重复播放: " + path);
+                return;
             }
-            else
-            {
-                _playingSoundResourceList.Add(path);
-                var sound = ResourceManager.Load<AudioStream>(path);
-                Stream = sound;
-  
-                Bus = Enum.GetName(typeof(BUS), 1);
-                Play();
-            }
+
+            _playingSoundResourceList.Add(path);
+            var sound = ResourceManager.Load<AudioStream>(path);
+            Stream = sound;
+
+            Bus = Enum.GetName(typeof(BUS), 1);
+            Play();
         }
 
         /// <summary>

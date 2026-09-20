@@ -1167,11 +1167,9 @@ public abstract partial class Role : ActivityObject
         //计算角色抗性后受到的伤害
         var damageResult = DamageManager.ApplyDamage(this, attackStats);
 
-        if (damageResult.IsCritical)
-        {
-            Debug.Log("触发暴击了!");
-        }
-        
+        //(这里原来有一句 Debug.Log("触发暴击了!") —— 已删。
+        // 暴击很常见, 打一局能刷出成百上千行, 把日志撑大也盖住真正的错误。)
+
         //计算真正受到的伤害
         if (damageResult.HealthDamage > 0)
         {
