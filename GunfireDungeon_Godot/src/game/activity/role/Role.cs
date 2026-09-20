@@ -190,6 +190,21 @@ public abstract partial class Role : ActivityObject
     private float _meleeHitAreaLeft;
 
     /// <summary>
+    /// 主动近战判定是否开启。武器"挥到位"那一刻打开, 判定框关闭时一并关掉。
+    /// 每个物理帧会查一次 MeleeAttackArea 的重叠区域 —— 见 <see cref="ProcessMeleeActiveQuery"/>。
+    /// </summary>
+    private bool _meleeActiveQuery;
+
+    /// <summary>
+    /// 本次挥击已经命中过的目标(键 = HurtArea 的 instance id)。
+    ///
+    /// 【为什么一定要有】主动判定是【每个物理帧】查一次重叠区域, 同一个敌人会被连续查到
+    /// 好几个物理帧 —— 没有这个集合, 一刀就能打出十几次伤害。
+    /// 每次挥击开始时清空(见 Role_Animation.PlayAnimation_MeleeAttack)。
+    /// </summary>
+    private readonly HashSet<ulong> _meleeHitIdsThisSwing = new();
+
+    /// <summary>
     /// 是否死亡
     /// </summary>
     public bool IsDie { get; private set; }
@@ -723,6 +738,8 @@ public abstract partial class Role : ActivityObject
             if (_meleeHitAreaLeft <= 0f && MeleeAttackCollision != null)
             {
                 MeleeAttackCollision.Disabled = true;
+                //判定框关了就同时停掉主动查询, 否则收回动画期间还会继续结算
+                _meleeActiveQuery = false;
             }
         }
 
@@ -872,6 +889,10 @@ public abstract partial class Role : ActivityObject
 
     protected override void PhysicsProcess(float delta)
     {
+        //主动近战判定(见 ProcessMeleeActiveQuery)。放在最前面,
+        //让它在同一物理帧里拿到最新的重叠状态。
+        ProcessMeleeActiveQuery();
+
         //被动道具更新
         if (BuffPropPack.Count > 0)
         {
@@ -1872,7 +1893,8 @@ public abstract partial class Role : ActivityObject
         
         if (area is IHurt hurt)
         {
-            HandlerCollision(hurt, activeWeapon);
+            //走同一次挥击的去重: 主动判定(ProcessMeleeActiveQuery)可能已经打过它了
+            TryMeleeHitThisSwing(hurt, activeWeapon);
         }
     }
 
@@ -1889,7 +1911,8 @@ public abstract partial class Role : ActivityObject
         
         if (body is IHurt hurt)
         {
-            HandlerCollision(hurt, activeWeapon);
+            //同上, 走去重
+            TryMeleeHitThisSwing(hurt, activeWeapon);
         }
         else if (body is Bullet bullet) //攻击子弹
         {
@@ -1930,6 +1953,81 @@ public abstract partial class Role : ActivityObject
         }
         MeleeAttackCollision.Disabled = false;
         _meleeHitAreaLeft = time;
+
+        //新的一次挥击: 清空"本次已命中"记录。
+        //不清的话上一刀打过的敌人在这一刀里会被当成已打过, 直接漏掉。
+        _meleeHitIdsThisSwing.Clear();
+
+        //主动查询等"挥到位"那一刻再打开(见 Role_Animation 里挥到位的回调),
+        //这里先关掉, 免得起手阶段就用旧的重叠状态结算。
+        _meleeActiveQuery = false;
+    }
+
+    /// <summary>
+    /// 主动近战判定 —— 每个物理帧查一次 MeleeAttackArea 的重叠区域。
+    ///
+    /// 【为什么要主动查, 而不是只靠 AreaEntered】
+    /// AreaEntered 只在"重叠开始的那一刻"触发一次, 完全依赖物理步恰好采到
+    /// 武器挥到位的那一个姿势。挥击动画被压到 0.02 秒(≈1.2 个物理帧)之后,
+    /// 这个姿势可能整帧被跳过 —— 表现就是"挥了刀却完全不掉血"。
+    ///
+    /// 主动查询不看时机: 只要判定框开着、敌人和它重叠, 就一定会结算。
+    /// 于是攻击间隔可以彻底不受动画长度限制(这正是当初想把挥击调快的原因)。
+    ///
+    /// ⚠️ 两点必须注意:
+    ///   1. 【变换有物理帧延迟】挥到位那一帧改的是 MountPoint 的变换,
+    ///      物理服务器要到下一个物理步才更新 Area2D 的世界变换。
+    ///      所以不能只在挥到位那一帧查一次, 而要连续查若干个物理帧 ——
+    ///      查询窗口由 _meleeHitAreaLeft 决定(判定框关掉时一并停)。
+    ///   2. 【必须去重】每帧都查, 同一个敌人会被连续查到十几个物理帧,
+    ///      靠 _meleeHitIdsThisSwing 保证一次挥击只结算一次。
+    /// </summary>
+    private void ProcessMeleeActiveQuery()
+    {
+        if (!_meleeActiveQuery || MeleeAttackArea == null)
+        {
+            return;
+        }
+
+        var activeWeapon = WeaponPack.ActiveItem;
+        if (activeWeapon == null)
+        {
+            return;
+        }
+
+        //敌人 / 可受击物: HurtArea 是 Area2D
+        foreach (var area in MeleeAttackArea.GetOverlappingAreas())
+        {
+            if (area is IHurt hurt)
+            {
+                TryMeleeHitThisSwing(hurt, activeWeapon);
+            }
+        }
+
+        //少数 IHurt 是 CharacterBody2D(直接挂角色身上的那种)
+        foreach (var body in MeleeAttackArea.GetOverlappingBodies())
+        {
+            if (body is IHurt hurt)
+            {
+                TryMeleeHitThisSwing(hurt, activeWeapon);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 同一次挥击里, 一个目标只结算一次。
+    /// AreaEntered / BodyEntered 和主动查询都走这里, 免得同一刀打出两次伤害。
+    /// </summary>
+    private void TryMeleeHitThisSwing(IHurt hurt, Weapon activeWeapon)
+    {
+        //键用 HurtArea 的 instance id; IHurt 不是 Godot 对象时(理论上不存在)不去重
+        var key = hurt is GodotObject obj ? obj.GetInstanceId() : 0UL;
+        if (key != 0UL && !_meleeHitIdsThisSwing.Add(key))
+        {
+            return; //这一刀已经打过它了
+        }
+
+        HandlerCollision(hurt, activeWeapon);
     }
 
     private void HandlerCollision(IHurt hurt, Weapon activeWeapon)
