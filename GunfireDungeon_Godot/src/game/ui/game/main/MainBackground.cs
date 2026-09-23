@@ -37,6 +37,11 @@ namespace UI.game.Main;
 /// 【会不会连着两次看到同一套】不会。用静态字段记住上一次抽到的选项,
 /// 抽重了就顺移一位再抽(见 <see cref="PickOption"/>) ——
 /// 11 选 1 纯随机会有约 9% 的概率连续两次相同, 放到玩家眼里就像"随机没生效"。
+///
+/// 【新接入的 10 套为什么用 Linear 过滤】它们是 576 宽的图, 要放大 3.3333 倍
+/// (不是整数倍)才铺满 1920 画布。Nearest 会让源像素宽度在 3/4 之间来回变,
+/// 而这个花纹会随滚动爬动 —— 看起来就是"云朵在原地抖, 不是平move"。
+/// 详见 <see cref="MakeLayerRect"/> 里的说明。
 /// </summary>
 public partial class MainBackground : Godot.Control
 {
@@ -205,7 +210,7 @@ public partial class MainBackground : Godot.Control
         {
             GD.PushWarning($"[MainBackground] 背景贴图加载失败: {WallPath}");
         }
-        AddChild(MakeLayerRect(wall, 1920f));
+        AddChild(MakeLayerRect(wall, 1920f, false));
     }
 
     /// <summary>
@@ -249,7 +254,7 @@ public partial class MainBackground : Godot.Control
         {
             //越靠前的层滚得越快, 才有纵深。只有一层时不加速, 用最远层的速度。
             var t = textures.Count > 1 ? i / (float)(textures.Count - 1) : 0f;
-            AddScrollingLayer(textures[i], CanvasSize.X, Mathf.Lerp(VariantBackSpeed, VariantFrontSpeed, t));
+            AddScrollingLayer(textures[i], CanvasSize.X, Mathf.Lerp(VariantBackSpeed, VariantFrontSpeed, t), true);
         }
     }
 
@@ -263,21 +268,21 @@ public partial class MainBackground : Godot.Control
             return;
         }
 
-        AddScrollingLayer(tex, width, speed);
+        AddScrollingLayer(tex, width, speed, false);
     }
 
     /// <summary>加一层横向循环滚动的贴图</summary>
-    private void AddScrollingLayer(Texture2D tex, float width, float speed)
+    private void AddScrollingLayer(Texture2D tex, float width, float speed, bool smooth)
     {
-        var a = MakeLayerRect(tex, width);
-        var b = MakeLayerRect(tex, width);
+        var a = MakeLayerRect(tex, width, smooth);
+        var b = MakeLayerRect(tex, width, smooth);
         AddChild(a);
         AddChild(b);
         _layers.Add(new ScrollLayer { A = a, B = b, Width = width, Speed = speed });
     }
 
     /// <summary>创建一个铺满整屏高度的图层贴图</summary>
-    private static TextureRect MakeLayerRect(Texture2D tex, float width)
+    private static TextureRect MakeLayerRect(Texture2D tex, float width, bool smooth)
     {
         return new TextureRect
         {
@@ -288,10 +293,24 @@ public partial class MainBackground : Godot.Control
             StretchMode = TextureRect.StretchModeEnum.Scale,
             MouseFilter = MouseFilterEnum.Ignore,
 
-            //这些层是 576 宽的像素画, 要在画布上放大 3.33 倍。
-            //全局 default_texture_filter 本来就是 Nearest, 这里显式写一遍
-            //免得以后有人改全局设置把主菜单背景弄糊。
-            TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+            //【过滤方式: 这是"云朵滚动会抖"的关键】
+            //
+            //这些 CraftPix 图层是 576 宽, 要铺满 1920 画布 = 放大 3.3333 倍(不是整数倍)。
+            //用 Nearest 时, 一个源像素有时占 3 个画布像素、有时占 4 个, 而且这个
+            //"3,3,4,3,3,4..." 的宽度花纹会随着滚动【一格一格地往前爬】——
+            //于是云朵边缘看起来不是平move, 而是在原地抖/发毛。
+            //(离线做过时空图验证: 3.333x Nearest 的斜线是台阶状的,
+            // 4x 整数 Nearest 和 3.333x Linear 都是笔直的。)
+            //
+            //整数倍能解决"花纹爬动", 但 4 倍时一个源像素占 4 个画布像素,
+            //6 像素/秒的慢速下就是每 0.67 秒才动一次 —— 变成一卡一卡。
+            //所以这里用 Linear: 亚像素位置会做插值, 任何速度都是完美平移, 代价是
+            //边缘比 Nearest 略软一点(放大 3.33 倍本来就已经不是原始像素密度了)。
+            //
+            //大厅那三层不走这里(它们是 1:1 的, Nearest 不会产生花纹爬动, 保持原样)。
+            TextureFilter = smooth
+                ? CanvasItem.TextureFilterEnum.Linear
+                : CanvasItem.TextureFilterEnum.Nearest,
         };
     }
 
