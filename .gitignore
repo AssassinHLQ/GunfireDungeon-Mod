@@ -13,3 +13,14 @@
 # Godot 版本升级时自动生成的整份项目备份(体积很大), 不纳入版本管理
 枪火地牢-*/
 *-([0-9].[0-9])/
+
+# ── 主菜单随机背景（10 张 CraftPix 免费素材）──────────────────────────────
+# CraftPix 免费素材条款允许商用、允许随游戏出售, 但 §2.2.1 禁止【再分发美术源文件】。
+# 本仓库是公开仓库, 所以这 10 张图【不上传】—— 只随打包发行（导出时从本机磁盘打进 pck）。
+# 效果: 仓库里没有它们, 别人 clone 下来跑会退回视差大厅背景（代码里有兜底, 不会黑屏）;
+#       packaged 版本里则一切正常。
+# 本机怎么补齐: resource/sprite/ui/mainBackground/variants/README.md
+#
+# 注意: 同目录的 LICENSE.md(授权记录) 必须入库, 上面的规则只针对图片本身。
+GunfireDungeon_Godot/resource/sprite/ui/mainBackground/variants/*.png
+GunfireDungeon_Godot/resource/sprite/ui/mainBackground/variants/*.png.import
