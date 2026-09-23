@@ -169,12 +169,17 @@ public partial class ChangelogOverlay : Control
         "原项目版权归原作者所有。\n" +
         "\n" +
         "本修改版由 klhuyjnvbnvbnb 修改制作\n" +
-        "修改者主页 space.bilibili.com/1463614316";
+        "修改者主页 github.com/AssassinHLQ/GunfireDungeon-Mod";
 
     /// <summary>
-    /// 本修改版作者主页, 放在正文末尾作为可点击链接
+    /// 本修改版(修改者)的主页, 放在正文末尾作为可点击链接。
+    ///
+    /// 【为什么是 GitHub 而不是哔哩哔哩】原来这里指向修改者的 B 站空间,
+    /// 但玩家点进去想看的其实是修订记录 / 下载 / 反馈, 仓库更合适 —— 已按用户要求改成仓库地址。
+    /// 正文末尾那行文字用的是同一个地址, 两处保持一致。
+    /// (原作者的 B 站链接是主菜单上另一个按钮, 见 prefab/ui/game/Main.tscn, 没动。)
     /// </summary>
-    private const string AuthorHomepage = "https://space.bilibili.com/1463614316";
+    private const string ModHomepage = "https://github.com/AssassinHLQ/GunfireDungeon-Mod";
 
     public static ChangelogOverlay Create()
     {
@@ -249,11 +254,11 @@ public partial class ChangelogOverlay : Control
         text.AddThemeConstantOverride("line_spacing", 6);
         content.AddChild(text);
 
-        //作者主页链接放在正文末尾, 保持与原作者的署名主次分明
+        //修改者主页链接放在正文末尾, 和原作者的署名主次分明
         var authorLink = new LinkButton
         {
-            Text = "作者主页（点击访问）",
-            Uri = AuthorHomepage,
+            Text = "修改者主页（点击访问）",
+            Uri = ModHomepage,
             SizeFlagsHorizontal = SizeFlags.ExpandFill
         };
         authorLink.AddThemeFontSizeOverride("font_size", 30);
