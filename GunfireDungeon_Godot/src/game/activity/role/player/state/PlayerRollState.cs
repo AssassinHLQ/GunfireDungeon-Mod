@@ -9,6 +9,9 @@ public class PlayerRollState : StateBase<Player, PlayerStateEnum>
 {
     private long _coroutineId = -1;
     private Vector2 _moveDir;
+    //本次翻滚的倍率, 在 Enter 里取一次。
+    //和方向一样, 只取一次 —— 翻滚途中吃到一个移速 buff 不该让动画和速度中途跳变。
+    private float _speedScale = 1f;
     
     public PlayerRollState() : base(PlayerStateEnum.Roll)
     {
@@ -35,7 +38,15 @@ public class PlayerRollState : StateBase<Player, PlayerStateEnum>
         //改成 Player.GetRollDirection(): 鼠标优先、八向吸附, 手柄用右摇杆。
         //只在这里取一次, Process 里不再重算 —— 否则翻滚途中甩鼠标会让方向中途拐弯。
         _moveDir = Master.GetRollDirection();
-        Master.BasisVelocity = _moveDir * Master.RoleState.RollSpeed;
+
+        //【翻滚速度 / 动画速度与移速成正比】
+        //倍率来自 Player.RollSpeedScale(= 当前移速 / 基础移速), 两边用同一个值,
+        //所以动画播完的时间点和位移结束的时间点始终对得上。
+        //不这么做的话穿两个鞋子(移速 120+30+30 = 180)后翻滚只有 170, 比正常跑还慢。
+        _speedScale = Master.RollSpeedScale;
+        Master.AnimatedSprite.SpeedScale = _speedScale;
+
+        Master.BasisVelocity = _moveDir * RollSpeed;
     }
 
     public override void Exit(PlayerStateEnum next)
@@ -45,13 +56,21 @@ public class PlayerRollState : StateBase<Player, PlayerStateEnum>
         Master.MountPoint.Visible = true;
         //启用伤害碰撞
         Master.HurtCollision.Disabled = false;
+        //恢复动画原速 —— 不恢复的话翻滚之后的移动/待机动画也会一直是加速的
+        Master.AnimatedSprite.SpeedScale = 1f;
         Master.BasisVelocity = Master.BasisVelocity.LimitLength(Master.RoleState.MoveSpeed);
     }
 
     public override void Process(float delta)
     {
-        Master.BasisVelocity = _moveDir * Master.RoleState.RollSpeed;
+        Master.BasisVelocity = _moveDir * RollSpeed;
     }
+
+    /// <summary>
+    /// 本次翻滚的实际移动速度 = 配置 RollSpeed × 本次倍率。
+    /// 用 Enter 里取的那一份倍率(而不是每帧重算), 保证和动画速度、动画时长一致。
+    /// </summary>
+    private float RollSpeed => Master.RoleState.RollSpeed * _speedScale;
 
     //翻滚逻辑处理
     private IEnumerator RunRoll()

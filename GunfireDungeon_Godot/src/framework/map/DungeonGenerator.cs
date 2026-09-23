@@ -318,6 +318,30 @@ public class DungeonGenerator
         return true;
     }
 
+    /// <summary>
+    /// 当前正要生成的这个房间, 是不是【出口前最后一个战斗类房间】。
+    ///
+    /// 【用途】见 GenerateRoom 里对 <see cref="DungeonConfig.BossRoomName"/> 的使用:
+    /// 魔王模式(按比例刷 Boss)里每个战斗格都是 Boss 房, 楼层计划指定的那个 Boss 模板
+    /// 只应该给最后一个 Boss 房用(本层的收官 BOSS), 其余必须随机 ——
+    /// 否则整层都是一个 BOSS。
+    ///
+    /// 【为什么能直接算出来】按比例模式下 <see cref="DefaultDungeonRule.GetNextRoomType"/>
+    /// 把出口固定放在 <c>RoomInfos.Count == totalRooms - 1</c> 的位置, 而且
+    /// <c>RoomInfos.Count</c> 在 GenerateRoom 里就是"正在生成的房间序号"
+    /// (同文件上面 <c>Config.DesignatedRoom[RoomInfos.Count]</c> 也是这么用的),
+    /// 所以倒数第二个房间就是出口前那一个。
+    ///
+    /// 生成中途失败/回滚会让这个预测偏掉 —— 那只是"这一层没有指定 BOSS",
+    /// 退回随机, 不会出错。
+    /// </summary>
+    private bool IsLastCombatRoomBeforeOutlet()
+    {
+        //和 DefaultDungeonRule.CanOverGenerator 里算 totalRooms 的公式保持一致
+        var totalRooms = 1 + Config.BattleRoomCount + Config.RewardRoomCount + Config.ShopRoomCount + 1;
+        return RoomInfos.Count >= totalRooms - 2;
+    }
+
     //生成房间
     private GenerateRoomErrorCode GenerateRoom(RoomInfo prevRoom, DungeonRoomType roomType, out RoomInfo resultRoomInfo)
     {
@@ -348,8 +372,17 @@ public class DungeonGenerator
                 //【Boss 房指定模板】楼层计划里写了 BossRoom 就用它, 不再随机。
                 //不这么做的话 Boss 房是按权重随机抽的, 而 4 个 Boss 房权重都是 100,
                 //结果是二层可能刷出最终 BOSS、四层可能刷出第一关的大橘。
+                //
+                //⚠️ 【魔王模式必须例外】魔王模式(按比例刷 Boss)里每一个战斗格都是 Boss 房,
+                //   如果这里无条件套用楼层指定的模板, 整层会变成同一个 BOSS ——
+                //   实测反馈就是"魔王模式 2 楼全是大橘"(F2 的 BossRoom 恰好是 Boss1 = 大橘)。
+                //   所以按比例模式下只把指定模板留给【出口前最后一个 Boss 房】(本层的收官 BOSS),
+                //   其余 Boss 房全部走权重随机, 保证一层里能碰到不同的 BOSS。
+                //   见 IsLastCombatRoomBeforeOutlet()。
                 roomSplit = null;
-                if (roomType == DungeonRoomType.Boss && !string.IsNullOrEmpty(Config.BossRoomName))
+                var useDesignatedBossRoom = !string.IsNullOrEmpty(Config.BossRoomName)
+                                            && (!Config.IsBossRatioMode || IsLastCombatRoomBeforeOutlet());
+                if (roomType == DungeonRoomType.Boss && useDesignatedBossRoom)
                 {
                     roomSplit = RoomGroup.GetRoomByName(DungeonRoomType.Boss, Config.BossRoomName);
                     if (roomSplit == null)

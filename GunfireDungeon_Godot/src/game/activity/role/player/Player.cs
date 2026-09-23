@@ -23,6 +23,41 @@ public partial class Player : Role
     /// 是否可以翻滚
     /// </summary>
     public bool CanRoll => _rollCoolingTimer <= 0;
+
+    /// <summary>
+    /// 翻滚倍率下限 / 上限。
+    /// 下限是防止"被减速到 0 就完全翻不动", 上限是防止一堆鞋子叠起来翻滚瞬间飞出屏幕。
+    /// </summary>
+    private const float MinRollSpeedScale = 0.5f;
+    private const float MaxRollSpeedScale = 4f;
+
+    /// <summary>
+    /// 【翻滚倍率】= 当前移动速度 / 角色基础移动速度(RoleBase.MoveSpeed)。
+    ///
+    /// 【为什么要这个】翻滚速度和动画速度原来是两个写死的常量
+    /// (RoleBase.json 里 RollSpeed = 170, 动画原速), 完全不吃移速加成。
+    /// 结果是: 鞋子每个 +30 移速(见 BuffPropBase.json 0001), 穿两个就是 180 ——
+    /// 比翻滚的 170 还快, 后期"翻滚"反而不如正常跑。
+    ///
+    /// 现在翻滚的【移动速度】和【动画播放速度】都乘这个倍率,
+    /// 也就是两者都与移动速度成正比(这是明确要求)。
+    /// 结果: 翻滚的【位移距离不变】(速度×倍率、时长÷倍率), 但整段翻滚变快 ——
+    /// 移速 180 时翻滚是 255 速度, 同样的距离比正常跑少花 1/3 时间, "翻滚不如跑"的问题就没了。
+    /// </summary>
+    public float RollSpeedScale
+    {
+        get
+        {
+            var baseSpeed = RoleState.RoleBase?.MoveSpeed ?? 0f;
+            if (baseSpeed <= 0.01f)
+            {
+                return 1f; //配置异常, 不要除零, 也不要放大
+            }
+
+            return Mathf.Clamp(RoleState.MoveSpeed / baseSpeed, MinRollSpeedScale, MaxRollSpeedScale);
+        }
+    }
+
     
     //翻滚冷却计时器
     private float _rollCoolingTimer = 0;
@@ -169,22 +204,21 @@ public partial class Player : Role
         var meleeAttackFlag = false;
         if (InputManager.MeleeAttack) //近战攻击
         {
-            if (StateController.CurrState != PlayerStateEnum.Roll) //不能是翻滚状态
+            //【翻滚期间也能打】原来这里有一道 StateController.CurrState != Roll 的判断,
+            //翻滚时近战和开火都被禁掉。现在解除了。
+            //另外这里改用 CanMeleeAttack —— 它把"空手"也算成可以近战(见 Role.CanMeleeAttack)。
+            if (CanMeleeAttack)
             {
-                if (WeaponPack.ActiveItem != null && WeaponPack.ActiveItem.Attribute.CanMeleeAttack)
-                {
-                    meleeAttackFlag = true;
-                    MeleeAttack();
-                }
+                meleeAttackFlag = true;
+                MeleeAttack();
             }
         }
 
         if (!meleeAttackFlag && InputManager.Fire) //正常开火
         {
-            if (StateController.CurrState != PlayerStateEnum.Roll) //不能是翻滚状态
-            {
-                Attack();
-            }
+            //【翻滚期间也能开枪】同上, 原来禁止。
+            //Attack() 内部自己会判 WeaponPack.ActiveItem != null, 空手不会出问题。
+            Attack();
         }
 
         if (InputManager.UseActiveProp) //使用道具

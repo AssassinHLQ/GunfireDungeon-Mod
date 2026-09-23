@@ -46,7 +46,9 @@ public partial class Role
 	{
 		//手持枪类武器(非近战武器)时挥击更快; 拿刀时保持原速。
 		//判断依据是当前手持武器的 IsMelee 标记(刀 = true, 枪/弓 = false)。
-		var isMeleeWeapon = WeaponPack.ActiveItem?.Attribute?.IsMelee == true;
+		//空手(ActiveItem == null)也走快的这一档 —— 毕竟没有武器的重量。
+		var activeItem = WeaponPack.ActiveItem;
+		var isMeleeWeapon = activeItem?.Attribute?.IsMelee == true;
 		var scale = isMeleeWeapon ? 1f : GunMeleeSpeedScale;
 
 		var windupTime = MeleeAttackWindupTime * scale;
@@ -71,9 +73,12 @@ public partial class Role
 		{
 			MountPoint.RotationDegrees = r + MeleeAttackAngle / 2f;
 			MountPoint.Position = p3;
-			//重新计算武器阴影位置
-			var activeItem = WeaponPack.ActiveItem;
-			activeItem.CalcShadowTransform(true);
+			//重新计算武器阴影位置。
+			//空手(activeItem == null)时没有武器阴影可以算, 跳过。
+			if (activeItem != null)
+			{
+				activeItem.CalcShadowTransform(true);
+			}
 			//创建屏幕抖动
 			if (Face == FaceDirection.Right)
 			{
@@ -88,8 +93,10 @@ public partial class Role
 			//播放特效
 			var effect = ObjectManager.GetPoolItem<IEffect>(ResourcePath.prefab_effect_weapon_MeleeAttack1_tscn);
 			var sprite = (Node2D)effect;
-			var localFirePosition = activeItem.GetLocalFirePosition() - activeItem.Position;
-			localFirePosition *= 0.9f;
+			//空手时没有枪口位置可量, 特效就落在 MountPoint 上(偏移 0)
+			var localFirePosition = activeItem != null
+				? (activeItem.GetLocalFirePosition() - activeItem.Position) * 0.9f
+				: Vector2.Zero;
 			sprite.Position = p1 + localFirePosition.Rotated(Mathf.DegToRad(r));
 			sprite.RotationDegrees = r;
 			AddChild(sprite);

@@ -1,1 +1,1 @@
-{"Position":{"X":-7,"Y":-13},"Size":{"X":24,"Y":20},"DoorAreaInfos":[],"GroupName":"Test1","RoomType":8,"RoomName":"Boss1","Weight":100,"Remark":""}
+{"Position":{"X":-7,"Y":-13},"Size":{"X":24,"Y":20},"DoorAreaInfos":[],"GroupName":"Test1","RoomType":8,"RoomName":"Boss1","Weight":20,"Remark":"魔王模式随机池: 大橘 BOSS 房 (24x20)。权重 20 —— 另一个大橘房是 Boss2(也是 20), 两间合起来 40%; 犀牛 Boss3 是 60%。改这三个数字就能调 BOSS 分布, 详见 DungeonGenerator 里对 BossRoomName 的说明"}

@@ -147,6 +147,48 @@ public abstract partial class Role : ActivityObject
     public float MeleeAttackAngle { get; set; } = 120;
 
     /// <summary>
+    /// 【空手近战】伤害范围(和武器配置表 MeleeAttackDamageRange 同格式)。
+    ///
+    /// 【为什么需要】原来近战键的判定是 <c>WeaponPack.ActiveItem != null &amp;&amp; Attribute.CanMeleeAttack</c>,
+    /// 所以把武器全扔掉之后玩家就只能跑 —— 而"扔掉所有武器"是子弹打空后的兜底手段
+    /// (而且玩家死亡时也会 ThrowAllWeapon), 这时候完全没有反击手段体验很差。
+    ///
+    /// 空手用一套固定的低伤害参数, 不占用武器背包、也不进武器栏 —— 只是给
+    /// <see cref="MeleeAttack"/> / <see cref="HandlerCollision"/> 一个兜底。
+    /// </summary>
+    public static readonly int[] BareHandMeleeDamageRange = { 2, 3 };
+
+    /// <summary>
+    /// 【空手近战】击退范围(和武器配置表 MeleeAttackRepelRange 同格式)
+    /// </summary>
+    public static readonly float[] BareHandMeleeRepelRange = { 6f, 10f };
+
+    /// <summary>
+    /// 【空手近战】判定扇形的半径(像素)。
+    /// 有武器时这个半径是按"握把到枪口"算出来的(见 <see cref="OnChangeActiveItem"/>),
+    /// 空手没有武器可量, 就用这个固定值。
+    /// </summary>
+    private const float BareHandMeleeRadius = 22f;
+
+    /// <summary>
+    /// 当前能不能用近战攻击。
+    /// 手上没武器时【也能】—— 空手挥拳, 见 <see cref="BareHandMeleeDamageRange"/>。
+    /// </summary>
+    public bool CanMeleeAttack
+    {
+        get
+        {
+            var weapon = WeaponPack.ActiveItem;
+            if (weapon == null)
+            {
+                return true; //空手
+            }
+
+            return !weapon.Reloading && weapon.Attribute != null && weapon.Attribute.CanMeleeAttack;
+        }
+    }
+
+    /// <summary>
     /// 武器挂载点是否始终指向目标
     /// </summary>
     public bool MountLookTarget { get; set; } = true;
@@ -183,6 +225,10 @@ public abstract partial class Role : ActivityObject
 
     //近战不再使用额外的固定冷却，只在挥刀动画期间阻止重入。
     private bool _meleeAttackPlaying;
+
+    //挥击开始前 MountLookTarget 的值。挥完要恢复成它而不是写死 true ——
+    //翻滚期间也能攻击(见 Player.Process), 而翻滚自己是把 MountLookTarget 关掉的。
+    private bool _meleeMountLookTargetBefore = true;
 
     //近战判定框还要开多久(秒), <= 0 表示已经关掉。
     //用它做保底关闭: 挥刀动画的补间被打断(换武器 / 死亡 / 节点释放)时,
@@ -1830,17 +1876,22 @@ public abstract partial class Role : ActivityObject
             return;
         }
 
-        if (WeaponPack.ActiveItem != null && !WeaponPack.ActiveItem.Reloading && WeaponPack.ActiveItem.Attribute.CanMeleeAttack)
+        //【空手也能近战】没有武器(全扔了 / 子弹打光扔枪)时走空手挥拳,
+        //伤害取 BareHandMeleeDamageRange, 见 CanMeleeAttack / HandlerCollision。
+        if (WeaponPack.ActiveItem == null || CanMeleeAttack)
         {
             _meleeAttackPlaying = true;
             MeleeAttackTimer = 0;
+            _meleeMountLookTargetBefore = MountLookTarget;
             MountLookTarget = false;
             
             //播放近战动画
             PlayAnimation_MeleeAttack(() =>
             {
                 _meleeAttackPlaying = false;
-                MountLookTarget = true;
+                //【不要写死 true】翻滚途中也能挥拳了(见 Player.Process),
+                //这一行如果无脑恢复成 true, 翻滚还没结束枪口就会开始跟鼠标。
+                MountLookTarget = _meleeMountLookTargetBefore;
             });
         }
     }
@@ -1868,27 +1919,28 @@ public abstract partial class Role : ActivityObject
     /// </summary>
     private void OnChangeActiveItem(Weapon weapon)
     {
-        //这里处理近战区域
-        if (weapon != null)
-        {
-            MeleeAttackCollision.Polygon = Utils.CreateSectorPolygon(
-                Utils.ConvertAngle(-MeleeAttackAngle / 2f),
-                (weapon.GetLocalFirePosition() + weapon.GetGripPosition()).Length() * 1.1f,
-                MeleeAttackAngle,
-                6
-            );
-            MeleeAttackArea.CollisionMask = AttackLayer | PhysicsLayer.Bullet;
-        }
+        //这里处理近战区域。
+        //【空手也要设】weapon 为 null 代表"武器全扔了", 这时近战是空手挥拳,
+        //判定扇形用一个固定半径(BareHandMeleeRadius)。原来这里 if (weapon != null) 直接跳过,
+        //结果就是空手时判定多边形还停在上一次武器的形状上 —— 甚至根本没初始化过。
+        var radius = weapon != null
+            ? (weapon.GetLocalFirePosition() + weapon.GetGripPosition()).Length() * 1.1f
+            : BareHandMeleeRadius;
+
+        MeleeAttackCollision.Polygon = Utils.CreateSectorPolygon(
+            Utils.ConvertAngle(-MeleeAttackAngle / 2f),
+            radius,
+            MeleeAttackAngle,
+            6
+        );
+        MeleeAttackArea.CollisionMask = AttackLayer | PhysicsLayer.Bullet;
     }
 
     private void OnMeleeAttackAreaEntered(Area2D area)
     {
+        //可能是 null(空手), 交给 HandlerCollision 兜底
         var activeWeapon = WeaponPack.ActiveItem;
-        if (activeWeapon == null)
-        {
-            return;
-        }
-        
+
         if (area is IHurt hurt)
         {
             //走同一次挥击的去重: 主动判定(ProcessMeleeActiveQuery)可能已经打过它了
@@ -1901,12 +1953,9 @@ public abstract partial class Role : ActivityObject
     /// </summary>
     private void OnMeleeAttackBodyEntered(Node2D body)
     {
+        //可能是 null(空手), 交给 HandlerCollision 兜底
         var activeWeapon = WeaponPack.ActiveItem;
-        if (activeWeapon == null)
-        {
-            return;
-        }
-        
+
         if (body is IHurt hurt)
         {
             //同上, 走去重
@@ -1987,11 +2036,8 @@ public abstract partial class Role : ActivityObject
             return;
         }
 
+        //可能是 null(空手挥拳) —— 不要再 return, HandlerCollision 会走空手参数
         var activeWeapon = WeaponPack.ActiveItem;
-        if (activeWeapon == null)
-        {
-            return;
-        }
 
         //敌人 / 可受击物: HurtArea 是 Area2D
         foreach (var area in MeleeAttackArea.GetOverlappingAreas())
@@ -2032,7 +2078,9 @@ public abstract partial class Role : ActivityObject
     {
         if (hurt.CanHurt(Camp))
         {
-            var damage = Utils.Random.RandomConfigRange(activeWeapon.Attribute.MeleeAttackDamageRange);
+            //activeWeapon 为 null = 空手挥拳, 用固定的低伤害参数(见 BareHandMeleeDamageRange)
+            var damage = Utils.Random.RandomConfigRange(
+                activeWeapon?.Attribute?.MeleeAttackDamageRange ?? BareHandMeleeDamageRange);
             //近战走 CalcMeleeDamage: 不吃"子弹伤害"类道具(杀伤弹/分裂子弹)的加成与减值
             damage = RoleState.CalcMeleeDamage(damage, DamageType.Physical);
 
@@ -2040,8 +2088,18 @@ public abstract partial class Role : ActivityObject
             var pos = hurt.GetPosition();
             if (o != null && o is not Player) //不是玩家才能被击退
             {
-                var attr = IsAi ? activeWeapon.AiUseAttribute : activeWeapon.PlayerUseAttribute;
-                var repel = Utils.Random.RandomConfigRange(attr.MeleeAttackRepelRange);
+                float[] repelRange;
+                if (activeWeapon == null)
+                {
+                    repelRange = BareHandMeleeRepelRange;
+                }
+                else
+                {
+                    var attr = IsAi ? activeWeapon.AiUseAttribute : activeWeapon.PlayerUseAttribute;
+                    repelRange = attr?.MeleeAttackRepelRange ?? BareHandMeleeRepelRange;
+                }
+
+                var repel = Utils.Random.RandomConfigRange(repelRange);
                 var position = pos - MountPoint.GlobalPosition;
                 var v2 = position.Normalized() * repel;
                 o.AddRepelForce(v2);
