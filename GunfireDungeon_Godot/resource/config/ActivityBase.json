@@ -1328,5 +1328,24 @@
     "Icon": "res://resource/sprite/role/death0001/Death_Icon.png",
     "NotInRandomPool": true,
     "ShowInMapEditor": true
+  },
+  {
+    "Id": "wizard0001",
+    "Name": "邪恶法师",
+    "Type": 4,
+    "Quality": 0,
+    "Price": 0,
+    "Intro": {
+      "Code": "精英怪, 不拿武器, 站定施法朝你放三颗火球\n血量 200 · 移速 34 · 全属性减伤 15%\n火球单发 4 点伤害, 三发扇形铺开, 可以侧身躲\n和普通小怪吃同一个楼层血量倍率, 越往下越硬"
+    },
+    "Details": {
+      "Code": "1999 年占据建筑学院的恐怖分子雇来的法师"
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/role/enemy/EvilWizard.tscn",
+    "Icon": "res://resource/sprite/role/wizard0001/Wizard_Icon.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
   }
 ]

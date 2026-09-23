@@ -609,5 +609,51 @@
     "UpliftAngle": 0,
     "__ShootSound": "",
     "FireEffect": ""
+  },
+  {
+    "Id": "0012",
+    "Name": "法师火球",
+    "Type": 1,
+    "Prefab": "bullet0006",
+    "Damage": {
+      "Physical": [
+        20
+      ]
+    },
+    "AbnormalState": null,
+    "CritRate": 0,
+    "CritBonus": 0,
+    "CritArmorPenetration": 0,
+    "RepelRange": [
+      28
+    ],
+    "DeviationAngleRange": [
+      0
+    ],
+    "SpeedRange": [
+      190,
+      190
+    ],
+    "LifeTimeRange": [
+      -1
+    ],
+    "DistanceRange": [
+      430,
+      430
+    ],
+    "VerticalSpeed": [
+      0
+    ],
+    "BounceCount": [
+      0
+    ],
+    "Penetration": [
+      0
+    ],
+    "CameraShake": 0,
+    "BacklashRange": null,
+    "UpliftAngle": 0,
+    "__ShootSound": "",
+    "FireEffect": ""
   }
 ]

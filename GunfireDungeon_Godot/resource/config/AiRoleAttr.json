@@ -68,5 +68,19 @@
     ],
     "BloodColor": "b03030",
     "__BodyFragment": "enemy_dead0001"
+  },
+  {
+    "Id": "wizard0001",
+    "Remark": "邪恶法师(精英怪)",
+    "AttackInterval": 1.1,
+    "ViewRange": 320,
+    "TailAfterViewRange": 380,
+    "ViewAngleRange": 150,
+    "Gold": [
+      12,
+      22
+    ],
+    "BloodColor": "b03030",
+    "__BodyFragment": "enemy_dead0001"
   }
 ]
