@@ -1,58 +1,99 @@
+using System.Collections.Generic;
 using Godot;
 
 namespace UI.game.Main;
 
 /// <summary>
-/// 主菜单背景 —— 进入主菜单时从 11 张背景里随机挑一张。
+/// 主菜单背景 —— 进入主菜单时从 11 套背景里随机挑一套, 每套都是【横向循环滚动的视差层】。
 ///
-/// 选项 0 = 原来的【视差石墙大厅】(天空 / 远山 / 石墙三层, 会缓慢横向漂移);
-/// 选项 1~10 = <c>resource/sprite/ui/mainBackground/variants/</c> 里的 10 张静图。
+/// 选项 0 = 原来的视差石墙大厅(天空 / 远山 / 石墙);
+/// 选项 1~10 = <c>resource/sprite/ui/mainBackground/variants/</c> 里的 10 套 CraftPix 天空。
 ///
-/// 【为什么是 11】用户要求"主页本来只有一张图片, 现在变成 11 张" ——
-/// 也就是原来那张视差大厅也算一版, 加上新接入的 10 张。
+/// 【为什么是 11】需求是"主页本来只有一张图片, 现在变成 11 张" ——
+/// 原来那张视差大厅也算一套, 加上新接入的 10 套。
 ///
-/// 【会不会连着两次看到同一张】不会。用静态字段记住上一次抽到的选项,
-/// 抽重了就顺移一位再抽一次(见 <see cref="PickOption"/>) ——
-/// 11 选 1 纯随机会有约 9% 的概率连续两次相同, 放到玩家眼里就像"随机没生效"。
+/// ────────────────────────────────────────────────────────────────
+/// 【新接入的 10 套为什么是多层而不是一张压平图】
+/// CraftPix 那个素材包里每个"background N"目录下有这么几个文件:
+///   <c>1.png … N.png</c>  576x324   ← 【视差分层】, 1 = 最远(星空/底色), 编号越大越靠前
+///   <c>orig.png</c>        576x324   ← 把上面几层压平的结果
+///   <c>orig_big.png</c>   2304x1296  ← 上面那张的 4 倍放大版
+/// 一开始按"一张静图"接了 <c>orig_big.png</c>, 结果 11 套里 10 套不会动,
+/// 主菜单从"动态循环"变成了"大部分时候是张静止画" —— 这是不对的。
+/// 所以改成直接用 <c>1.png…N.png</c> 这几层, 每层单独横向循环滚动、越靠前滚得越快,
+/// 这样 11 套背景**全部**是动态循环的, 也才是这个素材包("Parallax Clouds")的本来用法。
 ///
-/// ⚠️ 【这 10 张图不在 git 仓库里】
+/// 【层是不是真的能首尾相接循环】验证过: 按 1→N 的顺序做 alpha 叠加, 结果和
+/// <c>orig.png</c> 逐像素完全一致(平均差 0.00); 再把每层左右首尾接起来看接缝,
+/// 接缝处的列差和普通相邻列的列差同量级, 也就是本来就是为了横向平铺设计的。
+///
+/// ⚠️ 【这些图不在 git 仓库里】
 /// CraftPix 免费素材条款 §2.2.1 禁止再分发美术源文件, 而本仓库是公开仓库,
-/// 所以这 10 个 PNG 被 .gitignore 排除, 只在打包发行时从本机磁盘进 pck。
-/// 源码构建版(别人 clone 下来跑)会走到下面 <see cref="BuildStillBackground"/> 的
-/// 兜底分支, 退回视差大厅并打一条 warning —— 不会黑屏。
+/// 所以这些 PNG 被 .gitignore 排除, 只在打包发行时从本机磁盘进 pck。
+/// 源码构建版(别人 clone 下来跑)会走到 <see cref="BuildVariant"/> 的兜底分支,
+/// 退回视差大厅并打一条 warning —— 不会黑屏。
 /// 来源与授权见同目录 <c>variants/LICENSE.md</c>, 本机补齐见 <c>variants/restore_variants.ps1</c>。
+///
+/// 【会不会连着两次看到同一套】不会。用静态字段记住上一次抽到的选项,
+/// 抽重了就顺移一位再抽(见 <see cref="PickOption"/>) ——
+/// 11 选 1 纯随机会有约 9% 的概率连续两次相同, 放到玩家眼里就像"随机没生效"。
 /// </summary>
 public partial class MainBackground : Godot.Control
 {
-    /// <summary>视差大厅: 天空贴图</summary>
+    // ───────────────────────── 选项 0: 视差石墙大厅 ─────────────────────────
+
+    /// <summary>大厅: 天空贴图</summary>
     private const string SkyPath = "res://resource/sprite/ui/mainBackground/bg_sky.png";
 
-    /// <summary>视差大厅: 远山贴图</summary>
+    /// <summary>大厅: 远山贴图</summary>
     private const string RidgePath = "res://resource/sprite/ui/mainBackground/bg_ridge.png";
 
-    /// <summary>视差大厅: 石墙贴图(静止)</summary>
+    /// <summary>大厅: 石墙贴图(静止)</summary>
     private const string WallPath = "res://resource/sprite/ui/mainBackground/bg_wall.png";
 
-    /// <summary>
-    /// 随机静图池。顺序和 <c>variants/LICENSE.md</c> 里的编号一一对应。
-    /// 这 10 张都是 2304x1296(16:9), 和 UI 画布 1920x1080 同比例, 拉伸铺满不会变形。
-    /// </summary>
-    private static readonly string[] VariantPaths =
-    {
-        "res://resource/sprite/ui/mainBackground/variants/bg_v01.png",
-        "res://resource/sprite/ui/mainBackground/variants/bg_v02.png",
-        "res://resource/sprite/ui/mainBackground/variants/bg_v03.png",
-        "res://resource/sprite/ui/mainBackground/variants/bg_v04.png",
-        "res://resource/sprite/ui/mainBackground/variants/bg_v05.png",
-        "res://resource/sprite/ui/mainBackground/variants/bg_v06.png",
-        "res://resource/sprite/ui/mainBackground/variants/bg_v07.png",
-        "res://resource/sprite/ui/mainBackground/variants/bg_v08.png",
-        "res://resource/sprite/ui/mainBackground/variants/bg_v09.png",
-        "res://resource/sprite/ui/mainBackground/variants/bg_v10.png",
-    };
+    /// <summary>大厅天空/远山贴图宽度 = 滚动周期</summary>
+    private const float HallPeriod = 3840f;
 
-    /// <summary>总选项数 = 1 张视差大厅 + N 张静图</summary>
-    private static int OptionCount => 1 + VariantPaths.Length;
+    /// <summary>大厅天空层漂移速度(像素/秒)</summary>
+    private const float SkySpeed = 32f;
+
+    /// <summary>
+    /// 大厅远山层漂移速度(像素/秒), 要比天空快才有视差纵深。
+    /// 原为 90, 用户反馈"远山移动太快了" —— 降到 42, 与天空的 32 拉开适度差距。
+    /// </summary>
+    private const float RidgeSpeed = 42f;
+
+    // ───────────────────────── 选项 1~10: CraftPix 视差天空 ─────────────────────────
+
+    /// <summary>随机池里有几套 CraftPix 背景</summary>
+    private const int VariantCount = 10;
+
+    /// <summary>
+    /// 一套背景最多取几层。实际有几层是【加载到空为止】探出来的 ——
+    /// 换素材包、加减图层都不用改代码。
+    /// </summary>
+    private const int MaxLayersPerVariant = 8;
+
+    /// <summary>
+    /// 最远层的漂移速度(像素/秒)。
+    /// 新背景的贴图是 576 宽、拉伸到 1920, 所以滚动周期是 1920(不是大厅的 3840),
+    /// 这里比大厅的 32 慢一些, 让最快的前景层大约 64 秒走完一轮。
+    /// </summary>
+    private const float VariantBackSpeed = 6f;
+
+    /// <summary>最近层的漂移速度(像素/秒), 层与层之间在这个区间里线性分布</summary>
+    private const float VariantFrontSpeed = 30f;
+
+    /// <summary>图层路径: bg_v01_L1.png … bg_v10_L5.png</summary>
+    private static string VariantLayerPath(int variant, int layer)
+    {
+        return $"res://resource/sprite/ui/mainBackground/variants/bg_v{variant + 1:D2}_L{layer}.png";
+    }
+
+    // ───────────────────────── 公共 ─────────────────────────
+
+    /// <summary>总选项数 = 1 套视差大厅 + N 套 CraftPix</summary>
+    private static int OptionCount => 1 + VariantCount;
 
     /// <summary>
     /// 上一次抽到的选项(0 = 视差大厅)。静态 —— 同一次运行内跨主菜单实例有效。
@@ -63,25 +104,30 @@ public partial class MainBackground : Godot.Control
     /// <summary>UI 画布尺寸(和其它界面一致, 见 project.godot 的窗口/拉伸设置)</summary>
     private static readonly Vector2 CanvasSize = new(1920f, 1080f);
 
-    /// <summary>滚动周期 = 贴图宽度</summary>
-    private const float Period = 3840f;
-
-    /// <summary>天空层漂移速度(像素/秒)</summary>
-    private const float SkySpeed = 32f;
-
     /// <summary>
-    /// 远山层漂移速度(像素/秒), 要比天空快才有视差纵深。
-    /// 原为 90, 用户反馈"远山移动太快了" —— 降到 42, 与天空的 32 拉开适度差距。
+    /// 一套横向循环滚动的视差层。
+    /// 每层用【两张首尾相接的同一张贴图】铺满画布, 一起左移, 移满一个周期就归零 ——
+    /// 因为贴图左右无缝, 归零那一刻画面上看不出任何跳变。
     /// </summary>
-    private const float RidgeSpeed = 42f;
+    private sealed class ScrollLayer
+    {
+        /// <summary>左半边贴图</summary>
+        public TextureRect A;
 
-    private TextureRect _skyA;
-    private TextureRect _skyB;
-    private TextureRect _ridgeA;
-    private TextureRect _ridgeB;
+        /// <summary>右半边贴图(接在 A 右边)</summary>
+        public TextureRect B;
 
-    private float _skyOffset;
-    private float _ridgeOffset;
+        /// <summary>一张贴图的显示宽度, 也就是循环周期</summary>
+        public float Width;
+
+        /// <summary>漂移速度(像素/秒)</summary>
+        public float Speed;
+
+        /// <summary>当前偏移量, 始终保持在 [0, Width)</summary>
+        public float Offset;
+    }
+
+    private readonly List<ScrollLayer> _layers = new();
 
     public override void _Ready()
     {
@@ -96,12 +142,13 @@ public partial class MainBackground : Godot.Control
         }
         else
         {
-            BuildStillBackground(VariantPaths[option - 1]);
+            BuildVariant(option - 1);
         }
+
     }
 
     /// <summary>
-    /// 抽本次要用的背景。返回值 0 = 视差大厅, 1..N = <see cref="VariantPaths"/> 的第几个。
+    /// 抽本次要用的背景。返回值 0 = 视差大厅, 1..N = 第几套 CraftPix 背景。
     /// </summary>
     private static int PickOption()
     {
@@ -124,7 +171,7 @@ public partial class MainBackground : Godot.Control
             option = (int)(GD.Randi() % (uint)count);
         }
 
-        //抽重了就顺移: 在剩下的 count-1 个里再抽一个偏移量, 保证换一张。
+        //抽重了就顺移: 在剩下的 count-1 个里再抽一个偏移量, 保证换一套。
         //(不用 do/while 重抽, 免得随机源退化时死循环)
         if (option == _lastOption && Utils.Random != null)
         {
@@ -139,110 +186,125 @@ public partial class MainBackground : Godot.Control
         return option;
     }
 
+    // ───────────────────────── 组装 ─────────────────────────
+
     /// <summary>
     /// 选项 0: 原来的视差大厅 —— 地牢石墙大厅, 左右各一扇拱窗, 窗外是黄昏天空与远山。
     /// 层级(由远及近): 天空(慢) -> 远山(快) -> 石墙(静止)。
-    /// 天空与远山贴图都是 3840 宽且左右无缝, 各放两份首尾相接循环移动,
-    /// 这样任何时刻都能铺满 1920 宽的画布。
     /// </summary>
     private void BuildParallaxHall()
     {
         //注意 Godot 的绘制顺序: 后 AddChild 的画在上层
         //所以按 天空 -> 远山 -> 石墙 的顺序添加
-
-        //最远层: 天空
-        _skyA = MakeLayer(SkyPath, Period);
-        _skyB = MakeLayer(SkyPath, Period);
-        AddChild(_skyA);
-        AddChild(_skyB);
-
-        //中层: 远山
-        _ridgeA = MakeLayer(RidgePath, Period);
-        _ridgeB = MakeLayer(RidgePath, Period);
-        AddChild(_ridgeA);
-        AddChild(_ridgeB);
+        AddScrollingLayer(SkyPath, HallPeriod, SkySpeed);
+        AddScrollingLayer(RidgePath, HallPeriod, RidgeSpeed);
 
         //最近层: 石墙(静止), 拱窗处透明, 透出后面的天空
-        var wall = MakeLayer(WallPath, 1920f);
-        AddChild(wall);
-
-        Apply();
+        var wall = GD.Load<Texture2D>(WallPath);
+        if (wall == null)
+        {
+            GD.PushWarning($"[MainBackground] 背景贴图加载失败: {WallPath}");
+        }
+        AddChild(MakeLayerRect(wall, 1920f));
     }
 
     /// <summary>
-    /// 选项 1..N: 一张铺满全屏的静图。
-    /// 加载失败时退回视差大厅 —— 宁可少一张, 也不能让主菜单变成黑屏。
+    /// 选项 1~10: 一套 CraftPix 视差天空。
+    /// 图层从 L1 开始加载, 加载不到就停 —— 有几层用几层。
+    /// 一层都拿不到(源码构建版没这 10 套图)时退回视差大厅, 不会黑屏。
     /// </summary>
-    private void BuildStillBackground(string path)
+    private void BuildVariant(int variant)
     {
-        var tex = GD.Load<Texture2D>(path);
-        if (tex == null)
+        var textures = new List<Texture2D>();
+        for (var i = 1; i <= MaxLayersPerVariant; i++)
         {
-            GD.PushWarning($"[MainBackground] 背景贴图加载失败, 退回视差大厅: {path}");
+            var path = VariantLayerPath(variant, i);
+
+            //⚠️ 必须先 Exists 再 Load。
+            //直接 GD.Load 一个不存在的路径, Godot 会打两条 ERROR
+            //("Resource file not found" + "Error loading resource"), 每次进主菜单刷一次。
+            //ResourceLoader.Exists 只是查表, 不存在时安静返回 false。
+            if (!ResourceLoader.Exists(path))
+            {
+                break;
+            }
+
+            var tex = GD.Load<Texture2D>(path);
+            if (tex == null)
+            {
+                break;
+            }
+
+            textures.Add(tex);
+        }
+
+        if (textures.Count == 0)
+        {
+            GD.PushWarning($"[MainBackground] 背景 v{variant + 1:D2} 的图层一个都没加载到, 退回视差大厅");
             BuildParallaxHall();
             return;
         }
 
-        AddChild(new TextureRect
+        for (var i = 0; i < textures.Count; i++)
         {
-            Name = "StillBackground",
-            Texture = tex,
-            Position = Vector2.Zero,
-            Size = CanvasSize,
-            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-            StretchMode = TextureRect.StretchModeEnum.Scale,
-            MouseFilter = MouseFilterEnum.Ignore,
-
-            //这些图不是像素画(边缘本来就是抗锯齿的), 而且 2304 -> 1920 不是整数倍。
-            //项目全局的 default_texture_filter 是 Nearest(给像素画用的),
-            //直接套上去会在缩小时随机丢像素列, 边缘发毛。
-            //所以单独给这一层开线性过滤 —— 只影响这一张图, 不动全局设置。
-            TextureFilter = CanvasItem.TextureFilterEnum.Linear,
-        });
-
-        //静图不需要每帧漂移
-        SetProcess(false);
+            //越靠前的层滚得越快, 才有纵深。只有一层时不加速, 用最远层的速度。
+            var t = textures.Count > 1 ? i / (float)(textures.Count - 1) : 0f;
+            AddScrollingLayer(textures[i], CanvasSize.X, Mathf.Lerp(VariantBackSpeed, VariantFrontSpeed, t));
+        }
     }
 
-    /// <summary>创建一个铺满整屏高度的图层贴图</summary>
-    private static TextureRect MakeLayer(string path, float width)
+    /// <summary>加一层横向循环滚动的贴图</summary>
+    private void AddScrollingLayer(string path, float width, float speed)
     {
         var tex = GD.Load<Texture2D>(path);
         if (tex == null)
         {
             GD.PushWarning($"[MainBackground] 背景贴图加载失败: {path}");
+            return;
         }
 
+        AddScrollingLayer(tex, width, speed);
+    }
+
+    /// <summary>加一层横向循环滚动的贴图</summary>
+    private void AddScrollingLayer(Texture2D tex, float width, float speed)
+    {
+        var a = MakeLayerRect(tex, width);
+        var b = MakeLayerRect(tex, width);
+        AddChild(a);
+        AddChild(b);
+        _layers.Add(new ScrollLayer { A = a, B = b, Width = width, Speed = speed });
+    }
+
+    /// <summary>创建一个铺满整屏高度的图层贴图</summary>
+    private static TextureRect MakeLayerRect(Texture2D tex, float width)
+    {
         return new TextureRect
         {
-            Name = System.IO.Path.GetFileNameWithoutExtension(path),
             Texture = tex,
             Position = Vector2.Zero,
-            Size = new Vector2(width, 1080f),
+            Size = new Vector2(width, CanvasSize.Y),
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.Scale,
             MouseFilter = MouseFilterEnum.Ignore,
+
+            //这些层是 576 宽的像素画, 要在画布上放大 3.33 倍。
+            //全局 default_texture_filter 本来就是 Nearest, 这里显式写一遍
+            //免得以后有人改全局设置把主菜单背景弄糊。
+            TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
         };
     }
 
     public override void _Process(double delta)
     {
         var d = (float)delta;
-        _skyOffset = Mathf.PosMod(_skyOffset + d * SkySpeed, Period);
-        _ridgeOffset = Mathf.PosMod(_ridgeOffset + d * RidgeSpeed, Period);
-        Apply();
-    }
-
-    private void Apply()
-    {
-        if (_skyA == null)
+        for (var i = 0; i < _layers.Count; i++)
         {
-            return;
+            var layer = _layers[i];
+            //偏移量一直留在 [0, Width) 里: 因为贴图左右无缝, 归零那一刻画面看不出跳变
+            layer.Offset = Mathf.PosMod(layer.Offset + d * layer.Speed, layer.Width);
+            layer.A.Position = new Vector2(-layer.Offset, 0f);
+            layer.B.Position = new Vector2(layer.Width - layer.Offset, 0f);
         }
-
-        _skyA.Position = new Vector2(-_skyOffset, 0f);
-        _skyB.Position = new Vector2(Period - _skyOffset, 0f);
-        _ridgeA.Position = new Vector2(-_ridgeOffset, 0f);
-        _ridgeB.Position = new Vector2(Period - _ridgeOffset, 0f);
     }
 }

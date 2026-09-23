@@ -66,10 +66,12 @@ public partial class ChangelogOverlay : Control
         "· 界面素材来自 Kenney（www.kenney.nl），CC0 1.0 协议\n" +
         "· 界面音效来自 Kenney 的 Interface Sounds，CC0 1.0 协议\n" +
         "· 主菜单背景改为随机：原来固定一张视差石墙大厅，现在每次回到主菜单都会\n" +
-        "  从 11 张里随机挑一张（1 张视差大厅 + 10 张新背景），相邻两次不会重复\n" +
+        "  从 11 套背景里随机挑一套（1 套视差大厅 + 10 套新背景），相邻两次不会重复\n" +
+        "· 11 套背景全部是动态循环的：每套都由 3~5 层组成，各层以不同速度横向滚动，\n" +
+        "  形成视差纵深（新背景的层取自素材包自带的分层图，不是压平图）\n" +
         "· 主菜单背景的天空与云来自 ansimuz（ansimuz.com），CC0 1.0 协议\n" +
         "· 主菜单背景的远山与石墙为本修改版程序化生成\n" +
-        "· 新增的 10 张主菜单背景来自 CraftPix 免费素材（New free backgrounds part1~part4）\n" +
+        "· 新增的 10 套主菜单背景来自 CraftPix 免费素材（New free backgrounds part1~part4）\n" +
         "· 全部游戏音效替换为 Kenney 的 CC0 音效\n" +
         "· 统一素材授权，便于商业发布\n" +
         "· 说明：Kenney 没有写实枪声，枪声改用能量武器音\n" +
