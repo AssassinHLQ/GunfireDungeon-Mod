@@ -30,7 +30,12 @@ if (-not (Test-Path $SourceRoot)) {
     exit 1
 }
 
-# 顺序必须和 MainBackground.cs 里的 VariantPacks 完全一致
+# 编号 -> 素材目录。编号必须和 MainBackground.cs 里的 VariantIds 对得上：
+# 只复制 VariantIds 里启用的那几套，别的（比如下面注释掉的 07）不复制。
+#
+#   07 = part2/background 4（灰白岩云）—— 用户 2026-09-20 决定不用这一套：
+#        只有 3 层，而且整体偏亮、中间一团乳白正好压在标题后面。
+#        要加回来：取消下面那行注释，再把 7 填进 MainBackground.cs 的 VariantIds。
 $map = @(
     @{ V = "01"; Part = 1; Bg = 1 },
     @{ V = "02"; Part = 1; Bg = 2 },
@@ -38,11 +43,26 @@ $map = @(
     @{ V = "04"; Part = 2; Bg = 1 },
     @{ V = "05"; Part = 2; Bg = 2 },
     @{ V = "06"; Part = 2; Bg = 3 },
-    @{ V = "07"; Part = 2; Bg = 4 },
+    # @{ V = "07"; Part = 2; Bg = 4 },
     @{ V = "08"; Part = 3; Bg = 2 },
     @{ V = "09"; Part = 4; Bg = 1 },
     @{ V = "10"; Part = 4; Bg = 2 }
 )
+
+# 清掉那些"已经不在 VariantIds 里"的旧图层文件（例如弃用的 07），
+# 免得本机留着一堆用不到的图，或者导入缓存里还挂着它们。
+$enabled = $map | ForEach-Object { $_.V }
+Get-ChildItem $dest -Filter "bg_v*.png" -ErrorAction SilentlyContinue | ForEach-Object {
+    if ($_.Name -match '^bg_v(\d\d)_L\d+\.png$' -and $enabled -notcontains $Matches[1]) {
+        Remove-Item $_.FullName -Force
+        Write-Host "清理已停用的图层  $($_.Name)" -ForegroundColor DarkGray
+    }
+}
+Get-ChildItem $dest -Filter "bg_v*.png.import" -ErrorAction SilentlyContinue | ForEach-Object {
+    if ($_.Name -match '^bg_v(\d\d)_L\d+\.png\.import$' -and $enabled -notcontains $Matches[1]) {
+        Remove-Item $_.FullName -Force
+    }
+}
 
 # 旧版用的是压平图 orig_big.png，现在改成视差层，把它清掉免得混淆
 $stale = @("bg_v01.png", "bg_v02.png", "bg_v03.png", "bg_v04.png", "bg_v05.png",

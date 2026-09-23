@@ -4,24 +4,24 @@ using Godot;
 namespace UI.game.Main;
 
 /// <summary>
-/// 主菜单背景 —— 进入主菜单时从 11 套背景里随机挑一套, 每套都是【横向循环滚动的视差层】。
+/// 主菜单背景 —— 进入主菜单时从 10 套背景里随机挑一套, 每套都是【横向循环滚动的视差层】。
 ///
 /// 选项 0 = 原来的视差石墙大厅(天空 / 远山 / 石墙);
-/// 选项 1~10 = <c>resource/sprite/ui/mainBackground/variants/</c> 里的 10 套 CraftPix 天空。
+/// 选项 1~9 = <c>resource/sprite/ui/mainBackground/variants/</c> 里启用的 CraftPix 天空
+/// (启用哪几套见 <see cref="VariantIds"/>)。
 ///
-/// 【为什么是 11】需求是"主页本来只有一张图片, 现在变成 11 张" ——
-/// 原来那张视差大厅也算一套, 加上新接入的 10 套。
+/// 【为什么是 10】需求是"主页本来只有一张图片"; 先接入 10 套 CraftPix 加上原有大厅共 11 套,
+/// 后来用户决定不用 part2/background 4 (灰白岩云) 那一套, 于是变成 10 套。
 ///
 /// ────────────────────────────────────────────────────────────────
-/// 【新接入的 10 套为什么是多层而不是一张压平图】
+/// 【新接入的套为什么是多层而不是一张压平图】
 /// CraftPix 那个素材包里每个"background N"目录下有这么几个文件:
 ///   <c>1.png … N.png</c>  576x324   ← 【视差分层】, 1 = 最远(星空/底色), 编号越大越靠前
 ///   <c>orig.png</c>        576x324   ← 把上面几层压平的结果
 ///   <c>orig_big.png</c>   2304x1296  ← 上面那张的 4 倍放大版
-/// 一开始按"一张静图"接了 <c>orig_big.png</c>, 结果 11 套里 10 套不会动,
-/// 主菜单从"动态循环"变成了"大部分时候是张静止画" —— 这是不对的。
+/// 一开始按"一张静图"接了 <c>orig_big.png</c>, 结果大部分时间主菜单是张静止画 —— 这是不对的。
 /// 所以改成直接用 <c>1.png…N.png</c> 这几层, 每层单独横向循环滚动、越靠前滚得越快,
-/// 这样 11 套背景**全部**是动态循环的, 也才是这个素材包("Parallax Clouds")的本来用法。
+/// 这样才能全都是动态循环的, 也才是这个素材包("Parallax Clouds")的本来用法。
 ///
 /// 【层是不是真的能首尾相接循环】验证过: 按 1→N 的顺序做 alpha 叠加, 结果和
 /// <c>orig.png</c> 逐像素完全一致(平均差 0.00); 再把每层左右首尾接起来看接缝,
@@ -36,9 +36,9 @@ namespace UI.game.Main;
 ///
 /// 【会不会连着两次看到同一套】不会。用静态字段记住上一次抽到的选项,
 /// 抽重了就顺移一位再抽(见 <see cref="PickOption"/>) ——
-/// 11 选 1 纯随机会有约 9% 的概率连续两次相同, 放到玩家眼里就像"随机没生效"。
+/// 纯随机会有约 1/10 的概率连续两次相同, 放到玩家眼里就像"随机没生效"。
 ///
-/// 【新接入的 10 套为什么用 Linear 过滤】它们是 576 宽的图, 要放大 3.3333 倍
+/// 【新接入的套为什么用 Linear 过滤】它们是 576 宽的图, 要放大 3.3333 倍
 /// (不是整数倍)才铺满 1920 画布。Nearest 会让源像素宽度在 3/4 之间来回变,
 /// 而这个花纹会随滚动爬动 —— 看起来就是"云朵在原地抖, 不是平move"。
 /// 详见 <see cref="MakeLayerRect"/> 里的说明。
@@ -68,10 +68,22 @@ public partial class MainBackground : Godot.Control
     /// </summary>
     private const float RidgeSpeed = 42f;
 
-    // ───────────────────────── 选项 1~10: CraftPix 视差天空 ─────────────────────────
+    // ───────────────────────── 选项 1~N: CraftPix 视差天空 ─────────────────────────
 
-    /// <summary>随机池里有几套 CraftPix 背景</summary>
-    private const int VariantCount = 10;
+    /// <summary>
+    /// 随机池里启用哪几套 CraftPix 背景。数字对应文件名里的 <c>bg_vNN</c>。
+    ///
+    /// 【为什么是显式列表, 而不是"1..N 连续编号"】
+    /// 这样"哪套是什么"在文件名里永远对得上, 停用/加回某一套只改这一行,
+    /// 不用去重命名一堆图片文件, 也不会把 LICENSE.md 里的对照表搞乱。
+    ///
+    /// 目前停用:
+    ///   <c>v07</c> = part2/background 4 (灰白岩云, 只有 3 层, 而且整体偏亮、中间一团
+    ///   乳白正好压在标题后面) —— 用户 2026-09-20 决定"忍痛割爱"不用这一套。
+    ///   文件已从 variants/ 删掉, 想加回来: 把这个数字填回数组, 再跑一次
+    ///   restore_variants.ps1 + Godot 导入。
+    /// </summary>
+    private static readonly int[] VariantIds = { 1, 2, 3, 4, 5, 6, 8, 9, 10 };
 
     /// <summary>
     /// 一套背景最多取几层。实际有几层是【加载到空为止】探出来的 ——
@@ -89,16 +101,16 @@ public partial class MainBackground : Godot.Control
     /// <summary>最近层的漂移速度(像素/秒), 层与层之间在这个区间里线性分布</summary>
     private const float VariantFrontSpeed = 30f;
 
-    /// <summary>图层路径: bg_v01_L1.png … bg_v10_L5.png</summary>
-    private static string VariantLayerPath(int variant, int layer)
+    /// <summary>图层路径: bg_v01_L1.png … bg_v10_L5.png (variantId 就是文件名的 NN)</summary>
+    private static string VariantLayerPath(int variantId, int layer)
     {
-        return $"res://resource/sprite/ui/mainBackground/variants/bg_v{variant + 1:D2}_L{layer}.png";
+        return $"res://resource/sprite/ui/mainBackground/variants/bg_v{variantId:D2}_L{layer}.png";
     }
 
     // ───────────────────────── 公共 ─────────────────────────
 
-    /// <summary>总选项数 = 1 套视差大厅 + N 套 CraftPix</summary>
-    private static int OptionCount => 1 + VariantCount;
+    /// <summary>总选项数 = 1 套视差大厅 + 启用的 CraftPix 套数</summary>
+    private static int OptionCount => 1 + VariantIds.Length;
 
     /// <summary>
     /// 上一次抽到的选项(0 = 视差大厅)。静态 —— 同一次运行内跨主菜单实例有效。
@@ -149,7 +161,6 @@ public partial class MainBackground : Godot.Control
         {
             BuildVariant(option - 1);
         }
-
     }
 
     /// <summary>
@@ -214,16 +225,17 @@ public partial class MainBackground : Godot.Control
     }
 
     /// <summary>
-    /// 选项 1~10: 一套 CraftPix 视差天空。
+    /// 选项 1~N: 一套 CraftPix 视差天空。参数是 <see cref="VariantIds"/> 里的下标。
     /// 图层从 L1 开始加载, 加载不到就停 —— 有几层用几层。
-    /// 一层都拿不到(源码构建版没这 10 套图)时退回视差大厅, 不会黑屏。
+    /// 一层都拿不到(源码构建版没这些图)时退回视差大厅, 不会黑屏。
     /// </summary>
-    private void BuildVariant(int variant)
+    private void BuildVariant(int index)
     {
+        var variantId = VariantIds[index];
         var textures = new List<Texture2D>();
         for (var i = 1; i <= MaxLayersPerVariant; i++)
         {
-            var path = VariantLayerPath(variant, i);
+            var path = VariantLayerPath(variantId, i);
 
             //⚠️ 必须先 Exists 再 Load。
             //直接 GD.Load 一个不存在的路径, Godot 会打两条 ERROR
@@ -245,7 +257,7 @@ public partial class MainBackground : Godot.Control
 
         if (textures.Count == 0)
         {
-            GD.PushWarning($"[MainBackground] 背景 v{variant + 1:D2} 的图层一个都没加载到, 退回视差大厅");
+            GD.PushWarning($"[MainBackground] 背景 v{variantId:D2} 的图层一个都没加载到, 退回视差大厅");
             BuildParallaxHall();
             return;
         }

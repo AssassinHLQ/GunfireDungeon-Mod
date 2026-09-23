@@ -1,12 +1,12 @@
 # 主菜单随机背景素材说明 / Main Menu Background Variants
 
-本目录的 **42 个 PNG（10 套 × 3~5 层）** 是主菜单的随机背景池，由
+本目录的 **39 个 PNG（9 套 × 3~5 层）** 是主菜单的随机背景池，由
 `src/game/ui/game/main/MainBackground.cs` 在每次进入主菜单时随机挑**一套**，
 把这一套的每一层铺满全屏、各按不同速度横向循环滚动（视差）。
 
-主菜单一共有 **11 套**背景：本目录这 10 套 + 原来那张视差石墙大厅
+主菜单一共有 **10 套**背景：本目录这 9 套 + 原来那张视差石墙大厅
 （`../bg_sky.png` / `../bg_ridge.png` / `../bg_wall.png`，见 `../LICENSE.md`）。
-**11 套全部都是动态循环的。**
+**10 套全部都是动态循环的。**
 
 ---
 
@@ -17,13 +17,13 @@
 
 | | 仓库里 | 打包发行版里 |
 |---|---|---|
-| 42 个背景图层 PNG | ❌ 没有 | ✅ 有 |
+| 39 个背景图层 PNG | ❌ 没有 | ✅ 有 |
 | `LICENSE.md`（本文件）| ✅ 有 | ✅ 有 |
 | 程序化生成的视差大厅（选项 0）| ✅ 有 | ✅ 有 |
 
 **别人 `git clone` 下来会怎样**：`MainBackground.cs` 会照常尝试加载，
 加载不到就**退回视差大厅背景**并打一条 warning（不会黑屏、不会崩）。
-也就是源码构建版是 1 套背景，发行版是 11 套。
+也就是源码构建版是 1 套背景，发行版是 10 套。
 
 **本机怎么补回来**：跑同目录的 `restore_variants.ps1`，或照下面的对照表手工复制。
 
@@ -72,10 +72,10 @@
 
 一开始按"一张静图"接了 `orig_big.png`，结果是 **11 套里 10 套不会动** ——
 主菜单从"动态循环"退化成"大部分时候是张静止画"，这是不对的。
-改成直接用 `1.png…N.png` 这几层之后，11 套背景全部是动态循环的，
+改成直接用 `1.png…N.png` 这几层之后，全部背景都是动态循环的，
 也才是这个素材包（*Parallax Clouds*）的本来用法。
 
-**"这 10 套图能首尾相接循环吗"验证过**（用 Pillow + NumPy 逐像素比对）：
+**"这些层能首尾相接循环吗"验证过**（用 Pillow + NumPy 逐像素比对）：
 
 1. 按 `1→N` 的顺序做 alpha 叠加，结果和 `orig.png` **逐像素完全一致（平均差 0.00）**
    —— 确认 `1.png…N.png` 就是 `orig.png` 的构成成分，且顺序是 1 在最底层。
@@ -96,26 +96,40 @@
 原包目录名 → 本项目文件名。命名改为连续编号是为了让 `MainBackground.cs` 里
 可以按 `bg_vNN_L1.png`、`bg_vNN_L2.png`… 的规律直接拼路径。
 
-| 本项目前缀 | 原始位置 | 层数 |
-|---|---|---|
-| `bg_v01_L*.png` | part1 / background 1 | 4 |
-| `bg_v02_L*.png` | part1 / background 2 | 5 |
-| `bg_v03_L*.png` | part1 / background 3 | 4 |
-| `bg_v04_L*.png` | part2 / background 1 | 4 |
-| `bg_v05_L*.png` | part2 / background 2 | 5 |
-| `bg_v06_L*.png` | part2 / background 3 | 4 |
-| `bg_v07_L*.png` | part2 / background 4 | 3 |
-| `bg_v08_L*.png` | part3 / background 2 | 3 |
-| `bg_v09_L*.png` | part4 / background 1 | 5 |
-| `bg_v10_L*.png` | part4 / background 2 | 5 |
+| 本项目前缀 | 原始位置 | 层数 | 是否启用 |
+|---|---|---|---|
+| `bg_v01_L*.png` | part1 / background 1 | 4 | ✅ |
+| `bg_v02_L*.png` | part1 / background 2 | 5 | ✅ |
+| `bg_v03_L*.png` | part1 / background 3 | 4 | ✅ |
+| `bg_v04_L*.png` | part2 / background 1 | 4 | ✅ |
+| `bg_v05_L*.png` | part2 / background 2 | 5 | ✅ |
+| `bg_v06_L*.png` | part2 / background 3 | 4 | ✅ |
+| ~~`bg_v07_L*.png`~~ | part2 / background 4 | 3 | ❌ **已停用** |
+| `bg_v08_L*.png` | part3 / background 2 | 3 | ✅ |
+| `bg_v09_L*.png` | part4 / background 1 | 5 | ✅ |
+| `bg_v10_L*.png` | part4 / background 2 | 5 | ✅ |
 
-合计 42 个文件，257 KB。原包里每个目录的 `orig.png` / `orig_big.png` / PSD **未使用**。
+合计 **39 个文件**（启用中的 9 套），约 240 KB。
+原包里每个目录的 `orig.png` / `orig_big.png` / PSD **未使用**。
+
+### 为什么停用 v07（part2 / background 4）
+
+那是唯一只有 3 层的两套之一，而且整体偏亮、中间一团乳白正好压在标题后面 ——
+用户 2026-09-20 决定不用它（"忍痛割爱"）。
+
+**加回来只要两步**：
+
+1. 在 `restore_variants.ps1` 里取消 `# @{ V = "07"; ... }` 那行注释并跑一次；
+2. 把 `7` 填回 `MainBackground.cs` 的 `VariantIds` 数组。
+
+编号保持不连续（缺 07）是故意的 —— 这样"哪个编号对应哪个素材包"永远对得上，
+不用重命名一堆文件。
 
 ---
 
 ## 补齐后要做的两步
 
-1. 跑 `restore_variants.ps1`（复制 42 个图层文件进本目录）。
+1. 跑 `restore_variants.ps1`（复制在用的 39 个图层文件进本目录，已停用的不会复制）。
 2. 让 Godot 重新导入一次，生成 `.import` 与 `.godot/imported/*.ctex`：
 
    ```
