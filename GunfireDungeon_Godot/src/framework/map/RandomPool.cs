@@ -51,11 +51,45 @@ public class RandomPool
     }
 
     /// <summary>
+    /// 精英怪的抽取权重。没在表里的敌人一律按 <see cref="NormalEnemyWeight"/> 算,
+    /// 所以以后再加普通小怪不用动这里。
+    /// </summary>
+    private static readonly Dictionary<string, int> EnemyWeights = new()
+    {
+        { "wizard0001", EliteEnemyWeight },
+        { "executioner0001", EliteEnemyWeight },
+    };
+
+    private const int NormalEnemyWeight = 10;
+
+    /// <summary>
+    /// 精英怪权重。10 : 1 → 单只精英约占刷怪量的 1/11(两族合计约 15%)。
+    /// </summary>
+    private const int EliteEnemyWeight = 1;
+
+    /// <summary>
     /// 获取随机敌人
+    ///
+    /// 【为什么改成加权】(2026-09-24 加入第二个精英怪「不死刽子手」时)
+    /// 原来是无脑 <c>RandomChoose</c> —— 池子里 4 种就是各 25%,
+    /// 两只精英怪加起来要占掉**一半**的刷怪量, 战斗房会直接变成"精英房"。
+    /// 精英怪是"这一房有硬骨头"的节奏点, 不该跟小怪一个密度。
     /// </summary>
     public ExcelConfig.ActivityBase GetRandomEnemy()
     {
-        return Random.RandomChoose(PreinstallMarkManager.GetMarkConfigsByType(ActivityType.Enemy));
+        var pool = PreinstallMarkManager.GetMarkConfigsByType(ActivityType.Enemy);
+        if (pool.Count == 0)
+        {
+            return null;
+        }
+
+        var weights = new int[pool.Count];
+        for (var i = 0; i < pool.Count; i++)
+        {
+            weights[i] = EnemyWeights.TryGetValue(pool[i].Id, out var w) ? w : NormalEnemyWeight;
+        }
+
+        return pool[World.Random.RandomWeight(weights)];
     }
 
     /// <summary>

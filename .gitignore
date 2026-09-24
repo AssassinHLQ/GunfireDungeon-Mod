@@ -33,3 +33,15 @@ GunfireDungeon_Godot/resource/sprite/ui/mainBackground/variants/*.png.import
 # 注意: 同目录的 LICENSE.md(授权记录) 必须入库。
 GunfireDungeon_Godot/resource/sprite/weapon/weapon0047/*.png
 GunfireDungeon_Godot/resource/sprite/weapon/weapon0047/*.png.import
+
+# ── 不死刽子手 / 刽子手的幽灵 精灵图（Kronovi- 的 itch 免费素材）──────────────
+# 页面授权: 可商用、可修改、不要求署名, 但 "redistributing and reselling the sprite
+# are restricted" —— 禁止再分发。本仓库是公开仓库, 所以 PNG 不进库, 只随 pck 发行。
+# 后果: clone 下来这只精英怪会进随机池却画不出来（武器贴图那批同理, 没有代码兜底）。
+# 本机怎么补齐: resource/sprite/role/executioner0001/restore_sprites.ps1
+#              （纯 PowerShell, 复制改名 + 重新生成 64x64 图标）
+# 注意: 两个目录的 LICENSE.md(授权记录) 与 restore 脚本本身必须入库。
+GunfireDungeon_Godot/resource/sprite/role/executioner0001/*.png
+GunfireDungeon_Godot/resource/sprite/role/executioner0001/*.png.import
+GunfireDungeon_Godot/resource/sprite/role/spirit0001/*.png
+GunfireDungeon_Godot/resource/sprite/role/spirit0001/*.png.import

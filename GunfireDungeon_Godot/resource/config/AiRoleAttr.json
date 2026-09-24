@@ -82,5 +82,33 @@
     ],
     "BloodColor": "b03030",
     "__BodyFragment": "enemy_dead0001"
+  },
+  {
+    "Id": "executioner0001",
+    "Remark": "不死刽子手(精英怪)",
+    "AttackInterval": 1.6,
+    "ViewRange": 260,
+    "TailAfterViewRange": 420,
+    "ViewAngleRange": 160,
+    "Gold": [
+      20,
+      32
+    ],
+    "BloodColor": "6b5a7a",
+    "__BodyFragment": "enemy_dead0001"
+  },
+  {
+    "Id": "spirit0001",
+    "Remark": "刽子手的幽灵(召唤物)",
+    "AttackInterval": 2.0,
+    "ViewRange": 420,
+    "TailAfterViewRange": 520,
+    "ViewAngleRange": 360,
+    "Gold": [
+      0,
+      2
+    ],
+    "BloodColor": "8ab4c8",
+    "__BodyFragment": "enemy_dead0001"
   }
 ]

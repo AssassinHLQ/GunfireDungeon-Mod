@@ -1366,5 +1366,43 @@
     "Icon": "res://resource/sprite/weapon/weapon0047/AK47.png",
     "NotInRandomPool": false,
     "ShowInMapEditor": true
+  },
+  {
+    "Id": "executioner0001",
+    "Name": "不死刽子手",
+    "Type": 4,
+    "Quality": 0,
+    "Price": 0,
+    "Intro": {
+      "Code": "精英怪, 不拿武器, 用大镰刀近身横扫\n血量 320 · 移速 26 · 全属性减伤 20%\n二连挥砍 7~10 点伤害、扇形 150°; 每两刀接一次 220° 大横扫\n每 7 秒召唤一只幽灵(场上最多 4 只), 幽灵会追着你撞 2 点\n贴身额外 3 点碰撞伤害; 和普通小怪吃同一个楼层血量倍率, 越往下越硬"
+    },
+    "Details": {
+      "Code": "1999 年那场事故里, 被留在建筑学院地下室的那个施工队工头"
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/role/enemy/UndeadExecutioner.tscn",
+    "Icon": "res://resource/sprite/role/executioner0001/Executioner_Icon.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "spirit0001",
+    "Name": "刽子手的幽灵",
+    "Type": 4,
+    "Quality": 0,
+    "Price": 0,
+    "Intro": {
+      "Code": "不死刽子手召唤出来的追兵\n血量 28 · 移速 62 · 全属性减伤 0%\n没有攻击动作, 靠撞上来造成 2 点伤害\n召唤物, 不会自己出现在战斗房里"
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/role/enemy/ExecutionerSpirit.tscn",
+    "Icon": "res://resource/sprite/role/spirit0001/Spirit_Icon.png",
+    "NotInRandomPool": true,
+    "ShowInMapEditor": true
   }
 ]

@@ -23,7 +23,7 @@ using Godot;
 public partial class WizardEnemy : Enemy
 {
     /// <summary>活动/角色 Id</summary>
-    public const string Id = "wizard0001";
+    public new const string Id = "wizard0001";
 
     /// <summary>一次施法的总时长(秒), 对应 attack 动画 8 帧 @12fps</summary>
     private const float CastTotalTime = 0.66f;

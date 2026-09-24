@@ -77,6 +77,7 @@ public partial class ChangelogOverlay : Control
         "· 主菜单背景的远山与石墙为本修改版程序化生成\n" +
         "· 新增的主菜单背景来自 CraftPix 免费素材（New free backgrounds part1~part4）\n" +
         "· AK47 的武器贴图来自 CraftPix 免费素材（Free Guns Icon 32x32 Pixel Pack）\n" +
+        "· 不死刽子手的精灵图来自 Boss: Undead Executioner —— Kronovi-（darkpixel-kronovi）\n" +
         "· 游戏音效全部替换为 CC0 素材（界面音与反馈音来自 Kenney，枪声来自 Free Firearm Sound Library）\n" +
         "· 枪声来自 The Free Firearm Sound Library（CC0 1.0）—— 2013 年开源枪械音效众筹项目，\n" +
         "  录音与整理：Ben Jaszczak、Brian Nelson、Kevin Heras、Matthew Nanney 等\n" +
@@ -158,6 +159,18 @@ public partial class ChangelogOverlay : Control
         "  和步枪（伤害 15 · 射速 8/秒 · 散射 5°→45°）是两条不同的路线：\n" +
         "  步枪更稳更密，AK47 单发更狠但要压得住枪\n" +
         "  贴图来自 CraftPix 免费素材（Free Guns Icon 32x32 Pixel Pack）\n" +
+        "· 新增精英怪「不死刽子手」：不拿武器，贴上来用大镰刀近身横扫\n" +
+        "  血量 320、移速 26，比法师更厚更慢；镰刀 7~10 点伤害、扇形 150°\n" +
+        "  两套攻击交替：二连挥砍（13 帧）和大范围横扫（220°、半径更远）\n" +
+        "  每 7 秒召唤一只「刽子手的幽灵」追着你撞（场上最多 4 只，撞到 2 点）\n" +
+        "  贴身额外 3 点碰撞伤害；和法师一样随楼层变强、随机刷在战斗房里\n" +
+        "  精灵图来自 Boss: Undead Executioner —— Kronovi-（darkpixel-kronovi）, 可商用\n" +
+        "· 精英怪不再和小怪一个密度了：原来随机刷怪是均匀抽取，两只精英怪加起来要占掉\n" +
+        "  一半的刷怪量，战斗房会变成「精英房」；现在按权重抽（小怪 10、精英 1），\n" +
+        "  精英约占总刷怪量的 15%\n" +
+        "· 修复「邪恶法师」画偏的问题：它的贴图偏移是用反的（写成 -锚点 而不是 格子中心-锚点），\n" +
+        "  整只法师被画到实际位置左上 75 像素处 —— 贴图和它的受击框、影子完全分家，\n" +
+        "  看着像「打不到人」或「影子在别处」。现在改成和两个 BOSS 同一套写法\n" +
         "· 修复魔王模式每层都是同一个 BOSS 的问题（第 2 层曾经清一色大橘）：\n" +
         "  楼层计划指定的 BOSS 模板以前对魔王模式的每个 BOSS 房都生效，现在只留给\n" +
         "  该层出口前那一个 BOSS 房（收官 BOSS），其余 BOSS 房按权重随机\n" +

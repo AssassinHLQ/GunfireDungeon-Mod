@@ -171,6 +171,35 @@ public abstract partial class Role : ActivityObject
     private const float BareHandMeleeRadius = 22f;
 
     /// <summary>
+    /// 【空手近战】实际使用的伤害范围。
+    ///
+    /// 【为什么做成 virtual】空手那套 2~3 点的参数是给"玩家把枪全扔了"设计的
+    /// 兜底方案, 对精英怪太弱 —— 但它们又是 <c>static readonly</c>, 不能按实例改。
+    /// 于是让子类可以重写本属性: 精英怪「不死刽子手」用它把镰刀做成 7~10 点。
+    /// </summary>
+    public virtual int[] BareMeleeDamage => BareHandMeleeDamageRange;
+
+    /// <summary>【空手近战】实际使用的击退范围(同上, 子类可重写)</summary>
+    public virtual float[] BareMeleeRepel => BareHandMeleeRepelRange;
+
+    /// <summary>【空手近战】实际使用的判定扇形半径(像素, 子类可重写)</summary>
+    public virtual float BareMeleeRadius => BareHandMeleeRadius;
+
+    /// <summary>
+    /// 【给子类用的近战判定】打开判定框并清空"本次挥击已命中"记录, duration 秒后自动关闭。
+    ///
+    /// 和玩家挥刀(<see cref="Role_Animation.PlayAnimation_MeleeAttack"/>)走的是同一套机制,
+    /// 区别只是时机由子类自己挑 —— 「不死刽子手」有一整段 13 帧的大镰刀动画,
+    /// 判定要等到"挥到位"那一刻才开, 而不是起手就开。
+    /// 主动查询(每物理帧查一次重叠)在这里一并打开, 所以"挥得快也不掉伤害"同样成立。
+    /// </summary>
+    protected void BeginMeleeHitWindow(float duration)
+    {
+        EnableMeleeHitArea(duration);
+        _meleeActiveQuery = true;
+    }
+
+    /// <summary>
     /// 当前能不能用近战攻击。
     /// 手上没武器时【也能】—— 空手挥拳, 见 <see cref="BareHandMeleeDamageRange"/>。
     /// </summary>
@@ -1925,7 +1954,7 @@ public abstract partial class Role : ActivityObject
         //结果就是空手时判定多边形还停在上一次武器的形状上 —— 甚至根本没初始化过。
         var radius = weapon != null
             ? (weapon.GetLocalFirePosition() + weapon.GetGripPosition()).Length() * 1.1f
-            : BareHandMeleeRadius;
+            : BareMeleeRadius;
 
         MeleeAttackCollision.Polygon = Utils.CreateSectorPolygon(
             Utils.ConvertAngle(-MeleeAttackAngle / 2f),
@@ -2080,7 +2109,7 @@ public abstract partial class Role : ActivityObject
         {
             //activeWeapon 为 null = 空手挥拳, 用固定的低伤害参数(见 BareHandMeleeDamageRange)
             var damage = Utils.Random.RandomConfigRange(
-                activeWeapon?.Attribute?.MeleeAttackDamageRange ?? BareHandMeleeDamageRange);
+                activeWeapon?.Attribute?.MeleeAttackDamageRange ?? BareMeleeDamage);
             //近战走 CalcMeleeDamage: 不吃"子弹伤害"类道具(杀伤弹/分裂子弹)的加成与减值
             damage = RoleState.CalcMeleeDamage(damage, DamageType.Physical);
 
@@ -2091,7 +2120,7 @@ public abstract partial class Role : ActivityObject
                 float[] repelRange;
                 if (activeWeapon == null)
                 {
-                    repelRange = BareHandMeleeRepelRange;
+                    repelRange = BareMeleeRepel;
                 }
                 else
                 {

@@ -31,8 +31,17 @@ public static class WizardSpriteFrames
     ///   Attack   内容 x[59,140) y[51,101)  ← 法杖甩到 x=140
     ///   所以 pivot 取【身体】中心(x=71)而不是包围盒中心 —— 按包围盒算的话,
     ///   放技能那一刻角色会突然整体左移, 看起来像瞬移。
+    ///
+    /// ⚠️ 【2026-09-24 修正】原来这里写的是 <c>new(-71, -101)</c>, 是**错的**:
+    ///    AnimatedSprite2D 的 <c>centered</c> 默认是 <b>true</b>, 贴图是"以格子中心"
+    ///    对齐节点原点的, 所以偏移必须是 <c>格子中心 - 锚点</c>, 而不是 <c>-锚点</c>。
+    ///    用 <c>-锚点</c> 会让整只法师被画到节点左上角 75 像素处
+    ///    (用 <c>Sprite2D.GetRect()</c> 实测: 身体中心落在 (-75,-75) 而不是 (0,0))——
+    ///    也就是贴图和它的受击框/影子完全分家。
+    ///    现在改成和两个 Boss(<see cref="RhinoSpriteFrames"/> / <see cref="DeathSpriteFrames"/>)
+    ///    同一套写法, 实测身体中心精确落在 (0,0)。
     /// </summary>
-    public static readonly Vector2 SpriteOffset = new(-71, -101);
+    public static readonly Vector2 SpriteOffset = new(Cell * 0.5f - 71f, Cell * 0.5f - 101f);
 
     /// <summary>主动画的帧数(每张图集固定 8 帧)</summary>
     private const int MainFrames = 8;
