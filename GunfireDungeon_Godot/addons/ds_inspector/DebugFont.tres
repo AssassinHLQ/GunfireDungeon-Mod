@@ -1,11 +1,26 @@
-[gd_resource type="FontFile" load_steps=2 format=3 uid="uid://bf3q4oxcxieqb"]
+[gd_resource type="FontVariation" load_steps=3 format=3 uid="uid://bf3q4oxcxieqb"]
 
-[ext_resource type="FontFile" uid="uid://cjxdew1mr0wh2" path="res://addons/ds_inspector/Fonts/WenQuanYiMicroHei.ttf" id="1"]
+; 调试面板(DsInspector)用的字体。
+;
+; 【2026-09-20 改】原来这里挂的是插件自带的一份第三方字体
+;   addons/ds_inspector/Fonts/WenQuanYiMicroHei.ttf（文泉驿微米黑, 4.41 MB）,
+; 它随包发布, 而且授权是 Apache-2.0 / GPL-3+ with Font exception ——
+; 选 Apache-2.0 就得随附许可证全文 + 版权声明。
+;
+; 调试面板只有开发者会看, 完全没必要为它多带一份 4.41 MB 的中文字体,
+; 所以改成直接复用游戏自己的字体(方舟像素 + 缝合像素回退),
+; 和 resource/font/GameFont.tres 是完全一样的组合:
+;   · 省掉 4.41 MB
+;   · 顺带把那条 Apache-2.0 义务整个去掉
+;   · 调试面板的字形覆盖和游戏本体一致, 不会出现缺字方框
+;
+; 授权: 两者均为 SIL OFL 1.1
+;   resource/font/ArkPixel-LICENSE.md
+;   resource/font/FusionPixel-OFL.txt
+
+[ext_resource type="FontFile" uid="uid://y5crqt1mh5i1" path="res://resource/font/ArkPixel-12px-zh_cn.ttf" id="1_base"]
+[ext_resource type="FontFile" uid="uid://dvdyxuhvwtu50" path="res://resource/font/FusionPixel-12px-zh_hans.ttf" id="2_fallback"]
 
 [resource]
-fallbacks = Array[Font]([ExtResource("1")])
-cache/0/16/0/ascent = 0.0
-cache/0/16/0/descent = 0.0
-cache/0/16/0/underline_position = 0.0
-cache/0/16/0/underline_thickness = 0.0
-cache/0/16/0/scale = 1.0
+base_font = ExtResource("1_base")
+fallbacks = Array[Font]([ExtResource("2_fallback")])

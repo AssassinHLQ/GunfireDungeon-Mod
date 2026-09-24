@@ -58,8 +58,7 @@ public partial class ChangelogOverlay : Control
         "\n" +
         "【三】字体与界面素材\n" +
         "· 替换为「方舟像素字体」，采用 SIL OFL 1.1 协议\n" +
-        "· 缺字由「缝合像素字体」回退补齐（同样是 SIL OFL 1.1）；开发者用的检查器另带一份\n" +
-        "  「文泉驿微米黑」，采用 Apache License 2.0（版权归 The WenQuanYi Project）\n" +
+        "· 缺字由「缝合像素字体」回退补齐（同样是 SIL OFL 1.1）\n" +
         "· 像素字体关闭抗锯齿与次像素定位，放大后保持锐利\n" +
         "· 字号统一调整为基准字号 12 的整数倍\n" +
         "· 主菜单 / ESC 菜单 / 设置菜单改用新的界面素材\n" +
