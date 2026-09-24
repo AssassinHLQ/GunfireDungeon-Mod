@@ -75,9 +75,11 @@ public partial class ChangelogOverlay : Control
         "· 主菜单背景的天空与云来自 ansimuz（ansimuz.com），CC0 1.0 协议\n" +
         "· 主菜单背景的远山与石墙为本修改版程序化生成\n" +
         "· 新增的主菜单背景来自 CraftPix 免费素材（New free backgrounds part1~part4）\n" +
-        "· 全部游戏音效替换为 Kenney 的 CC0 音效\n" +
+        "· 游戏音效全部替换为 CC0 素材（界面音与反馈音来自 Kenney，枪声来自 Free Firearm Sound Library）\n" +
+        "· 枪声来自 The Free Firearm Sound Library（CC0 1.0）—— 2013 年开源枪械音效众筹项目，\n" +
+        "  录音与整理：Ben Jaszczak、Brian Nelson、Kevin Heras、Matthew Nanney 等\n" +
+        "  （原素材是 6~30 秒的整段靶场录音，本项目做了起音检测 / 单发切片 / 质量筛选 / 归一化）\n" +
         "· 统一素材授权，便于商业发布\n" +
-        "· 说明：Kenney 没有写实枪声，枪声改用能量武器音\n" +
         "\n" +
         "【四】问题修复\n" +
         "· 修复设置面板超出屏幕、内容溢出的问题\n" +
@@ -107,7 +109,8 @@ public partial class ChangelogOverlay : Control
         "· 普通房间 第 2 层：贝多芬 月光奏鸣曲 第三乐章 Presto —— Paul Pitman 演奏\n" +
         "· Boss 战（大橘）：肖邦 第一谐谑曲 Op.20（37 秒循环段）—— Alice G. Young 演奏\n" +
         "· Boss 战（犀牛）：舒伯特 魔王 D.328 钢琴版 —— 本项目按公有领域乐谱自行渲染\n" +
-        "· 两首 Boss 曲分开：大橘的 Boss 房和犀牛的 Boss 房各用一首，不再共用\n" +
+        "· Boss 战（甲方）：肖邦 冬风练习曲 Op.25 No.11 —— European Archive 演奏\n" +
+        "· 三首 Boss 曲各自分开：大橘、犀牛、甲方三个 Boss 房各用一首，不再共用\n" +
         "· 所有背景音乐都会循环播放，不会播完就停\n" +
         "· 魔王钢琴版所用音源的署名：YDP Grand Piano —— FreePats / Zenph Studios（CC-BY 3.0）\n" +
         "\n" +
@@ -147,7 +150,7 @@ public partial class ChangelogOverlay : Control
         "· 普通模式第 2/4/6 层出口前会出现 BOSS 房；魔王模式每层都是 BOSS 房\n" +
         "· 新增精英怪「邪恶法师」：不拿武器，站定施法朝你放三颗扇形火球（单发 4 点伤害）\n" +
         "  血量 200、移速 34，介于小怪和 BOSS 之间；会随楼层一起变强，随机刷在战斗房里\n" +
-        "  精灵图来自 CC0 的 Evil Wizard Asset Pack\n" +
+        "  精灵图来自 Evil Wizard Asset Pack —— Luiz Melo（LuizMelo）, CC0 1.0 协议\n" +
         "· 修复魔王模式每层都是同一个 BOSS 的问题（第 2 层曾经清一色大橘）：\n" +
         "  楼层计划指定的 BOSS 模板以前对魔王模式的每个 BOSS 房都生效，现在只留给\n" +
         "  该层出口前那一个 BOSS 房（收官 BOSS），其余 BOSS 房按权重随机\n" +

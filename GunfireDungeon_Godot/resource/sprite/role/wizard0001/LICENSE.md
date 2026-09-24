@@ -10,11 +10,37 @@
 | 项目 | 内容 |
 |---|---|
 | 素材包 | **Evil Wizard Asset Pack** |
+| 作者 | **Luiz Melo**（LuizMelo）· <https://luizmelo.artstation.com> |
 | 授权 | **CC0 1.0 Universal（公有领域）** |
 | 原文 | *"This pack - Evil Wizard Asset Pack is Creative Commons Zero (CC-0). Can be used in commercial and non-commercial projects."* |
 | 授权文件 | 同目录 `LICENSE.txt`（原包附带，原样保留） |
-| 署名 | **不需要**（本项目仍在此主动记录来源） |
-| 可否入库 | ✅ **可以**。CC0 不限制再分发 —— 和 CraftPix 那 10 套主菜单背景不同，这些图**正常提交进 git** |
+| 署名 | **CC0 不要求** —— 但**本项目主动署名**，见下 |
+| 可否入库 | ✅ **可以**。CC0 不限制再分发 —— 和 CraftPix 那 9 套主菜单背景不同，这些图**正常提交进 git** |
+
+### 本项目主动使用的署名文字
+
+CC0 不要求署名，但署名是对作者的尊重，也让上架材料的来源链更完整。
+**游戏内「修改说明」浮层里已经有这一行**（`src/game/ui/game/main/ChangelogOverlay.cs`）：
+
+```
+Evil Wizard Asset Pack — Luiz Melo (LuizMelo), CC0 1.0
+```
+
+### 作者名是怎么确认的（留个证据链）
+
+素材包自带的 `License.txt` **只写了 CC0，没有写作者**。作者名是从
+**Luiz Melo 自己的 Unity Asset Store 发行者页面**确认的 —— 同系列的
+*Evil Wizard 2* / *Evil Wizard 3* 都挂在这个发行者名下：
+
+- 发行者页面：<https://assetstore.unity.com/publishers/34852>
+- 同系列条目：<https://assetstore.unity.com/packages/2d/characters/evil-wizard-2-284501>
+
+（构建这台机器访问不了 itch.io，所以没能直接引 itch 页面。补证据的话，
+建议翻自己的 itch 下载记录，把 **页面标题 + 作者 + License 一栏** 截图存档。）
+
+> ⚠️ **注意区分**：本仓库里这份素材的授权依据是**包内 `LICENSE.txt` 的 CC0**，
+> 不是 Unity Asset Store 的 Standard EULA。同一套美术在两个平台上架、两套授权，
+> 别混用。
 
 ---
 
