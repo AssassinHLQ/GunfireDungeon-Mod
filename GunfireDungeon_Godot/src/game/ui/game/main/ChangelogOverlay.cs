@@ -76,6 +76,7 @@ public partial class ChangelogOverlay : Control
         "· 主菜单背景的天空与云来自 ansimuz（ansimuz.com），CC0 1.0 协议\n" +
         "· 主菜单背景的远山与石墙为本修改版程序化生成\n" +
         "· 新增的主菜单背景来自 CraftPix 免费素材（New free backgrounds part1~part4）\n" +
+        "· AK47 的武器贴图来自 CraftPix 免费素材（Free Guns Icon 32x32 Pixel Pack）\n" +
         "· 游戏音效全部替换为 CC0 素材（界面音与反馈音来自 Kenney，枪声来自 Free Firearm Sound Library）\n" +
         "· 枪声来自 The Free Firearm Sound Library（CC0 1.0）—— 2013 年开源枪械音效众筹项目，\n" +
         "  录音与整理：Ben Jaszczak、Brian Nelson、Kevin Heras、Matthew Nanney 等\n" +
@@ -152,6 +153,11 @@ public partial class ChangelogOverlay : Control
         "· 新增精英怪「邪恶法师」：不拿武器，站定施法朝你放三颗扇形火球（单发 4 点伤害）\n" +
         "  血量 200、移速 34，介于小怪和 BOSS 之间；会随楼层一起变强，随机刷在战斗房里\n" +
         "  精灵图来自 Evil Wizard Asset Pack —— Luiz Melo（LuizMelo）, CC0 1.0 协议\n" +
+        "· 新增武器「AK47」：单发威力大、后坐力也大、换弹偏慢\n" +
+        "  伤害 18 · 射速 7/秒 · 弹夹 30(备用 180) · 散射 6°→52° · 换弹 1.4 秒\n" +
+        "  和步枪（伤害 15 · 射速 8/秒 · 散射 5°→45°）是两条不同的路线：\n" +
+        "  步枪更稳更密，AK47 单发更狠但要压得住枪\n" +
+        "  贴图来自 CraftPix 免费素材（Free Guns Icon 32x32 Pixel Pack）\n" +
         "· 修复魔王模式每层都是同一个 BOSS 的问题（第 2 层曾经清一色大橘）：\n" +
         "  楼层计划指定的 BOSS 模板以前对魔王模式的每个 BOSS 房都生效，现在只留给\n" +
         "  该层出口前那一个 BOSS 房（收官 BOSS），其余 BOSS 房按权重随机\n" +

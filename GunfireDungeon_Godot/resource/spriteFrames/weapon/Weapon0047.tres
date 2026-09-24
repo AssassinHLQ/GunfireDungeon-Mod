@@ -1,0 +1,14 @@
+[gd_resource type="SpriteFrames" load_steps=2 format=3 uid="uid://mxb66n4e31h9s"]
+
+[ext_resource type="Texture2D" uid="uid://bnft8hkgrnqc1" path="res://resource/sprite/weapon/weapon0047/AK47.png" id="1_ak47a"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_ak47a")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]

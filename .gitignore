@@ -24,3 +24,12 @@
 # 注意: 同目录的 LICENSE.md(授权记录) 必须入库, 上面的规则只针对图片本身。
 GunfireDungeon_Godot/resource/sprite/ui/mainBackground/variants/*.png
 GunfireDungeon_Godot/resource/sprite/ui/mainBackground/variants/*.png.import
+
+# ── AK47 武器贴图（同一套 CraftPix 免费素材）───────────────────────────────
+# 和上面同理: §2.2.1 禁止再分发美术源文件, 而本仓库是公开仓库。
+# 该图由 CraftPix「Free Guns Icon 32x32 Pixel Pack」的 Icon29_37.png 旋转 39.4°
+# 转成侧视得到, 属于"修改版素材", 同样不上传。
+# 本机怎么补齐: resource/sprite/weapon/weapon0047/restore_ak47.ps1
+# 注意: 同目录的 LICENSE.md(授权记录) 必须入库。
+GunfireDungeon_Godot/resource/sprite/weapon/weapon0047/*.png
+GunfireDungeon_Godot/resource/sprite/weapon/weapon0047/*.png.import

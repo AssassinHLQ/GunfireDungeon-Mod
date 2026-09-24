@@ -332,5 +332,26 @@
       "Bullet": "2001"
     },
     "Remark": ""
+  },
+  {
+    "Id": "0013",
+    "Name": "AK47子弹",
+    "__ActivityTemplate": "part_comm0001",
+    "Intro": {
+      "Code": "AK47[color=#7bc1d5]子弹[/color]\n伤害 18 · 弹速 330~360 · 射程 230~260\n击退 22"
+    },
+    "Details": {
+      "Code": "AK47子弹详情"
+    },
+    "Quality": 1,
+    "Price": 50,
+    "Icon": "res://resource/sprite/prop/part/PartProp0001.png",
+    "Type": 0,
+    "BaseMana": 8,
+    "ClassType": "Bullet",
+    "Param": {
+      "Bullet": "0013"
+    },
+    "Remark": ""
   }
 ]

@@ -1347,5 +1347,24 @@
     "Icon": "res://resource/sprite/role/wizard0001/Wizard_Icon.png",
     "NotInRandomPool": false,
     "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0047",
+    "Name": "AK47",
+    "Type": 5,
+    "Quality": 4,
+    "Price": 28,
+    "Intro": {
+      "Code": "AK47 突击步枪, 单发威力大、后坐力也大, 换弹偏慢\n伤害 18 · 射速 7/秒 · 弹夹 30(备用 180)\n散射 6°→52° · 换弹 1.4 秒"
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0047.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0047/AK47.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
   }
 ]

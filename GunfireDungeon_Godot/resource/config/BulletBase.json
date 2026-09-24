@@ -655,5 +655,54 @@
     "UpliftAngle": 0,
     "__ShootSound": "",
     "FireEffect": ""
+  },
+  {
+    "Id": "0013",
+    "Name": "AK47子弹",
+    "Type": 1,
+    "Prefab": "bullet0001",
+    "Damage": {
+      "Physical": [
+        18
+      ]
+    },
+    "AbnormalState": null,
+    "CritRate": 0.3,
+    "CritBonus": 0.5,
+    "CritArmorPenetration": 0.4,
+    "RepelRange": [
+      22
+    ],
+    "DeviationAngleRange": [
+      0
+    ],
+    "SpeedRange": [
+      330,
+      360
+    ],
+    "LifeTimeRange": [
+      -1
+    ],
+    "DistanceRange": [
+      230,
+      260
+    ],
+    "VerticalSpeed": [
+      0
+    ],
+    "BounceCount": [
+      0
+    ],
+    "Penetration": [
+      0
+    ],
+    "CameraShake": 2.5,
+    "BacklashRange": [
+      3,
+      5
+    ],
+    "UpliftAngle": 12,
+    "__ShootSound": "shooting0007",
+    "FireEffect": "res://prefab/effect/weapon/ShotFire0001.tscn"
   }
 ]
