@@ -38,25 +38,6 @@
     "ShowInMapEditor": true
   },
   {
-    "Id": "boss0001",
-    "Name": "Boss",
-    "Type": 12,
-    "Quality": 0,
-    "Price": 0,
-    "Intro": {
-      "Code": "Boss"
-    },
-    "Details": {
-      "Code": "Boss"
-    },
-    "IsStatic": false,
-    "__Material": "",
-    "Prefab": "res://prefab/role/boss/Boss0001.tscn",
-    "Icon": "",
-    "NotInRandomPool": false,
-    "ShowInMapEditor": true
-  },
-  {
     "Id": "shopBoss0001",
     "Name": "\u5546\u5e97\u8001\u677f",
     "Type": 11,
@@ -1268,7 +1249,7 @@
     "IsStatic": false,
     "__Material": "",
     "Prefab": "res://prefab/weapon/Weapon0013.tscn",
-    "Icon": "res://resource/sprite/weapon/weapon0013/Weapon0013.png",
+    "Icon": "res://resource/sprite/weapon/weapon0013/weapon0013.png",
     "NotInRandomPool": false,
     "ShowInMapEditor": true
   },
