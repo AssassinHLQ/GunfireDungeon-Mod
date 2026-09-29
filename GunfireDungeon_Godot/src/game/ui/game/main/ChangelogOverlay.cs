@@ -77,6 +77,7 @@ public partial class ChangelogOverlay : Control
         "· 主菜单背景的远山与石墙为本修改版程序化生成\n" +
         "· 新增的主菜单背景来自 CraftPix 免费素材（New free backgrounds part1~part4）\n" +
         "· AK47 的武器贴图来自 CraftPix 免费素材（Free Guns Icon 32x32 Pixel Pack）\n" +
+        "· ERA Weapon Primary (58) 来自 Reactorcore 的 Eradication Wars Weapon Sprite Pack v1.1，CC BY 4.0（用于武器导入与尺寸测试）\n" +
         "· 不死刽子手的精灵图来自 Boss: Undead Executioner —— Kronovi-（darkpixel-kronovi）\n" +
         "· 游戏音效全部替换为 CC0 素材（界面音与反馈音来自 Kenney，枪声来自 Free Firearm Sound Library）\n" +
         "· 枪声来自 The Free Firearm Sound Library（CC0 1.0）—— 2013 年开源枪械音效众筹项目，\n" +

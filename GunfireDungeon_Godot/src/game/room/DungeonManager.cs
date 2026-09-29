@@ -415,6 +415,13 @@ public partial class DungeonManager : Node2D
             return;
         }
 
+        // 联机时由房主为下一层生成新种子, 客户端会从会话状态同步该种子。
+        if (LanNetworkManager.Instance != null && LanNetworkManager.Instance.IsLanConnected &&
+            LanNetworkManager.Instance.IsHost)
+        {
+            CurrConfig.RandomSeed = LanNetworkManager.Instance.MakeDungeonSeed();
+        }
+
         Debug.Log($"进入 {Plan.CurrentName}");
         UiManager.Open_Game_Loading();
         RestartDungeon(true, CurrConfig, () =>
@@ -660,6 +667,8 @@ public partial class DungeonManager : Node2D
             player.GetParent().RemoveChild(player);
             player.World = null;
             player.Collision.Disabled = true;
+            // 大厅切到地牢也要缓存玩家, 否则新 World 创建后玩家引用会丢失。
+            _cachePlayer = player;
         }
 
         CurrWorld.OnUnloadSuccess();

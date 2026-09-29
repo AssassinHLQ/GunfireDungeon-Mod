@@ -24,6 +24,12 @@ public partial class RoomExit : Area2D
 
         if (body is Role role)
         {
+            // 联机时由房主统一推进楼层, 客户端只跟随房主广播的状态。
+            var lan = LanNetworkManager.Instance;
+            if (lan != null && lan.IsLanConnected && !lan.IsHost)
+            {
+                return;
+            }
             //Debug.Log("::RoomExit::OnBodyEntered");
             var gameApplication = GameApplication.Instance;
 

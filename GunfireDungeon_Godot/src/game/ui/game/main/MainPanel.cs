@@ -21,6 +21,10 @@ public partial class MainPanel : Main
     /// </summary>
     private SoundManager.GameAudioPlayer _bgm;
 
+    /// <summary>局域网联机按钮与弹窗。</summary>
+    private Godot.Button _lanButton;
+    private LanLobbyPanel _lanLobby;
+
     public override void OnCreateUi()
     {
         //视差背景(石墙大厅 + 拱窗外的黄昏天空), 必须排在最底层
@@ -37,6 +41,7 @@ public partial class MainPanel : Main
         }
 
         S_Start.Instance.Pressed += OnStartGameClick;
+        AddLanButton();
         S_Tools.Instance.Pressed += OnToolsClick;
         S_Setting.Instance.Pressed += OnSettingClick;
         S_Exit.Instance.Pressed += OnExitClick;
@@ -96,6 +101,46 @@ public partial class MainPanel : Main
         _bgm = null;
     }
 
+    /// <summary>
+    /// 在原有主菜单中插入局域网按钮, 不修改自动生成的 Main.cs。
+    /// </summary>
+    private void AddLanButton()
+    {
+        var buttonList = GetNodeOrNull<Godot.VBoxContainer>("VBoxContainer/ButtonList");
+        var startButton = GetNodeOrNull<Godot.Button>("VBoxContainer/ButtonList/Start");
+        if (buttonList == null || startButton == null)
+        {
+            return;
+        }
+
+        _lanButton = new Godot.Button
+        {
+            Name = "LanButton",
+            Text = "局域网联机",
+            CustomMinimumSize = new Vector2(0, 90),
+            SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
+            Theme = startButton.Theme,
+        };
+        _lanButton.AddThemeFontSizeOverride("font_size", 64);
+        _lanButton.Pressed += OnLanGameClick;
+        buttonList.AddChild(_lanButton);
+        buttonList.MoveChild(_lanButton, 1);
+    }
+
+    private void OnLanGameClick()
+    {
+        if (_lanLobby != null && GodotObject.IsInstanceValid(_lanLobby))
+        {
+            return;
+        }
+
+        _lanLobby = new LanLobbyPanel
+        {
+            Name = "LanLobbyPanel",
+            MainPanel = this,
+        };
+        AddChild(_lanLobby);
+    }
     //点击开始游戏
     private void OnStartGameClick()
     {

@@ -280,6 +280,13 @@ public partial class GameApplication : Node2D, ICoroutine
             Name = "BackpackOverlay"
         };
         AddChild(backpackOverlay);
+        //局域网联机管理器。即使不使用联机, 它也不会改变单机流程。
+        var lanNetworkManager = new LanNetworkManager
+        {
+            Name = "LanNetworkManager"
+        };
+        AddChild(lanNetworkManager);
+
         //地牢管理器
         DungeonManager = new DungeonManager(ActivityObject.Ids.Id_role0001);
         DungeonManager.Name = "DungeonManager";

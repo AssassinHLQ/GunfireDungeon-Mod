@@ -30,6 +30,20 @@ public partial class DungeonEntrance : Area2D
             var baseConfig = GameApplication.Instance.FirstDungeonConfig;
             var config = GameApplication.Instance.GetDungeonConfig(baseConfig.GroupName, 1, Mode);
 
+            // 联机时只允许房主触发入口, 避免每台机器各自生成不同地牢。
+            var lan = LanNetworkManager.Instance;
+            if (lan != null && lan.IsLanConnected)
+            {
+                if (!lan.IsHost)
+                {
+                    EditorWindowManager.ShowTips("提示", "请等待房主进入地牢");
+                    return;
+                }
+
+                lan.HostStartDungeon(config);
+                return;
+            }
+
             // 验证该组是否满足生成地牢的条件
             var result = DungeonManager.CheckDungeon(config.GroupName);
             if (result.HasError)

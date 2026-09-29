@@ -53,7 +53,7 @@ patch_margin_right = 40
 patch_margin_bottom = 0
 
 [node name="ButtonList" type="VBoxContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(560, 460)
+custom_minimum_size = Vector2(560, 580)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
