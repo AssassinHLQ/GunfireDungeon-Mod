@@ -829,9 +829,11 @@ public partial class DungeonManager : Node2D
         _cachePlayer = null;
 
         player.World = CurrWorld;
+        player.ResetForNewRun();
         player.PutDown(RoomLayerEnum.YSortLayer);
         CurrWorld.SetCurrentPlayer(player);
         StartRoomInfo.AffiliationArea.InsertItem(player);
+        CurrWorld.Pause = false;
         yield return 0;
         player.Collision.Disabled = false;
         
@@ -1280,9 +1282,8 @@ public partial class DungeonManager : Node2D
         area?.RemoveRemotePlayer(remotePlayer);
     }
 
-    public bool ForcePartyIntoRoom(int roomId, out Vector2 position)
+    public bool ForcePartyIntoRoom(int roomId, Vector2 entrantPosition)
     {
-        position = Vector2.Zero;
         var room = _dungeonGenerator?.RoomInfos.FirstOrDefault(item => item.Id == roomId);
         if (room == null || !room.HasFirstEntered || room.RoomPreinstall?.HasEnemy() != true ||
             (!room.IsSeclusion && !room.RoomPreinstall.IsRunWave && !room.RoomPreinstall.HasLivingEnemy))
@@ -1290,14 +1291,27 @@ public partial class DungeonManager : Node2D
             return false;
         }
 
-        position = (Vector2)room.Waypoints * GameConfig.TileCellSize +
-                   Vector2.One * (GameConfig.TileCellSize * 0.5f);
         if (CurrWorld?.Player is Player player)
         {
-            player.PutDown(position, RoomLayerEnum.YSortLayer, false);
+            player.PutDown(entrantPosition, RoomLayerEnum.YSortLayer, false);
+            room.AffiliationArea.InsertItem(player);
         }
 
         return true;
+    }
+
+    public void ForceLocalPlayerIntoRoom(int roomId, Vector2 position)
+    {
+        var room = _dungeonGenerator?.RoomInfos.FirstOrDefault(item => item.Id == roomId);
+        var player = CurrWorld?.Player;
+        if (room == null || player == null || player.IsDestroyed)
+        {
+            return;
+        }
+
+        player.PutDown(position, RoomLayerEnum.YSortLayer, false);
+        player.Collision.Disabled = false;
+        room.AffiliationArea.InsertItem(player);
     }
 
     public void CheckRemoteRoomWave(int roomId)
@@ -1336,7 +1350,7 @@ public partial class DungeonManager : Node2D
         if (network != null && network.IsHost && network.IsLanConnected && roomInfo.HasFirstEntered &&
             roomInfo.RoomPreinstall?.HasEnemy() == true)
         {
-            network.ForcePartyIntoRoom(roomInfo.Id);
+            network.ForcePartyIntoRoom(roomInfo.Id, CurrWorld.Player.GlobalPosition, network.LocalPeerId);
         }
 
         if (_affiliationAreaFlag != roomInfo.AffiliationArea)

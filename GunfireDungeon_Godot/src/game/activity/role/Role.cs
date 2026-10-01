@@ -285,6 +285,25 @@ public abstract partial class Role : ActivityObject
     public bool IsDie { get; private set; }
     public bool IsNetworkReplica { get; private set; }
     public bool HasCompletedDeathSequence { get; private set; }
+
+    public void ResetForNewRun()
+    {
+        IsDie = false;
+        HasCompletedDeathSequence = false;
+        IsNetworkReplica = false;
+        Visible = true;
+        Collision.Disabled = false;
+        var stateController = GetComponent<IStateController>();
+        if (stateController != null)
+        {
+            stateController.Enable = true;
+        }
+        MoveController.ClearForce();
+        BasisVelocity = Vector2.Zero;
+        Hp = MaxHp;
+        Shield = MaxShield;
+        Armor = MaxArmor;
+    }
     
     /// <summary>
     /// 血量

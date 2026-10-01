@@ -263,7 +263,7 @@ public partial class LanNetworkManager : Node
         return 0x7000000000000000L | _nextDynamicNetworkId++;
     }
 
-    public void ForcePartyIntoRoom(int roomId)
+    public void ForcePartyIntoRoom(int roomId, Vector2 entrantPosition, long entrantPeerId)
     {
         if (!IsHost || !IsLanConnected)
         {
@@ -271,21 +271,30 @@ public partial class LanNetworkManager : Node
         }
 
         var dungeonManager = GameApplication.Instance?.DungeonManager;
-        if (dungeonManager == null || !dungeonManager.ForcePartyIntoRoom(roomId, out var position))
+        if (dungeonManager == null || !dungeonManager.ForcePartyIntoRoom(roomId, entrantPosition))
         {
             return;
         }
 
         foreach (var state in _remotePlayers.Values)
         {
-            state.RoomId = roomId;
-            state.TargetPosition = position;
-            if (state.Player != null && GodotObject.IsInstanceValid(state.Player))
+            if (state.PeerId == entrantPeerId)
             {
-                state.Player.PutDown(position, RoomLayerEnum.YSortLayer, false);
+                state.RoomId = roomId;
+                state.TargetPosition = entrantPosition;
+                dungeonManager.OnRemotePlayerEnterRoom(roomId, state.Player);
+                continue;
             }
 
-            RpcId(state.PeerId, nameof(ReceiveForceRoomEntry), roomId, position.X, position.Y);
+            state.RoomId = roomId;
+            state.TargetPosition = entrantPosition;
+            if (state.Player != null && GodotObject.IsInstanceValid(state.Player))
+            {
+                state.Player.PutDown(entrantPosition, RoomLayerEnum.YSortLayer, false);
+                dungeonManager.OnRemotePlayerEnterRoom(roomId, state.Player);
+            }
+
+            RpcId(state.PeerId, nameof(ReceiveForceRoomEntry), roomId, entrantPosition.X, entrantPosition.Y);
         }
     }
 
@@ -549,8 +558,8 @@ public partial class LanNetworkManager : Node
             return;
         }
 
-        GameApplication.Instance?.DungeonManager?.CurrWorld?.Player?.PutDown(
-            new Vector2(x, y), RoomLayerEnum.YSortLayer, false);
+        GameApplication.Instance?.DungeonManager?.ForceLocalPlayerIntoRoom(
+            roomId, new Vector2(x, y));
     }
 
     /// <summary>确保相同地图参数的重开也会作为新会话同步给客户端。</summary>
@@ -558,6 +567,8 @@ public partial class LanNetworkManager : Node
     {
         if (IsHost && IsLanConnected)
         {
+            ClearRemotePlayers();
+            _lastBroadcastStateKey = string.Empty;
             _sessionRevision++;
         }
     }
@@ -1306,7 +1317,7 @@ public partial class LanNetworkManager : Node
         if (IsHost && senderId > 1 && roomId >= 0 && roomId != state.RoomId)
         {
             GameApplication.Instance?.DungeonManager?.OnRemotePlayerEnterRoom(roomId, state.Player);
-            ForcePartyIntoRoom(roomId);
+            ForcePartyIntoRoom(roomId, newPosition, senderId);
         }
         else if (IsHost && senderId > 1 && roomId < 0 && state.RoomId >= 0)
         {
