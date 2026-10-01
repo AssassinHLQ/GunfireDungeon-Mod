@@ -1239,6 +1239,15 @@ public partial class DungeonManager : Node2D
     {
         _checkEnemyTimer = 0;
         var room = (RoomInfo)o;
+
+        // 联机访客不负责生成房间波次。敌人由房主权威生成并通过快照同步，
+        // 否则访客被拉入已开战房间时会再次本地生成一套 Boss。
+        var network = LanNetworkManager.Instance;
+        if (network != null && network.IsLanConnected && !network.IsHost)
+        {
+            return;
+        }
+
         room.OnFirstEnter();
         //如果关门了, 那么房间外的敌人就会丢失目标
         if (room.IsSeclusion)

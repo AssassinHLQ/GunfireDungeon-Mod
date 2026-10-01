@@ -1596,6 +1596,39 @@ public partial class LanNetworkManager : Node
         var role = world?.Role_InstanceList.Find(item => item.NetworkId == networkId);
         if ((role == null || role.IsDestroyed) && !string.IsNullOrEmpty(activityId))
         {
+            // 兼容修复前已经在访客端本地生成的副本：优先接管同房间、同资源的
+            // 无 NetworkId 敌人，避免快照到达后再叠加第二只 Boss。
+            var snapshotPosition = new Vector2(x, y);
+            var nearestDistanceSquared = 256f * 256f;
+            if (world != null)
+            {
+                foreach (var candidate in world.Role_InstanceList)
+                {
+                    if (candidate.IsDestroyed || candidate.NetworkId != 0 ||
+                        candidate.ActivityBase?.Id != activityId ||
+                        candidate.AffiliationArea?.RoomInfo == null)
+                    {
+                        continue;
+                    }
+
+                    var distanceSquared = candidate.GlobalPosition.DistanceSquaredTo(snapshotPosition);
+                    if (distanceSquared <= nearestDistanceSquared)
+                    {
+                        nearestDistanceSquared = distanceSquared;
+                        role = candidate;
+                    }
+                }
+            }
+
+            if (role != null)
+            {
+                role.NetworkId = networkId;
+                role.EnableCustomBehavior = false;
+            }
+        }
+
+        if ((role == null || role.IsDestroyed) && !string.IsNullOrEmpty(activityId))
+        {
             role = ActivityObject.Create<Role>(activityId);
             if (role != null)
             {
