@@ -223,6 +223,16 @@ public partial class Laser : Area2D, IBullet
     {
         if (hurt.CanHurt(Camp))
         {
+            var network = LanNetworkManager.Instance;
+            if (network != null && network.IsLanConnected && network.IsHost &&
+                hurt.GetActivityObject() is Player remotePlayer && network.IsRemotePlayer(remotePlayer) &&
+                BulletData.TriggerRole?.IsAi == true)
+            {
+                network.BroadcastRemotePlayerDamage(remotePlayer, BulletData.Damages,
+                    BulletData.Abnormals, Rotation);
+                return;
+            }
+
             if (BulletData.Repel != 0)
             {
                 var o = hurt.GetActivityObject();

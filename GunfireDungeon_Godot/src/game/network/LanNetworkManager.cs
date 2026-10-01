@@ -952,6 +952,104 @@ public partial class LanNetworkManager : Node
         RpcId(1, nameof(ReceiveEnemyDamageRequest), networkId, damagePacket, abnormalPacket, angle);
     }
 
+    public bool IsRemotePlayer(Player player)
+    {
+        foreach (var state in _remotePlayers.Values)
+        {
+            if (state.Player == player)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void RequestEnemyDamageFromBullet(IHurt hurt, List<AttackStats> damages,
+        List<AbnormalData> abnormals, float angle)
+    {
+        if (hurt?.GetActivityObject() is not Role enemy || enemy.NetworkId == 0)
+        {
+            return;
+        }
+
+        RequestEnemyDamage(enemy.NetworkId, damages, abnormals, angle);
+    }
+
+    public void BroadcastRemotePlayerDamage(Player player,
+        List<AttackStats> damages, List<AbnormalData> abnormals, float angle)
+    {
+        if (!IsHost || player == null)
+        {
+            return;
+        }
+
+        long peerId = 0;
+        foreach (var state in _remotePlayers.Values)
+        {
+            if (state.Player == player)
+            {
+                peerId = state.PeerId;
+                break;
+            }
+        }
+
+        if (peerId <= 1 || player.IsDie)
+        {
+            return;
+        }
+
+        var damagePacket = new Godot.Collections.Array<Variant>();
+        foreach (var damage in damages ?? new List<AttackStats>())
+        {
+            damagePacket.Add(damage.BaseDamage);
+            damagePacket.Add((int)damage.Type);
+            damagePacket.Add(damage.CritRate);
+            damagePacket.Add(damage.CritBonus);
+            damagePacket.Add(damage.CritArmorPenetration);
+        }
+
+        var abnormalPacket = new Godot.Collections.Array<Variant>();
+        foreach (var abnormal in abnormals ?? new List<AbnormalData>())
+        {
+            abnormalPacket.Add((int)abnormal.Type);
+            abnormalPacket.Add(abnormal.Value);
+        }
+
+        RpcId(peerId, nameof(ReceiveRemotePlayerDamage), damagePacket, abnormalPacket, angle);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveRemotePlayerDamage(Godot.Collections.Array<Variant> damagePacket,
+        Godot.Collections.Array<Variant> abnormalPacket, float angle)
+    {
+        if (IsHost || damagePacket == null)
+        {
+            return;
+        }
+
+        var player = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player;
+        if (player == null || player.IsDestroyed)
+        {
+            return;
+        }
+
+        var damages = new List<AttackStats>();
+        for (var i = 0; i + 4 < damagePacket.Count; i += 5)
+        {
+            damages.Add(new AttackStats((int)damagePacket[i], (DamageType)(int)damagePacket[i + 1],
+                (float)damagePacket[i + 2], (float)damagePacket[i + 3], (float)damagePacket[i + 4]));
+        }
+
+        var abnormals = new List<AbnormalData>();
+        for (var i = 0; i + 1 < abnormalPacket.Count; i += 2)
+        {
+            abnormals.Add(new AbnormalData((AbnormalStateType)(int)abnormalPacket[i], (int)abnormalPacket[i + 1]));
+        }
+
+        player.HurtArea.Hurt(null, damages, abnormals, angle);
+    }
+
     public void OnPlayerBulletFired(Role shooter, IBullet bullet)
     {
         var localPlayer = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player;
@@ -1386,7 +1484,9 @@ public partial class LanNetworkManager : Node
         var world = GameApplication.Instance?.DungeonManager?.CurrWorld;
         var target = world?.Role_InstanceList.Find(item => item.NetworkId == networkId);
         if (target == null || target.IsDestroyed || !target.IsAi || target.IsDie || target.HurtArea == null ||
-            !target.HurtArea.CanHurt(playerState.Player.Camp))
+            playerState.RoomId < 0 || target.AffiliationArea?.RoomInfo?.Id != playerState.RoomId ||
+            !target.HurtArea.CanHurt(playerState.Player.Camp) ||
+            target.GlobalPosition.DistanceTo(playerState.Player.GlobalPosition) > 700f)
         {
             return;
         }

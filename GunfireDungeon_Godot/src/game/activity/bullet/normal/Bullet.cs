@@ -197,6 +197,13 @@ public partial class Bullet : ActivityObject, IBullet
         {
             if (hurt.CanHurt(Camp))
             {
+                var network = LanNetworkManager.Instance;
+                if (network != null && network.IsLanConnected && !network.IsHost &&
+                    BulletData.TriggerRole == GameApplication.Instance?.DungeonManager?.CurrWorld?.Player)
+                {
+                    network.RequestEnemyDamageFromBullet(hurt, BulletData.Damages, BulletData.Abnormals, Rotation);
+                }
+
                 OnPlayDisappearEffect();
                 State = BulletStateEnum.CollisionTarget;
                 CallDeferred(nameof(LogicalFinish));
@@ -207,6 +214,19 @@ public partial class Bullet : ActivityObject, IBullet
 
         if (hurt.CanHurt(Camp))
         {
+            var network = LanNetworkManager.Instance;
+            if (network != null && network.IsLanConnected && network.IsHost &&
+                hurt.GetActivityObject() is Player remotePlayer && network.IsRemotePlayer(remotePlayer) &&
+                BulletData.TriggerRole?.IsAi == true)
+            {
+                network.BroadcastRemotePlayerDamage(remotePlayer, BulletData.Damages,
+                    BulletData.Abnormals, Rotation);
+                OnPlayDisappearEffect();
+                State = BulletStateEnum.CollisionTarget;
+                CallDeferred(nameof(LogicalFinish));
+                return;
+            }
+
             OnPlayDisappearEffect();
             if (BulletData.Repel != 0)
             {
