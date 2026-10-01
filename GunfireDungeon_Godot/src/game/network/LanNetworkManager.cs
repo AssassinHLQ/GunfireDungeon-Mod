@@ -58,6 +58,7 @@ public partial class LanNetworkManager : Node
     private long _nextDynamicNetworkId = 1;
     private long _nextDamageSequence = 1;
     private long _lastAppliedDamageSequence;
+    private readonly HashSet<int> _broadcastClearedRooms = new();
 
     private sealed class RemotePlayerState
     {
@@ -332,6 +333,35 @@ public partial class LanNetworkManager : Node
 
         Rpc(nameof(ReceiveNetworkPickupSpawn), item.NetworkId, item.ActivityBase?.Id ?? string.Empty,
             item.GlobalPosition.X, item.GlobalPosition.Y);
+    }
+
+    public void BroadcastNetworkWeaponDrop(Weapon weapon)
+    {
+        if (!IsHost || !IsLanConnected || weapon == null || weapon.IsDestroyed)
+        {
+            return;
+        }
+
+        weapon.NetworkId = AllocateDynamicNetworkId();
+        Rpc(nameof(ReceiveNetworkWeaponDrop), weapon.NetworkId, weapon.ActivityBase?.Id ?? string.Empty,
+            weapon.GlobalPosition.X, weapon.GlobalPosition.Y);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveNetworkWeaponDrop(long networkId, string activityId, float x, float y)
+    {
+        if (IsHost || networkId == 0 || string.IsNullOrEmpty(activityId) || FindActivityObject(networkId) != null)
+        {
+            return;
+        }
+
+        var weapon = ActivityObject.Create<Weapon>(activityId);
+        if (weapon == null)
+        {
+            return;
+        }
+        weapon.NetworkId = networkId;
+        weapon.PutDown(new Vector2(x, y), RoomLayerEnum.YSortLayer, false);
     }
 
     public void RequestGoldPickup(Gold gold)
@@ -916,13 +946,16 @@ public partial class LanNetworkManager : Node
             });
         }
 
-        foreach (var room in GameApplication.Instance.DungeonManager.RoomInfosForNetwork)
+    }
+
+    public void BroadcastRoomCleared(int roomId)
+    {
+        if (!IsHost || !IsLanConnected || !_broadcastClearedRooms.Add(roomId))
         {
-            if (room != null && room.HasFirstEntered && !room.IsSeclusion)
-            {
-                Rpc(nameof(ReceiveRoomCleared), room.Id);
-            }
+            return;
         }
+
+        Rpc(nameof(ReceiveRoomCleared), roomId);
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -1536,7 +1569,7 @@ public partial class LanNetworkManager : Node
         }
     }
 
-    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void ReceiveEnemySnapshot(long networkId, string activityId, float x, float y, int faceValue, int hp,
         int maxHp, int gold, bool isDead, string animation, int frame, long hitSequence)
     {
@@ -1588,8 +1621,7 @@ public partial class LanNetworkManager : Node
         var target = world?.Role_InstanceList.Find(item => item.NetworkId == networkId);
         if (target == null || target.IsDestroyed || !target.IsAi || target.IsDie || target.HurtArea == null ||
             playerState.RoomId < 0 || target.AffiliationArea?.RoomInfo?.Id != playerState.RoomId ||
-            !target.HurtArea.CanHurt(playerState.Player.Camp) ||
-            target.GlobalPosition.DistanceTo(playerState.Player.GlobalPosition) > 700f)
+            !target.HurtArea.CanHurt(playerState.Player.Camp))
         {
             return;
         }

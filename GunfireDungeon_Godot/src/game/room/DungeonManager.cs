@@ -1346,6 +1346,7 @@ public partial class DungeonManager : Node2D
 
         var isFinalWave = room.RoomPreinstall.IsLastWave;
         room.OnClearRoom();
+        LanNetworkManager.Instance?.BroadcastRoomCleared(room.Id);
         if (isFinalWave && room.RoomPreinstall.HasEnemy())
         {
             GameNotificationOverlay.ShowRoomCleared(
@@ -1519,6 +1520,7 @@ public partial class DungeonManager : Node2D
                     {
                         var isFinalWave = activeRoom.RoomPreinstall.IsLastWave;
                         activeRoom.OnClearRoom();
+                        LanNetworkManager.Instance?.BroadcastRoomCleared(activeRoom.Id);
                         // 提示玩家房间已经清空。
                         // 没有这个提示, 玩家不知道是否打完, 会继续浪费子弹。
                         if (isFinalWave && activeRoom.RoomPreinstall.HasEnemy())

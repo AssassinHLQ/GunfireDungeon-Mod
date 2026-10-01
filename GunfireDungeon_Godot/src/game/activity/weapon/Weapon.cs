@@ -2007,6 +2007,10 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
         {
             network.BroadcastNetworkPickupSpawn(this);
         }
+        else if (master is Player && network != null && network.IsHost && network.IsLanConnected)
+        {
+            network.BroadcastNetworkWeaponDrop(this);
+        }
         
         //继承role的移动速度
         InheritVelocity(master);
