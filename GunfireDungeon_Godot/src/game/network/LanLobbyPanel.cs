@@ -13,6 +13,7 @@ public partial class LanLobbyPanel : Control
     private Label _statusLabel;
     private LineEdit _addressEdit;
     private Button _hostButton;
+    private Button _searchButton;
     private Button _joinButton;
     private Button _backButton;
     private bool _closing;
@@ -27,6 +28,7 @@ public partial class LanLobbyPanel : Control
         {
             LanNetworkManager.Instance.StatusChanged += OnStatusChanged;
             LanNetworkManager.Instance.LocalWorldReady += OnLocalWorldReady;
+            LanNetworkManager.Instance.HostSearchCompleted += OnHostSearchCompleted;
             OnStatusChanged(LanNetworkManager.Instance.LastStatus);
         }
     }
@@ -37,6 +39,7 @@ public partial class LanLobbyPanel : Control
         {
             LanNetworkManager.Instance.StatusChanged -= OnStatusChanged;
             LanNetworkManager.Instance.LocalWorldReady -= OnLocalWorldReady;
+            LanNetworkManager.Instance.HostSearchCompleted -= OnHostSearchCompleted;
         }
     }
 
@@ -120,6 +123,10 @@ public partial class LanLobbyPanel : Control
         _hostButton.Pressed += OnHostPressed;
         buttonRow.AddChild(_hostButton);
 
+        _searchButton = MakeButton("自动搜索");
+        _searchButton.Pressed += OnSearchPressed;
+        buttonRow.AddChild(_searchButton);
+
         _joinButton = MakeButton("加入房间");
         _joinButton.Pressed += OnJoinPressed;
         buttonRow.AddChild(_joinButton);
@@ -192,6 +199,40 @@ public partial class LanLobbyPanel : Control
 
         SetButtonsEnabled(false);
         _statusLabel.Text = "正在连接房主...";
+    }
+
+    private void OnSearchPressed()
+    {
+        if (LanNetworkManager.Instance == null)
+        {
+            return;
+        }
+
+        _searchButton.Disabled = true;
+        _statusLabel.Text = "正在搜索局域网房间...";
+        if (!LanNetworkManager.Instance.FindHostOnLan())
+        {
+            _searchButton.Disabled = false;
+            _statusLabel.Text = "搜索启动失败，请手动输入房主 IP";
+        }
+    }
+
+    private void OnHostSearchCompleted(string address)
+    {
+        if (!IsInstanceValid(_statusLabel))
+        {
+            return;
+        }
+
+        _searchButton.Disabled = false;
+        if (string.IsNullOrEmpty(address))
+        {
+            _statusLabel.Text = "未找到房间，请确认房主已创建房间，或手动输入 IP";
+            return;
+        }
+
+        _addressEdit.Text = address;
+        _statusLabel.Text = $"已找到房主 {address}，点击“加入房间”即可连接";
     }
 
     private void OnBackPressed()

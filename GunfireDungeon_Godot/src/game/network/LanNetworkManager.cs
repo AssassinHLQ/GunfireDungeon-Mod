@@ -1,6 +1,9 @@
 using DsUi;
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using Godot;
 
 /// <summary>
@@ -13,7 +16,10 @@ using Godot;
 public partial class LanNetworkManager : Node
 {
     public const int DefaultPort = 24567;
+    private const int DiscoveryPort = 24568;
     public const int MaxPlayers = 4;
+    private const string DiscoveryRequest = "GFDISCOVER1";
+    private const string DiscoveryResponse = "GFDROOM1";
 
     public static LanNetworkManager Instance { get; private set; }
 
@@ -29,7 +35,13 @@ public partial class LanNetworkManager : Node
     /// <summary>本机已经完成大厅/地牢加载。</summary>
     public event Action<string> LocalWorldReady;
 
+    /// <summary>自动搜索结束。address 为空表示没有找到房间。</summary>
+    public event Action<string> HostSearchCompleted;
+
     private ENetMultiplayerPeer _peer;
+    private UdpClient _discoveryListener;
+    private UdpClient _discoveryClient;
+    private double _hostSearchRemaining;
     private readonly Dictionary<long, RemotePlayerState> _remotePlayers = new();
     private double _snapshotTimer;
     private double _worldSnapshotTimer;
@@ -81,6 +93,9 @@ public partial class LanNetworkManager : Node
 
     public override void _Process(double delta)
     {
+        PollHostDiscovery();
+        PollHostSearch(delta);
+
         if (!IsLanConnected)
         {
             return;
@@ -134,6 +149,7 @@ public partial class LanNetworkManager : Node
         _peer = peer;
         Multiplayer.MultiplayerPeer = _peer;
         IsHost = true;
+        StartHostDiscovery();
         _lastLocalWorld = null;
         _lastLocalWorldKind = string.Empty;
         _lastBroadcastStateKey = string.Empty;
@@ -177,6 +193,8 @@ public partial class LanNetworkManager : Node
 
     public void Disconnect()
     {
+        StopHostSearch();
+        StopHostDiscovery();
         ClearRemotePlayers();
         _lastLocalWorld = null;
         _lastLocalWorldKind = string.Empty;
@@ -239,6 +257,125 @@ public partial class LanNetworkManager : Node
     public long AllocateDynamicNetworkId()
     {
         return 0x7000000000000000L | _nextDynamicNetworkId++;
+    }
+
+    /// <summary>向局域网广播搜索请求，并在短时间内等待房主回应。</summary>
+    public bool FindHostOnLan()
+    {
+        StopHostSearch();
+        try
+        {
+            _discoveryClient = new UdpClient(0);
+            _discoveryClient.EnableBroadcast = true;
+            var payload = Encoding.ASCII.GetBytes(DiscoveryRequest);
+            _discoveryClient.Send(payload, payload.Length, new IPEndPoint(IPAddress.Broadcast, DiscoveryPort));
+            _hostSearchRemaining = 2.0;
+            return true;
+        }
+        catch (SocketException)
+        {
+            StopHostSearch();
+            return false;
+        }
+    }
+
+    private void StartHostDiscovery()
+    {
+        StopHostDiscovery();
+        try
+        {
+            _discoveryListener = new UdpClient(DiscoveryPort);
+        }
+        catch (SocketException)
+        {
+            _discoveryListener = null;
+        }
+    }
+
+    private void PollHostDiscovery()
+    {
+        if (!IsHost || _discoveryListener == null)
+        {
+            return;
+        }
+
+        try
+        {
+            while (_discoveryListener.Available > 0)
+            {
+                IPEndPoint sender = new(IPAddress.Any, 0);
+                var request = _discoveryListener.Receive(ref sender);
+                if (Encoding.ASCII.GetString(request) != DiscoveryRequest)
+                {
+                    continue;
+                }
+
+                var response = Encoding.ASCII.GetBytes(DiscoveryResponse);
+                _discoveryListener.Send(response, response.Length, sender);
+            }
+        }
+        catch (SocketException)
+        {
+            StopHostDiscovery();
+        }
+        catch (ObjectDisposedException)
+        {
+            StopHostDiscovery();
+        }
+    }
+
+    private void PollHostSearch(double delta)
+    {
+        if (_discoveryClient == null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_discoveryClient.Available > 0)
+            {
+                IPEndPoint sender = new(IPAddress.Any, 0);
+                var response = _discoveryClient.Receive(ref sender);
+                if (Encoding.ASCII.GetString(response) == DiscoveryResponse)
+                {
+                    var address = sender.Address.ToString();
+                    StopHostSearch();
+                    HostSearchCompleted?.Invoke(address);
+                    return;
+                }
+            }
+        }
+        catch (SocketException)
+        {
+            StopHostSearch();
+            HostSearchCompleted?.Invoke(string.Empty);
+            return;
+        }
+        catch (ObjectDisposedException)
+        {
+            return;
+        }
+
+        _hostSearchRemaining -= delta;
+        if (_hostSearchRemaining <= 0)
+        {
+            StopHostSearch();
+            HostSearchCompleted?.Invoke(string.Empty);
+        }
+    }
+
+    private void StopHostSearch()
+    {
+        _hostSearchRemaining = 0;
+        _discoveryClient?.Close();
+        _discoveryClient = null;
+    }
+
+    private void StopHostDiscovery()
+    {
+        _discoveryListener?.Close();
+        _discoveryListener = null;
     }
 
     private static string GetLanAddressText()
