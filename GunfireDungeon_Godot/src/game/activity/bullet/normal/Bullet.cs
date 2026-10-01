@@ -55,6 +55,8 @@ public partial class Bullet : ActivityObject, IBullet
     /// </summary>
     public bool IsEnemyBullet { get; private set; } = false;
 
+    public bool NetworkVisualOnly { get; set; }
+
     /// <summary>
     /// 子弹状态
     /// </summary>
@@ -90,6 +92,8 @@ public partial class Bullet : ActivityObject, IBullet
         CurrFlyDistance = 0;
         
         BulletData = data;
+        CollisionArea.Monitoring = !NetworkVisualOnly;
+        CollisionArea.Monitorable = !NetworkVisualOnly;
         Rotation = data.Rotation;
         
         var triggerRole = data.TriggerRole;
@@ -189,6 +193,18 @@ public partial class Bullet : ActivityObject, IBullet
     /// </summary>
     public virtual void OnCollisionTarget(IHurt hurt)
     {
+        if (NetworkVisualOnly)
+        {
+            if (hurt.CanHurt(Camp))
+            {
+                OnPlayDisappearEffect();
+                State = BulletStateEnum.CollisionTarget;
+                CallDeferred(nameof(LogicalFinish));
+            }
+
+            return;
+        }
+
         if (hurt.CanHurt(Camp))
         {
             OnPlayDisappearEffect();
@@ -376,6 +392,7 @@ public partial class Bullet : ActivityObject, IBullet
     public virtual void OnReclaim()
     {
         State = BulletStateEnum.Normal;
+        NetworkVisualOnly = false;
         Visible = false;
         if (Particles2D != null)
         {

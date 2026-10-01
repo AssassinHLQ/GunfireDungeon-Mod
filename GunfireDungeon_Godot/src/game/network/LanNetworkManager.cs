@@ -1,4 +1,5 @@
 using DsUi;
+using Config;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -60,6 +61,7 @@ public partial class LanNetworkManager : Node
         public long PeerId;
         public Vector2 TargetPosition;
         public FaceDirection Face;
+        public float AimRotationDegrees;
         public Player Player;
         public bool IsMoving;
         public bool IsRolling;
@@ -534,6 +536,7 @@ public partial class LanNetworkManager : Node
             player.GlobalPosition.X,
             player.GlobalPosition.Y,
             (int)player.Face,
+            player.MountPoint?.RealRotationDegrees ?? 0f,
             elapsed,
             player.StateController?.CurrState == PlayerStateEnum.Roll,
             player.AffiliationArea?.RoomInfo?.Id ?? -1,
@@ -648,6 +651,112 @@ public partial class LanNetworkManager : Node
         RpcId(1, nameof(ReceiveEnemyDamageRequest), networkId, damagePacket, abnormalPacket, angle);
     }
 
+    public void OnPlayerBulletFired(Role shooter, IBullet bullet)
+    {
+        var localPlayer = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player;
+        if (!IsLanConnected || shooter != localPlayer || bullet?.BulletData?.BulletBase == null ||
+            bullet.BulletData.BulletBase.Type != 1)
+        {
+            return;
+        }
+
+        var data = bullet.BulletData;
+        if (IsHost)
+        {
+            Rpc(nameof(ReceivePlayerBulletVisual), LocalPeerId, data.BulletBase.Id,
+                data.Position.X, data.Position.Y, data.Rotation, data.Altitude, data.FlySpeed,
+                data.VerticalSpeed, data.MaxDistance, data.LifeTime);
+        }
+        else
+        {
+            RpcId(1, nameof(RequestPlayerBulletVisual), data.BulletBase.Id,
+                data.Position.X, data.Position.Y, data.Rotation, data.Altitude, data.FlySpeed,
+                data.VerticalSpeed, data.MaxDistance, data.LifeTime);
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
+    public void RequestPlayerBulletVisual(string bulletId, float x, float y, float rotation,
+        float altitude, float flySpeed, float verticalSpeed, float maxDistance, float lifeTime)
+    {
+        if (!IsHost || !ExcelConfig.BulletBase_Map.TryGetValue(bulletId, out var bulletBase) || bulletBase.Type != 1)
+        {
+            return;
+        }
+
+        var senderId = Multiplayer.GetRemoteSenderId();
+        if (senderId <= 1 || !_remotePlayers.TryGetValue(senderId, out var state) ||
+            state.Player == null || !GodotObject.IsInstanceValid(state.Player))
+        {
+            return;
+        }
+
+        SpawnNetworkVisualBullet(senderId, bulletBase, new Vector2(x, y), rotation,
+            altitude, flySpeed, verticalSpeed, maxDistance, lifeTime);
+        Rpc(nameof(ReceivePlayerBulletVisual), senderId, bulletId, x, y, rotation,
+            altitude, flySpeed, verticalSpeed, maxDistance, lifeTime);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
+    public void ReceivePlayerBulletVisual(long sourcePeerId, string bulletId, float x, float y,
+        float rotation, float altitude, float flySpeed, float verticalSpeed, float maxDistance, float lifeTime)
+    {
+        if (IsHost || sourcePeerId == LocalPeerId ||
+            !ExcelConfig.BulletBase_Map.TryGetValue(bulletId, out var bulletBase) || bulletBase.Type != 1)
+        {
+            return;
+        }
+
+        SpawnNetworkVisualBullet(sourcePeerId, bulletBase, new Vector2(x, y), rotation,
+            altitude, flySpeed, verticalSpeed, maxDistance, lifeTime);
+    }
+
+    private void SpawnNetworkVisualBullet(long sourcePeerId, ExcelConfig.BulletBase bulletBase,
+        Vector2 position, float rotation, float altitude, float flySpeed, float verticalSpeed,
+        float maxDistance, float lifeTime)
+    {
+        var world = GameApplication.Instance?.DungeonManager?.CurrWorld;
+        Role shooter = null;
+        if (sourcePeerId == LocalPeerId)
+        {
+            shooter = world?.Player;
+        }
+        else
+        {
+            if (!_remotePlayers.TryGetValue(sourcePeerId, out var state))
+            {
+                state = new RemotePlayerState { PeerId = sourcePeerId };
+                _remotePlayers.Add(sourcePeerId, state);
+            }
+
+            EnsureRemotePlayer(state);
+            shooter = state.Player;
+        }
+
+        if (world == null || shooter == null || shooter.IsDestroyed || string.IsNullOrEmpty(bulletBase.Prefab))
+        {
+            return;
+        }
+
+        var visualBullet = ObjectManager.GetBullet(bulletBase.Prefab);
+        visualBullet.NetworkVisualOnly = true;
+        var data = new BulletData(world)
+        {
+            BulletBase = bulletBase,
+            TriggerRole = shooter,
+            Damages = new List<AttackStats>(),
+            Abnormals = new List<AbnormalData>(),
+            Position = position,
+            Rotation = rotation,
+            Altitude = altitude,
+            FlySpeed = flySpeed,
+            VerticalSpeed = verticalSpeed,
+            MaxDistance = maxDistance,
+            LifeTime = lifeTime,
+        };
+        visualBullet.InitData(data, shooter.Camp);
+    }
+
     private void UpdateRemotePlayers(float delta)
     {
         foreach (var state in _remotePlayers.Values)
@@ -661,6 +770,7 @@ public partial class LanNetworkManager : Node
             var blend = Mathf.Clamp(delta * 18f, 0f, 1f);
             state.Player.GlobalPosition = state.Player.GlobalPosition.Lerp(state.TargetPosition, blend);
             state.Player.Face = state.Face;
+            state.Player.MountPoint?.ApplyNetworkRotation(state.AimRotationDegrees);
 
             if (state.Player.AnimatedSprite != null)
             {
@@ -875,7 +985,7 @@ public partial class LanNetworkManager : Node
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
-    public void ReceivePlayerSnapshot(long peerId, float x, float y, int faceValue, float elapsed,
+    public void ReceivePlayerSnapshot(long peerId, float x, float y, int faceValue, float aimRotationDegrees, float elapsed,
         bool isRolling, int roomId)
     {
         var senderId = Multiplayer.GetRemoteSenderId();
@@ -900,6 +1010,7 @@ public partial class LanNetworkManager : Node
         state.IsRolling = isRolling;
         state.TargetPosition = newPosition;
         state.Face = (FaceDirection)Mathf.Clamp(faceValue, (int)FaceDirection.Left, (int)FaceDirection.Right);
+        state.AimRotationDegrees = aimRotationDegrees;
         EnsureRemotePlayer(state);
 
         if (IsHost && senderId > 1 && roomId >= 0 && roomId != state.RoomId)
@@ -917,7 +1028,7 @@ public partial class LanNetworkManager : Node
         {
             Rpc(nameof(ReceivePlayerSnapshot), new Variant[]
             {
-                peerId, x, y, faceValue, elapsed, isRolling, roomId,
+                peerId, x, y, faceValue, aimRotationDegrees, elapsed, isRolling, roomId,
             });
         }
     }

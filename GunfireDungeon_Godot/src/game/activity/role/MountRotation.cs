@@ -58,6 +58,12 @@ public partial class MountRotation : Marker2D
         GlobalRotationDegrees = AdsorptionAngle(angle);
     }
 
+    public void ApplyNetworkRotation(float angleDegrees)
+    {
+        RealRotationDegrees = angleDegrees;
+        GlobalRotationDegrees = AdsorptionAngle(angleDegrees);
+    }
+
     private float AdsorptionAngle(float angle)
     {
         return Mathf.Round(angle / _adsorption) * _adsorption;

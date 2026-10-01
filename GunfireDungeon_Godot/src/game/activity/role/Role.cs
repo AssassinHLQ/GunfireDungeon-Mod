@@ -2248,6 +2248,7 @@ public abstract partial class Role : ActivityObject
         {
             OnShootBulletEvent(this, weapon, fireRotation, bullet);
         }
+        LanNetworkManager.Instance?.OnPlayerBulletFired(this, bullet);
         //throw new NotImplementedException();
     }
 
