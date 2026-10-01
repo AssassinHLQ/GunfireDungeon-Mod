@@ -56,6 +56,8 @@ public partial class LanNetworkManager : Node
     private bool _applyingRemoteState;
     private Variant[] _pendingRemoteState;
     private long _nextDynamicNetworkId = 1;
+    private long _nextDamageSequence = 1;
+    private long _lastAppliedDamageSequence;
 
     private sealed class RemotePlayerState
     {
@@ -1107,17 +1109,19 @@ public partial class LanNetworkManager : Node
             abnormalPacket.Add(abnormal.Value);
         }
 
-        RpcId(peerId, nameof(ReceiveRemotePlayerDamage), damagePacket, abnormalPacket, angle);
+        RpcId(peerId, nameof(ReceiveRemotePlayerDamage), _nextDamageSequence++, damagePacket, abnormalPacket, angle);
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveRemotePlayerDamage(Godot.Collections.Array<Variant> damagePacket,
+    public void ReceiveRemotePlayerDamage(long damageSequence, Godot.Collections.Array<Variant> damagePacket,
         Godot.Collections.Array<Variant> abnormalPacket, float angle)
     {
-        if (IsHost || damagePacket == null)
+        if (IsHost || damagePacket == null || damageSequence <= _lastAppliedDamageSequence)
         {
             return;
         }
+
+        _lastAppliedDamageSequence = damageSequence;
 
         var player = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player;
         if (player == null || player.IsDestroyed)
@@ -1612,7 +1616,7 @@ public partial class LanNetworkManager : Node
         target.HurtArea.Hurt(playerState.Player, damages, abnormals, angle);
     }
 
-    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void ReceivePlayerVitals(long peerId, int hp, int shield, int armor)
     {
         if (IsHost || peerId != LocalPeerId)

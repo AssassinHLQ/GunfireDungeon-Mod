@@ -1312,6 +1312,17 @@ public partial class DungeonManager : Node2D
         player.PutDown(position, RoomLayerEnum.YSortLayer, false);
         player.Collision.Disabled = false;
         room.AffiliationArea.InsertItem(player);
+        CallDeferred(nameof(RefreshNetworkRoomVisuals), roomId);
+    }
+
+    private void RefreshNetworkRoomVisuals(int roomId)
+    {
+        var room = _dungeonGenerator?.RoomInfos.FirstOrDefault(item => item.Id == roomId);
+        if (room == null || CurrWorld?.Player == null)
+        {
+            return;
+        }
+
         FogMaskHandler.RefreshRoomFog(room);
         FogMaskHandler.Update();
         EventManager.EmitEvent(EventEnum.OnPlayerEnterRoom, room);
@@ -1354,8 +1365,6 @@ public partial class DungeonManager : Node2D
         }
 
         room.ForceNetworkClear();
-        FogMaskHandler.RefreshRoomFog(room);
-        FogMaskHandler.Update();
     }
 
     /// <summary>
