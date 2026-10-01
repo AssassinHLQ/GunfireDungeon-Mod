@@ -50,6 +50,7 @@ public partial class LanNetworkManager : Node
     private string _lastLocalWorldKind = string.Empty;
     private string _lastBroadcastStateKey = string.Empty;
     private string _lastRequestedStateKey = string.Empty;
+    private int _sessionRevision;
     private bool _applyingRemoteState;
     private Variant[] _pendingRemoteState;
     private long _nextDynamicNetworkId = 1;
@@ -149,6 +150,7 @@ public partial class LanNetworkManager : Node
         _peer = peer;
         Multiplayer.MultiplayerPeer = _peer;
         IsHost = true;
+        _sessionRevision = 0;
         StartHostDiscovery();
         _lastLocalWorld = null;
         _lastLocalWorldKind = string.Empty;
@@ -257,6 +259,15 @@ public partial class LanNetworkManager : Node
     public long AllocateDynamicNetworkId()
     {
         return 0x7000000000000000L | _nextDynamicNetworkId++;
+    }
+
+    /// <summary>确保相同地图参数的重开也会作为新会话同步给客户端。</summary>
+    public void MarkSessionRestarted()
+    {
+        if (IsHost && IsLanConnected)
+        {
+            _sessionRevision++;
+        }
     }
 
     /// <summary>向局域网广播搜索请求，并在短时间内等待房主回应。</summary>
@@ -765,12 +776,13 @@ public partial class LanNetworkManager : Node
             mode,
             seed,
             hasSeed,
+            _sessionRevision,
         };
     }
 
     private static string MakeStateKey(Variant[] state)
     {
-        return $"{state[0]}|{state[1]}|{state[2]}|{state[3]}|{state[4]}|{state[5]}";
+        return $"{state[0]}|{state[1]}|{state[2]}|{state[3]}|{state[4]}|{state[5]}|{state[6]}";
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -789,7 +801,8 @@ public partial class LanNetworkManager : Node
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveSessionState(string worldKind, string groupName, int floor, int modeValue, int seed, bool hasSeed)
+    public void ReceiveSessionState(string worldKind, string groupName, int floor, int modeValue, int seed,
+        bool hasSeed, int sessionRevision)
     {
         if (IsHost)
         {
@@ -804,6 +817,7 @@ public partial class LanNetworkManager : Node
             modeValue,
             seed,
             hasSeed,
+            sessionRevision,
         };
         var key = MakeStateKey(state);
         if (key == _lastRequestedStateKey && _pendingRemoteState == null)
@@ -1055,6 +1069,8 @@ public partial class LanNetworkManager : Node
         }
 
         UiManager.Open_Game_Loading();
+        UiManager.Destroy_Game_Settlement();
+        UiManager.Destroy_Game_PauseMenu();
         Action loadDungeon = () => dungeonManager.LoadDungeon(config, () =>
         {
             _applyingRemoteState = false;
