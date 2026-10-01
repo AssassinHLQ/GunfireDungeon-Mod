@@ -1241,7 +1241,7 @@ public partial class DungeonManager : Node2D
         //如果关门了, 那么房间外的敌人就会丢失目标
         if (room.IsSeclusion)
         {
-            var playerAffiliationArea = CurrWorld.Player.AffiliationArea;
+            var playerAffiliationArea = room.AffiliationArea;
             foreach (var role in CurrWorld.Role_InstanceList)
             {
                 //不与玩家处于同一个房间
@@ -1280,6 +1280,26 @@ public partial class DungeonManager : Node2D
         area?.RemoveRemotePlayer(remotePlayer);
     }
 
+    public bool ForcePartyIntoRoom(int roomId, out Vector2 position)
+    {
+        position = Vector2.Zero;
+        var room = _dungeonGenerator?.RoomInfos.FirstOrDefault(item => item.Id == roomId);
+        if (room == null || !room.HasFirstEntered || room.RoomPreinstall?.HasEnemy() != true ||
+            (!room.IsSeclusion && !room.RoomPreinstall.IsRunWave && !room.RoomPreinstall.HasLivingEnemy))
+        {
+            return false;
+        }
+
+        position = (Vector2)room.Waypoints * GameConfig.TileCellSize +
+                   Vector2.One * (GameConfig.TileCellSize * 0.5f);
+        if (CurrWorld?.Player is Player player)
+        {
+            player.PutDown(position, RoomLayerEnum.YSortLayer, false);
+        }
+
+        return true;
+    }
+
     public void CheckRemoteRoomWave(int roomId)
     {
         var room = _dungeonGenerator?.RoomInfos.FirstOrDefault(item => item.Id == roomId);
@@ -1289,7 +1309,7 @@ public partial class DungeonManager : Node2D
             return;
         }
 
-        var hasEnemy = room.AffiliationArea.ExistEnterItem(
+        var hasEnemy = room.RoomPreinstall.HasLivingEnemy || room.AffiliationArea.ExistIncludeItem(
             activityObject => activityObject is Role role && role.IsEnemyWithPlayer());
         if (hasEnemy)
         {
@@ -1312,6 +1332,13 @@ public partial class DungeonManager : Node2D
     private void OnPlayerEnterRoom(object o)
     {
         var roomInfo = (RoomInfo)o;
+        var network = LanNetworkManager.Instance;
+        if (network != null && network.IsHost && network.IsLanConnected && roomInfo.HasFirstEntered &&
+            roomInfo.RoomPreinstall?.HasEnemy() == true)
+        {
+            network.ForcePartyIntoRoom(roomInfo.Id);
+        }
+
         if (_affiliationAreaFlag != roomInfo.AffiliationArea)
         {
             if (!roomInfo.AffiliationArea.IsDestroyed)
@@ -1443,7 +1470,7 @@ public partial class DungeonManager : Node2D
                 if (activeRoom.RoomPreinstall.IsCurrWaveOver()) //所有标记执行完成
                 {
                     //房间内是否有存活的敌人
-                    var flag = ActiveAffiliationArea.ExistEnterItem(
+                    var flag = activeRoom.RoomPreinstall.HasLivingEnemy || ActiveAffiliationArea.ExistIncludeItem(
                         activityObject => activityObject is Role role && role.IsEnemyWithPlayer()
                     );
                     //Debug.Log("当前房间存活数量: " + count);

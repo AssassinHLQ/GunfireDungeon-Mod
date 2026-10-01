@@ -81,6 +81,11 @@ public partial class Boss : AiRole
 
     private void DropRewardItem()
     {
+        if (IsNetworkReplica)
+        {
+            return;
+        }
+
         var propConfig = World?.RandomPool?.GetRandomProp();
         if (propConfig == null)
         {
@@ -89,6 +94,11 @@ public partial class Boss : AiRole
 
         var item = Create(propConfig);
         item.Throw(Position, 8, 40, new Vector2(0, 11), 0);
+        var network = LanNetworkManager.Instance;
+        if (network != null && network.IsHost && network.IsLanConnected)
+        {
+            network.BroadcastNetworkPickupSpawn(item);
+        }
     }
 
     /// <summary>

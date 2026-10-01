@@ -283,6 +283,8 @@ public abstract partial class Role : ActivityObject
     /// 是否死亡
     /// </summary>
     public bool IsDie { get; private set; }
+    public bool IsNetworkReplica { get; private set; }
+    public bool HasCompletedDeathSequence { get; private set; }
     
     /// <summary>
     /// 血量
@@ -1194,6 +1196,14 @@ public abstract partial class Role : ActivityObject
         if (HasInteractive())
         {
             var item = InteractiveItem;
+            if (this is Player && item is ActivityObject activityObject &&
+                (activityObject is Weapon || activityObject is PropActivity) &&
+                LanNetworkManager.Instance is { IsLanConnected: true } network)
+            {
+                network.RequestSharedPickup(activityObject);
+                return item;
+            }
+
             item.Interactive(this);
             return item;
         }
@@ -1370,6 +1380,7 @@ public abstract partial class Role : ActivityObject
         }
 
         MaxHp = maxHp;
+        IsNetworkReplica = true;
         Hp = hp;
         RoleState.Gold = gold;
         EnableCustomBehavior = false;
@@ -1481,6 +1492,7 @@ public abstract partial class Role : ActivityObject
     //死亡逻辑
     private void DoDieHandler()
     {
+        HasCompletedDeathSequence = true;
         OnDie();
         //死亡事件
         World.OnRoleDie(this);

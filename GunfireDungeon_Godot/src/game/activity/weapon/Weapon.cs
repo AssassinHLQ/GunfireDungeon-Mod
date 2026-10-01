@@ -2001,6 +2001,12 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
         var velocity = new Vector2(20, 0).Rotated(rotation);
         var yf = Utils.Random.RandomRangeInt(50, 70);
         Throw(startPosition, startHeight, yf, velocity, 0);
+
+        var network = LanNetworkManager.Instance;
+        if (master.IsAi && network != null && network.IsHost && network.IsLanConnected)
+        {
+            network.BroadcastNetworkPickupSpawn(this);
+        }
         
         //继承role的移动速度
         InheritVelocity(master);

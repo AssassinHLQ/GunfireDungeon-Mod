@@ -47,6 +47,8 @@ public class RoomPreinstall : IDestroy
     /// 包含的 Boss 列表
     /// </summary>
     public List<Boss> BossList { get; } = new List<Boss>();
+    private readonly HashSet<Role> _roomEnemies = new();
+    public bool HasLivingEnemy => _roomEnemies.Any(role => role != null && !role.IsDestroyed && !role.HasCompletedDeathSequence);
     
     //是否运行过预处理
     private bool _runPretreatment = false;
@@ -187,11 +189,6 @@ public class RoomPreinstall : IDestroy
             for (var markIndex = 0; markIndex < wave.Count; markIndex++)
             {
                 var mark = wave[markIndex];
-                if (mark.ActivityType != ActivityType.Enemy && mark.ActivityType != ActivityType.Boss)
-                {
-                    continue;
-                }
-
                 mark.NetworkId = ((long)floor << 40) |
                                  ((long)(RoomInfo.Id & 0xFFFF) << 24) |
                                  ((long)(waveIndex & 0xFFF) << 12) |
@@ -616,6 +613,10 @@ public class RoomPreinstall : IDestroy
         activityObject.VerticalSpeed = activityMark.VerticalSpeed;
         activityObject.Altitude = activityMark.Altitude;
         activityObject.NetworkId = activityMark.NetworkId;
+        if (activityObject is Role trackedRole && trackedRole.IsEnemyWithPlayer())
+        {
+            _roomEnemies.Add(trackedRole);
+        }
         return activityObject;
     }
 
