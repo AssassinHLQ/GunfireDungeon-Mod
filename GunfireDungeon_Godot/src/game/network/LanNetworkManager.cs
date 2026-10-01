@@ -65,6 +65,7 @@ public partial class LanNetworkManager : Node
         public Player Player;
         public bool IsMoving;
         public bool IsRolling;
+        public bool IsMeleeAttacking;
         public int RoomId = -1;
     }
 
@@ -840,6 +841,7 @@ public partial class LanNetworkManager : Node
             player.MountPoint?.RealRotationDegrees ?? 0f,
             elapsed,
             player.StateController?.CurrState == PlayerStateEnum.Roll,
+            player.MeleeAttackTimer > 0 || player.IsAttack && player.AnimatedSprite?.Animation == AnimatorNames.Attack,
             player.AffiliationArea?.RoomInfo?.Id ?? -1,
         };
         Rpc(nameof(ReceivePlayerSnapshot), args);
@@ -874,6 +876,7 @@ public partial class LanNetworkManager : Node
                 role.IsDie,
                 role.AnimatedSprite.Animation.ToString(),
                 role.AnimatedSprite.Frame,
+                role.ReplicatedHitSequence,
             });
         }
     }
@@ -1173,7 +1176,9 @@ public partial class LanNetworkManager : Node
 
             if (state.Player.AnimatedSprite != null)
             {
-                var animation = state.IsRolling
+                var animation = state.IsMeleeAttacking
+                    ? AnimatorNames.Attack
+                    : state.IsRolling
                     ? AnimatorNames.Roll
                     : state.IsMoving ? AnimatorNames.Run : AnimatorNames.Idle;
                 if (state.Player.AnimatedSprite.Animation != animation)
@@ -1385,7 +1390,7 @@ public partial class LanNetworkManager : Node
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
     public void ReceivePlayerSnapshot(long peerId, float x, float y, int faceValue, float aimRotationDegrees, float elapsed,
-        bool isRolling, int roomId)
+        bool isRolling, bool isMeleeAttacking, int roomId)
     {
         var senderId = Multiplayer.GetRemoteSenderId();
         if (senderId > 1)
@@ -1407,6 +1412,7 @@ public partial class LanNetworkManager : Node
         var newPosition = new Vector2(x, y);
         state.IsMoving = state.TargetPosition.DistanceTo(newPosition) > Mathf.Max(0.25f, 4f * elapsed);
         state.IsRolling = isRolling;
+        state.IsMeleeAttacking = isMeleeAttacking;
         state.TargetPosition = newPosition;
         state.Face = (FaceDirection)Mathf.Clamp(faceValue, (int)FaceDirection.Left, (int)FaceDirection.Right);
         state.AimRotationDegrees = aimRotationDegrees;
@@ -1428,14 +1434,14 @@ public partial class LanNetworkManager : Node
         {
             Rpc(nameof(ReceivePlayerSnapshot), new Variant[]
             {
-                peerId, x, y, faceValue, aimRotationDegrees, elapsed, isRolling, roomId,
+                peerId, x, y, faceValue, aimRotationDegrees, elapsed, isRolling, isMeleeAttacking, roomId,
             });
         }
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
     public void ReceiveEnemySnapshot(long networkId, string activityId, float x, float y, int faceValue, int hp,
-        int maxHp, int gold, bool isDead, string animation, int frame)
+        int maxHp, int gold, bool isDead, string animation, int frame, long hitSequence)
     {
         if (IsHost)
         {
@@ -1462,7 +1468,7 @@ public partial class LanNetworkManager : Node
 
         role.GlobalPosition = new Vector2(x, y);
         role.Face = (FaceDirection)Mathf.Clamp(faceValue, (int)FaceDirection.Left, (int)FaceDirection.Right);
-        role.ApplyReplicatedEnemyState(hp, maxHp, gold, isDead, animation, frame);
+        role.ApplyReplicatedEnemyState(hp, maxHp, gold, isDead, animation, frame, hitSequence);
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]

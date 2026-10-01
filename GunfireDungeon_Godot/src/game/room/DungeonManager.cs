@@ -1312,6 +1312,9 @@ public partial class DungeonManager : Node2D
         player.PutDown(position, RoomLayerEnum.YSortLayer, false);
         player.Collision.Disabled = false;
         room.AffiliationArea.InsertItem(player);
+        FogMaskHandler.RefreshRoomFog(room);
+        FogMaskHandler.Update();
+        EventManager.EmitEvent(EventEnum.OnPlayerEnterRoom, room);
     }
 
     public void CheckRemoteRoomWave(int roomId)

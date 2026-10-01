@@ -255,6 +255,10 @@ public abstract partial class Role : ActivityObject
     //近战不再使用额外的固定冷却，只在挥刀动画期间阻止重入。
     private bool _meleeAttackPlaying;
 
+    /// <summary>房主用于同步敌人受击表现的递增序号。</summary>
+    public long ReplicatedHitSequence { get; private set; }
+    private long _lastReplicatedHitSequence;
+
     //挥击开始前 MountLookTarget 的值。挥完要恢复成它而不是写死 true ——
     //翻滚期间也能攻击(见 Player.Process), 而翻滚自己是把 MountLookTarget 关掉的。
     private bool _meleeMountLookTargetBefore = true;
@@ -1306,6 +1310,10 @@ public abstract partial class Role : ActivityObject
         }
 
         PrevHitAngle = angle;
+        if (IsAi && !IsNetworkReplica)
+        {
+            ReplicatedHitSequence++;
+        }
         OnHit(target, damageResult, angle);
         if (OnHitEvent != null)
         {
@@ -1391,7 +1399,7 @@ public abstract partial class Role : ActivityObject
         }
     }
 
-    public void ApplyReplicatedEnemyState(int hp, int maxHp, int gold, bool isDead, string animation, int frame)
+    public void ApplyReplicatedEnemyState(int hp, int maxHp, int gold, bool isDead, string animation, int frame, long hitSequence = 0)
     {
         if (IsDestroyed)
         {
@@ -1405,15 +1413,25 @@ public abstract partial class Role : ActivityObject
         EnableCustomBehavior = false;
         IsStatic = true;
         BasisVelocity = Vector2.Zero;
+        if (isDead)
+        {
+            Hp = 0;
+            if (!IsDie)
+            {
+                StartDeathSequence(true);
+            }
+            return;
+        }
+
         if (IsDie)
         {
             return;
         }
 
-        if (isDead)
+        if (hitSequence != _lastReplicatedHitSequence)
         {
-            StartDeathSequence(true);
-            return;
+            _lastReplicatedHitSequence = hitSequence;
+            PlayHitAnimation();
         }
 
         if (!string.IsNullOrEmpty(animation) && AnimatedSprite.SpriteFrames.HasAnimation(animation))
