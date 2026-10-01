@@ -1343,6 +1343,21 @@ public partial class DungeonManager : Node2D
         }
     }
 
+    public IEnumerable<RoomInfo> RoomInfosForNetwork => _dungeonGenerator?.RoomInfos ?? Enumerable.Empty<RoomInfo>();
+
+    public void ApplyNetworkRoomCleared(int roomId)
+    {
+        var room = _dungeonGenerator?.RoomInfos.FirstOrDefault(item => item.Id == roomId);
+        if (room == null)
+        {
+            return;
+        }
+
+        room.ForceNetworkClear();
+        FogMaskHandler.RefreshRoomFog(room);
+        FogMaskHandler.Update();
+    }
+
     /// <summary>
     /// 玩家进入某个房间回调
     /// </summary>

@@ -337,7 +337,7 @@ public abstract partial class AiRole : Role
         var target = LookTarget as Role;
         if (target == null || target.IsDestroyed)
         {
-            target = World?.Player;
+            target = LanNetworkManager.Instance?.FindCoopTarget(AffiliationArea, GlobalPosition) ?? World?.Player;
         }
 
         if (target == null || target.IsDie || !IsEnemy(target))

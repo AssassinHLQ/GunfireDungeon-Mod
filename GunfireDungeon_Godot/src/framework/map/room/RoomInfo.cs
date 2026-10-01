@@ -530,6 +530,16 @@ public class RoomInfo : IDestroy
         }
     }
 
+    public void ForceNetworkClear()
+    {
+        IsSeclusion = false;
+        OpenDoor();
+        if (RoomPreinstall != null && RoomPreinstall.IsRunWave)
+        {
+            RoomPreinstall.OverWave();
+        }
+    }
+
     /// <summary>
     /// 打开所有门
     /// </summary>

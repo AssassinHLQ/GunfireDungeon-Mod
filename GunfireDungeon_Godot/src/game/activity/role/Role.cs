@@ -254,6 +254,18 @@ public abstract partial class Role : ActivityObject
 
     //近战不再使用额外的固定冷却，只在挥刀动画期间阻止重入。
     private bool _meleeAttackPlaying;
+    public long MeleeAttackSequence { get; private set; }
+
+    public void PlayReplicatedMeleeAttack()
+    {
+        if (IsDestroyed || _meleeAttackPlaying)
+        {
+            return;
+        }
+
+        _meleeAttackPlaying = true;
+        PlayAnimation_MeleeAttack(() => _meleeAttackPlaying = false);
+    }
 
     /// <summary>房主用于同步敌人受击表现的递增序号。</summary>
     public long ReplicatedHitSequence { get; private set; }
@@ -2043,6 +2055,7 @@ public abstract partial class Role : ActivityObject
         //伤害取 BareHandMeleeDamageRange, 见 CanMeleeAttack / HandlerCollision。
         if (WeaponPack.ActiveItem == null || CanMeleeAttack)
         {
+            MeleeAttackSequence++;
             _meleeAttackPlaying = true;
             MeleeAttackTimer = 0;
             _meleeMountLookTargetBefore = MountLookTarget;

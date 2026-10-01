@@ -199,7 +199,10 @@ public partial class RoomMapPanel : RoomMap
                         DoTransmission(_hoverRoom);
                         ResetMap();
                         _isMagnifyMap = false;
-                        World.Current.Pause = false;
+                        if (LanNetworkManager.Instance?.IsLanConnected != true)
+                        {
+                            World.Current.Pause = false;
+                        }
                     }
                 }
                 else
@@ -219,7 +222,10 @@ public partial class RoomMapPanel : RoomMap
                             DoTransmission(_hoverRoom);
                             ResetMap();
                             _isMagnifyMap = false;
-                            World.Current.Pause = false;
+                            if (LanNetworkManager.Instance?.IsLanConnected != true)
+                            {
+                                World.Current.Pause = false;
+                            }
                         }
                         _isMousePressed = false;
                         _isMoveDragFlag = false;
@@ -304,7 +310,10 @@ public partial class RoomMapPanel : RoomMap
     /// </summary>
     public void ExpandMap()
     {
-        World.Current.Pause = true;
+        if (LanNetworkManager.Instance?.IsLanConnected != true)
+        {
+            World.Current.Pause = true;
+        }
         _isMagnifyMap = true;
         MagnifyMap();
     }
@@ -316,7 +325,10 @@ public partial class RoomMapPanel : RoomMap
     {
         ResetMap();
         _isMagnifyMap = false;
-        World.Current.Pause = false;
+        if (LanNetworkManager.Instance?.IsLanConnected != true)
+        {
+            World.Current.Pause = false;
+        }
     }
     
     private void OnDrawContainerResized()

@@ -120,7 +120,7 @@ public partial class Boss : AiRole
             return;
         }
         base.Process(delta);
-        LookTarget = World.Player;
+        LookTarget = LanNetworkManager.Instance?.FindCoopTarget(AffiliationArea, GlobalPosition) ?? World.Player;
         //UpdateFace();
 
         var lean = MoveLeanDegrees;

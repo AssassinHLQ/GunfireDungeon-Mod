@@ -46,6 +46,7 @@ public partial class LanNetworkManager : Node
     private readonly Dictionary<long, RemotePlayerState> _remotePlayers = new();
     private double _snapshotTimer;
     private double _worldSnapshotTimer;
+    private int _lastSharedGold;
     private ulong _lastSnapshotSentAt;
     private World _lastLocalWorld;
     private string _lastLocalWorldKind = string.Empty;
@@ -66,6 +67,7 @@ public partial class LanNetworkManager : Node
         public bool IsMoving;
         public bool IsRolling;
         public bool IsMeleeAttacking;
+        public long MeleeAttackSequence;
         public int RoomId = -1;
     }
 
@@ -122,6 +124,7 @@ public partial class LanNetworkManager : Node
                 _worldSnapshotTimer = 0.05;
                 BroadcastEnemySnapshots();
                 BroadcastPlayerVitals();
+                BroadcastSharedGold();
                 CheckRemoteRoomWaves();
             }
         }
@@ -405,22 +408,27 @@ public partial class LanNetworkManager : Node
             return;
         }
 
-        player.AddGold(gold.GoldCount);
         var count = gold.GoldCount;
+        var hostPlayer = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player as Player;
+        var sharedGold = (hostPlayer?.RoleState.Gold ?? 0) + (hostPlayer?.RoleState.CalcGetGold(count) ?? count);
+        if (hostPlayer != null)
+        {
+            hostPlayer.RoleState.Gold = sharedGold;
+        }
         gold.ReclaimNetworkDrop();
-        Rpc(nameof(ReceiveGoldPickupResult), networkId, peerId, count);
+        Rpc(nameof(ReceiveGoldPickupResult), networkId, peerId, count, sharedGold);
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveGoldPickupResult(long networkId, long winnerPeerId, int count)
+    public void ReceiveGoldPickupResult(long networkId, long winnerPeerId, int count, int sharedGold)
     {
         if (!IsHost)
         {
-            ApplyGoldPickupResult(networkId, winnerPeerId, count);
+            ApplyGoldPickupResult(networkId, winnerPeerId, count, sharedGold);
         }
     }
 
-    private void ApplyGoldPickupResult(long networkId, long winnerPeerId, int count)
+    private void ApplyGoldPickupResult(long networkId, long winnerPeerId, int count, int sharedGold)
     {
         var gold = FindActivityObject(networkId) as Gold;
         if (winnerPeerId < 0)
@@ -429,12 +437,37 @@ public partial class LanNetworkManager : Node
             return;
         }
 
-        if (winnerPeerId == LocalPeerId)
+        if (GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is Player player)
         {
-            GameApplication.Instance?.DungeonManager?.CurrWorld?.Player?.AddGold(count);
+            player.RoleState.Gold = sharedGold;
         }
 
         gold?.ReclaimNetworkDrop();
+    }
+
+    private void BroadcastSharedGold()
+    {
+        if (!IsHost || GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is not Player player)
+        {
+            return;
+        }
+
+        if (_lastSharedGold == player.RoleState.Gold)
+        {
+            return;
+        }
+
+        _lastSharedGold = player.RoleState.Gold;
+        Rpc(nameof(ReceiveSharedGold), _lastSharedGold);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveSharedGold(int gold)
+    {
+        if (!IsHost && GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is Player player)
+        {
+            player.RoleState.Gold = gold;
+        }
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -842,6 +875,7 @@ public partial class LanNetworkManager : Node
             elapsed,
             player.StateController?.CurrState == PlayerStateEnum.Roll,
             player.MeleeAttackTimer > 0 || player.IsAttack && player.AnimatedSprite?.Animation == AnimatorNames.Attack,
+            player.MeleeAttackSequence,
             player.AffiliationArea?.RoomInfo?.Id ?? -1,
         };
         Rpc(nameof(ReceivePlayerSnapshot), args);
@@ -879,6 +913,25 @@ public partial class LanNetworkManager : Node
                 role.ReplicatedHitSequence,
             });
         }
+
+        foreach (var room in GameApplication.Instance.DungeonManager.RoomInfosForNetwork)
+        {
+            if (room != null && room.HasFirstEntered && !room.IsSeclusion)
+            {
+                Rpc(nameof(ReceiveRoomCleared), room.Id);
+            }
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveRoomCleared(int roomId)
+    {
+        if (IsHost)
+        {
+            return;
+        }
+
+        GameApplication.Instance?.DungeonManager?.ApplyNetworkRoomCleared(roomId);
     }
 
     private void BroadcastPlayerVitals()
@@ -966,6 +1019,41 @@ public partial class LanNetworkManager : Node
         }
 
         return false;
+    }
+
+    public Player FindCoopTarget(AffiliationArea area, Vector2 position)
+    {
+        if (!IsHost || area == null)
+        {
+            return null;
+        }
+
+        Player result = null;
+        var bestDistance = float.MaxValue;
+        if (GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is Player host &&
+            host.AffiliationArea == area && !host.IsDie)
+        {
+            result = host;
+            bestDistance = position.DistanceSquaredTo(host.GlobalPosition);
+        }
+
+        foreach (var state in _remotePlayers.Values)
+        {
+            if (state.Player == null || !GodotObject.IsInstanceValid(state.Player) ||
+                state.Player.IsDie || state.Player.AffiliationArea != area)
+            {
+                continue;
+            }
+
+            var distance = position.DistanceSquaredTo(state.Player.GlobalPosition);
+            if (distance < bestDistance)
+            {
+                result = state.Player;
+                bestDistance = distance;
+            }
+        }
+
+        return result;
     }
 
     public void RequestEnemyDamageFromBullet(IHurt hurt, List<AttackStats> damages,
@@ -1390,7 +1478,7 @@ public partial class LanNetworkManager : Node
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
     public void ReceivePlayerSnapshot(long peerId, float x, float y, int faceValue, float aimRotationDegrees, float elapsed,
-        bool isRolling, bool isMeleeAttacking, int roomId)
+        bool isRolling, bool isMeleeAttacking, long meleeAttackSequence, int roomId)
     {
         var senderId = Multiplayer.GetRemoteSenderId();
         if (senderId > 1)
@@ -1413,6 +1501,11 @@ public partial class LanNetworkManager : Node
         state.IsMoving = state.TargetPosition.DistanceTo(newPosition) > Mathf.Max(0.25f, 4f * elapsed);
         state.IsRolling = isRolling;
         state.IsMeleeAttacking = isMeleeAttacking;
+        if (state.MeleeAttackSequence != meleeAttackSequence)
+        {
+            state.MeleeAttackSequence = meleeAttackSequence;
+            state.Player?.PlayReplicatedMeleeAttack();
+        }
         state.TargetPosition = newPosition;
         state.Face = (FaceDirection)Mathf.Clamp(faceValue, (int)FaceDirection.Left, (int)FaceDirection.Right);
         state.AimRotationDegrees = aimRotationDegrees;
@@ -1434,7 +1527,7 @@ public partial class LanNetworkManager : Node
         {
             Rpc(nameof(ReceivePlayerSnapshot), new Variant[]
             {
-                peerId, x, y, faceValue, aimRotationDegrees, elapsed, isRolling, isMeleeAttacking, roomId,
+                peerId, x, y, faceValue, aimRotationDegrees, elapsed, isRolling, isMeleeAttacking, meleeAttackSequence, roomId,
             });
         }
     }
