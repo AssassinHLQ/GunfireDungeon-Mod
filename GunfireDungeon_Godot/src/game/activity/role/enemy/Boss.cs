@@ -75,6 +75,10 @@ public partial class Boss : AiRole
     /// </summary>
     protected override void OnDie()
     {
+        if (!IsNetworkReplica)
+        {
+            Gold.CreateGold(Position, RoleState.Gold);
+        }
         DropRewardItem();
         base.OnDie();
     }

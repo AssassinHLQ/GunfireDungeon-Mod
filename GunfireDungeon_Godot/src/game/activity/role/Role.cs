@@ -1467,6 +1467,15 @@ public abstract partial class Role : ActivityObject
 
         IsDie = true;
         StopInvincibleFlashing();
+        if (HurtCollision != null)
+        {
+            HurtCollision.Disabled = true;
+        }
+        if (MeleeAttackCollision != null)
+        {
+            MeleeAttackCollision.Disabled = true;
+        }
+        _meleeActiveQuery = false;
 
         var stateController = GetComponent<IStateController>();
         if (stateController != null)
