@@ -168,6 +168,8 @@ public partial class LanNetworkManager : Node
         _pendingRemoteState = null;
         _lastSnapshotSentAt = 0;
         _worldSnapshotTimer = 0;
+        _nextDamageSequence = 1;
+        _lastAppliedDamageSequence = 0;
         SetStatus($"房主已启动，端口 {port}。本机 IP: {GetLanAddressText()}");
         return true;
     }
@@ -198,6 +200,8 @@ public partial class LanNetworkManager : Node
         _pendingRemoteState = null;
         _lastSnapshotSentAt = 0;
         _worldSnapshotTimer = 0;
+        _nextDamageSequence = 1;
+        _lastAppliedDamageSequence = 0;
         SetStatus($"正在连接 {address}:{port}...");
         return true;
     }
@@ -366,7 +370,17 @@ public partial class LanNetworkManager : Node
 
     public void RequestGoldPickup(Gold gold)
     {
-        if (!IsLanConnected || gold == null || gold.IsDestroyed || gold.NetworkId == 0)
+        if (!IsLanConnected || gold == null || gold.IsDestroyed)
+        {
+            return;
+        }
+
+        if (gold.NetworkId == 0 && IsHost)
+        {
+            gold.NetworkId = AllocateDynamicNetworkId();
+        }
+
+        if (gold.NetworkId == 0)
         {
             return;
         }

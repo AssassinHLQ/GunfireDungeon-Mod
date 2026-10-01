@@ -1325,6 +1325,13 @@ public partial class DungeonManager : Node2D
 
         FogMaskHandler.RefreshRoomFog(room);
         FogMaskHandler.Update();
+        foreach (var door in room.Doors)
+        {
+            FogMaskHandler.RefreshAisleFog(door);
+            FogMaskHandler.Update();
+            FogMaskHandler.RefreshAisleFog(door.ConnectDoor);
+            FogMaskHandler.Update();
+        }
         EventManager.EmitEvent(EventEnum.OnPlayerEnterRoom, room);
     }
 

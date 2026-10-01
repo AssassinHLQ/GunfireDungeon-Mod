@@ -45,7 +45,7 @@ public partial class Gold : ActivityObject, IPoolItem
         if (network != null && network.IsLanConnected)
         {
             var player = World.Player;
-            if (player != null && GlobalPosition.DistanceSquaredTo(player.GlobalPosition) <= 18f * 18f &&
+            if (player != null && NetworkId != 0 && GlobalPosition.DistanceSquaredTo(player.GlobalPosition) <= 36f * 36f &&
                 !_networkClaimPending)
             {
                 _networkClaimPending = true;
