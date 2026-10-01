@@ -9,6 +9,9 @@ public class ActivityMark
     /// </summary>
     public string Id { get; set; }
 
+    /// <summary>由房间、波次和标记序号生成的联机稳定 ID。</summary>
+    public long NetworkId { get; set; }
+
     /// <summary>
     /// 刷新位置, 单位: 像素
     /// </summary>

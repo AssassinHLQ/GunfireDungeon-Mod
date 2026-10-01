@@ -84,6 +84,7 @@ public partial class AffiliationArea : Area2D, IDestroy
         if (activityObject.AffiliationArea != null)
         {
             activityObject.AffiliationArea._includeItems.Remove(activityObject);
+            activityObject.AffiliationArea._enterItems.Remove(activityObject);
         }
         activityObject.AffiliationArea = this;
         if (_includeItems.Add(activityObject))
@@ -93,6 +94,21 @@ public partial class AffiliationArea : Area2D, IDestroy
             {
                 CallDeferred(nameof(OnPlayerInsertRoom));
             }
+        }
+    }
+
+    public void InsertRemotePlayer(ActivityObject activityObject)
+    {
+        InsertItem(activityObject);
+        _enterItems.Add(activityObject);
+    }
+
+    public void RemoveRemotePlayer(ActivityObject activityObject)
+    {
+        _enterItems.Remove(activityObject);
+        if (activityObject.AffiliationArea == this)
+        {
+            RemoveItem(activityObject);
         }
     }
 
@@ -107,6 +123,7 @@ public partial class AffiliationArea : Area2D, IDestroy
         }
         activityObject.AffiliationArea = null;
         _includeItems.Remove(activityObject);
+        _enterItems.Remove(activityObject);
     }
 
     /// <summary>

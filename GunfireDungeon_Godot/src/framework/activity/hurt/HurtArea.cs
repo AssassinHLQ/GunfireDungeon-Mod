@@ -34,6 +34,18 @@ public partial class HurtArea : Area2D, IHurt
 
     public void Hurt(ActivityObject target, List<AttackStats> damages, List<AbnormalData> abnormals, float angle)
     {
+        var network = LanNetworkManager.Instance;
+        if (network != null && network.IsLanConnected && !network.IsHost &&
+            Master.NetworkId != 0 && Master.IsAi)
+        {
+            if (target is Player)
+            {
+                network.RequestEnemyDamage(Master.NetworkId, damages, abnormals, angle);
+            }
+
+            return;
+        }
+
         if (damages != null)
         {
             foreach (var item in damages)

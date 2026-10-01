@@ -172,8 +172,32 @@ public class RoomPreinstall : IDestroy
             }
         }
 
+        AssignNetworkIds();
+
         //判断是否有敌人
         CheckHasEnemy();
+    }
+
+    private void AssignNetworkIds()
+    {
+        var floor = Mathf.Clamp(GameApplication.Instance?.DungeonManager?.CurrentFloor ?? 1, 1, 0xFFFF);
+        for (var waveIndex = 0; waveIndex < WaveList.Count; waveIndex++)
+        {
+            var wave = WaveList[waveIndex];
+            for (var markIndex = 0; markIndex < wave.Count; markIndex++)
+            {
+                var mark = wave[markIndex];
+                if (mark.ActivityType != ActivityType.Enemy && mark.ActivityType != ActivityType.Boss)
+                {
+                    continue;
+                }
+
+                mark.NetworkId = ((long)floor << 40) |
+                                 ((long)(RoomInfo.Id & 0xFFFF) << 24) |
+                                 ((long)(waveIndex & 0xFFF) << 12) |
+                                 (uint)((markIndex + 1) & 0xFFF);
+            }
+        }
     }
 
     private static bool HandlerNormalMark(World world, MarkInfo markInfo, ActivityMark mark)
@@ -480,6 +504,12 @@ public class RoomPreinstall : IDestroy
                 if (activityMark.MarkType == SpecialMarkType.Normal)
                 {
                     var activityObject = CreateItem(activityMark);
+                    if (activityObject == null)
+                    {
+                        i++;
+                        continue;
+                    }
+
                     //初始化属性
                     InitAttr(activityObject, activityMark);
                     //播放出生动画
@@ -563,6 +593,19 @@ public class RoomPreinstall : IDestroy
         {
             return null;
         }
+
+        var network = LanNetworkManager.Instance;
+        if (network != null && network.IsLanConnected && !network.IsHost && activityMark.NetworkId != 0)
+        {
+            foreach (var role in World.Current.Role_InstanceList)
+            {
+                if (role.NetworkId == activityMark.NetworkId && !role.IsDestroyed)
+                {
+                    return null;
+                }
+            }
+        }
+
         var activityObject = ActivityObject.Create(activityMark.Id);
         if (activityObject == null)
         {
@@ -572,6 +615,7 @@ public class RoomPreinstall : IDestroy
         activityObject.Position = activityMark.Position;
         activityObject.VerticalSpeed = activityMark.VerticalSpeed;
         activityObject.Altitude = activityMark.Altitude;
+        activityObject.NetworkId = activityMark.NetworkId;
         return activityObject;
     }
 

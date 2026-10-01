@@ -22,6 +22,9 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// 实例唯一 Id
     /// </summary>
     public long Id { get; set; }
+
+    /// <summary>跨联机实例稳定的活动物体 ID；普通本地物体为 0。</summary>
+    public long NetworkId { get; set; }
     
     /// <summary>
     /// 当前物体对应的配置数据, 如果不是通过 ActivityObject.Create() 函数创建出来的对象那么 ItemConfig 为 null

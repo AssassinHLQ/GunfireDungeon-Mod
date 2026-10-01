@@ -1256,6 +1256,56 @@ public partial class DungeonManager : Node2D
         }
     }
 
+    public void OnRemotePlayerEnterRoom(int roomId, Player remotePlayer)
+    {
+        if (_dungeonGenerator == null || remotePlayer == null)
+        {
+            return;
+        }
+
+        var room = _dungeonGenerator.RoomInfos.FirstOrDefault(item => item.Id == roomId);
+        if (room != null)
+        {
+            room.AffiliationArea.InsertRemotePlayer(remotePlayer);
+            if (!room.HasFirstEntered)
+            {
+                OnPlayerFirstEnterRoom(room);
+            }
+        }
+    }
+
+    public void OnRemotePlayerLeaveRoom(Player remotePlayer)
+    {
+        var area = remotePlayer?.AffiliationArea;
+        area?.RemoveRemotePlayer(remotePlayer);
+    }
+
+    public void CheckRemoteRoomWave(int roomId)
+    {
+        var room = _dungeonGenerator?.RoomInfos.FirstOrDefault(item => item.Id == roomId);
+        if (room?.RoomPreinstall == null || !room.RoomPreinstall.IsRunWave ||
+            !room.RoomPreinstall.IsCurrWaveOver())
+        {
+            return;
+        }
+
+        var hasEnemy = room.AffiliationArea.ExistEnterItem(
+            activityObject => activityObject is Role role && role.IsEnemyWithPlayer());
+        if (hasEnemy)
+        {
+            return;
+        }
+
+        var isFinalWave = room.RoomPreinstall.IsLastWave;
+        room.OnClearRoom();
+        if (isFinalWave && room.RoomPreinstall.HasEnemy())
+        {
+            GameNotificationOverlay.ShowRoomCleared(
+                CurrentFloor,
+                room.RoomType == DungeonRoomType.Outlet);
+        }
+    }
+
     /// <summary>
     /// 玩家进入某个房间回调
     /// </summary>

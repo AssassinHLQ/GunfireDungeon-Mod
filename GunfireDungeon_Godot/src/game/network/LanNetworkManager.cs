@@ -32,6 +32,7 @@ public partial class LanNetworkManager : Node
     private ENetMultiplayerPeer _peer;
     private readonly Dictionary<long, RemotePlayerState> _remotePlayers = new();
     private double _snapshotTimer;
+    private double _worldSnapshotTimer;
     private ulong _lastSnapshotSentAt;
     private World _lastLocalWorld;
     private string _lastLocalWorldKind = string.Empty;
@@ -39,6 +40,7 @@ public partial class LanNetworkManager : Node
     private string _lastRequestedStateKey = string.Empty;
     private bool _applyingRemoteState;
     private Variant[] _pendingRemoteState;
+    private long _nextDynamicNetworkId = 1;
 
     private sealed class RemotePlayerState
     {
@@ -47,6 +49,8 @@ public partial class LanNetworkManager : Node
         public FaceDirection Face;
         public Player Player;
         public bool IsMoving;
+        public bool IsRolling;
+        public int RoomId = -1;
     }
 
     public override void _Ready()
@@ -92,6 +96,15 @@ public partial class LanNetworkManager : Node
         {
             // 不只监听 world 类型, 还要检测楼层/种子变化。
             BroadcastSessionState();
+
+            _worldSnapshotTimer -= delta;
+            if (_worldSnapshotTimer <= 0)
+            {
+                _worldSnapshotTimer = 0.05;
+                BroadcastEnemySnapshots();
+                BroadcastPlayerVitals();
+                CheckRemoteRoomWaves();
+            }
         }
         UpdateRemotePlayers((float)delta);
 
@@ -127,6 +140,7 @@ public partial class LanNetworkManager : Node
         _lastRequestedStateKey = string.Empty;
         _pendingRemoteState = null;
         _lastSnapshotSentAt = 0;
+        _worldSnapshotTimer = 0;
         SetStatus($"房主已启动，端口 {port}。本机 IP: {GetLanAddressText()}");
         return true;
     }
@@ -156,6 +170,7 @@ public partial class LanNetworkManager : Node
         _lastRequestedStateKey = string.Empty;
         _pendingRemoteState = null;
         _lastSnapshotSentAt = 0;
+        _worldSnapshotTimer = 0;
         SetStatus($"正在连接 {address}:{port}...");
         return true;
     }
@@ -170,6 +185,7 @@ public partial class LanNetworkManager : Node
         _pendingRemoteState = null;
         _applyingRemoteState = false;
         _lastSnapshotSentAt = 0;
+        _worldSnapshotTimer = 0;
 
         if (Multiplayer.MultiplayerPeer != null)
         {
@@ -218,6 +234,11 @@ public partial class LanNetworkManager : Node
     public int MakeDungeonSeed()
     {
         return unchecked((int)GD.Randi());
+    }
+
+    public long AllocateDynamicNetworkId()
+    {
+        return 0x7000000000000000L | _nextDynamicNetworkId++;
     }
 
     private static string GetLanAddressText()
@@ -350,7 +371,7 @@ public partial class LanNetworkManager : Node
 
     private void SendLocalPlayerSnapshot()
     {
-        var player = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player;
+        var player = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player as Player;
         if (player == null || player.IsDestroyed || string.IsNullOrEmpty(_lastLocalWorldKind))
         {
             return;
@@ -366,8 +387,117 @@ public partial class LanNetworkManager : Node
             player.GlobalPosition.Y,
             (int)player.Face,
             elapsed,
+            player.StateController?.CurrState == PlayerStateEnum.Roll,
+            player.AffiliationArea?.RoomInfo?.Id ?? -1,
         };
         Rpc(nameof(ReceivePlayerSnapshot), args);
+    }
+
+    private void BroadcastEnemySnapshots()
+    {
+        var world = GameApplication.Instance?.DungeonManager?.CurrWorld;
+        if (!IsHost || world == null)
+        {
+            return;
+        }
+
+        foreach (var role in world.Role_InstanceList)
+        {
+            if (role == null || role.IsDestroyed || !role.IsAi || role.NetworkId == 0 ||
+                role.AnimatedSprite == null)
+            {
+                continue;
+            }
+
+            Rpc(nameof(ReceiveEnemySnapshot), new Variant[]
+            {
+                role.NetworkId,
+                role.ActivityBase?.Id ?? string.Empty,
+                role.GlobalPosition.X,
+                role.GlobalPosition.Y,
+                (int)role.Face,
+                role.Hp,
+                role.MaxHp,
+                role.RoleState.Gold,
+                role.IsDie,
+                role.AnimatedSprite.Animation.ToString(),
+                role.AnimatedSprite.Frame,
+            });
+        }
+    }
+
+    private void BroadcastPlayerVitals()
+    {
+        var world = GameApplication.Instance?.DungeonManager?.CurrWorld;
+        if (!IsHost || world?.Player is not Player hostPlayer)
+        {
+            return;
+        }
+
+        BroadcastVitalsForPeer(1, hostPlayer);
+        foreach (var state in _remotePlayers.Values)
+        {
+            if (state.Player != null && GodotObject.IsInstanceValid(state.Player))
+            {
+                BroadcastVitalsForPeer(state.PeerId, state.Player);
+            }
+        }
+    }
+
+    private void CheckRemoteRoomWaves()
+    {
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        if (!IsHost || dungeonManager == null)
+        {
+            return;
+        }
+
+        foreach (var state in _remotePlayers.Values)
+        {
+            if (state.RoomId >= 0)
+            {
+                dungeonManager.CheckRemoteRoomWave(state.RoomId);
+            }
+        }
+    }
+
+    private void BroadcastVitalsForPeer(long peerId, Player player)
+    {
+        Rpc(nameof(ReceivePlayerVitals), peerId, player.Hp, player.Shield, player.Armor);
+    }
+
+    public void RequestEnemyDamage(long networkId, List<AttackStats> damages,
+        List<AbnormalData> abnormals, float angle)
+    {
+        if (!IsLanConnected || IsHost || networkId == 0)
+        {
+            return;
+        }
+
+        var damagePacket = new Godot.Collections.Array<Variant>();
+        if (damages != null)
+        {
+            foreach (var damage in damages)
+            {
+                damagePacket.Add(damage.BaseDamage);
+                damagePacket.Add((int)damage.Type);
+                damagePacket.Add(damage.CritRate);
+                damagePacket.Add(damage.CritBonus);
+                damagePacket.Add(damage.CritArmorPenetration);
+            }
+        }
+
+        var abnormalPacket = new Godot.Collections.Array<Variant>();
+        if (abnormals != null)
+        {
+            foreach (var abnormal in abnormals)
+            {
+                abnormalPacket.Add((int)abnormal.Type);
+                abnormalPacket.Add(abnormal.Value);
+            }
+        }
+
+        RpcId(1, nameof(ReceiveEnemyDamageRequest), networkId, damagePacket, abnormalPacket, angle);
     }
 
     private void UpdateRemotePlayers(float delta)
@@ -386,7 +516,13 @@ public partial class LanNetworkManager : Node
 
             if (state.Player.AnimatedSprite != null)
             {
-                state.Player.AnimatedSprite.Play(state.IsMoving ? AnimatorNames.Run : AnimatorNames.Idle);
+                var animation = state.IsRolling
+                    ? AnimatorNames.Roll
+                    : state.IsMoving ? AnimatorNames.Run : AnimatorNames.Idle;
+                if (state.Player.AnimatedSprite.Animation != animation)
+                {
+                    state.Player.AnimatedSprite.Play(animation);
+                }
             }
         }
     }
@@ -588,7 +724,8 @@ public partial class LanNetworkManager : Node
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
-    public void ReceivePlayerSnapshot(long peerId, float x, float y, int faceValue, float elapsed)
+    public void ReceivePlayerSnapshot(long peerId, float x, float y, int faceValue, float elapsed,
+        bool isRolling, int roomId)
     {
         var senderId = Multiplayer.GetRemoteSenderId();
         if (senderId > 1)
@@ -609,15 +746,118 @@ public partial class LanNetworkManager : Node
 
         var newPosition = new Vector2(x, y);
         state.IsMoving = state.TargetPosition.DistanceTo(newPosition) > Mathf.Max(0.25f, 4f * elapsed);
+        state.IsRolling = isRolling;
         state.TargetPosition = newPosition;
         state.Face = (FaceDirection)Mathf.Clamp(faceValue, (int)FaceDirection.Left, (int)FaceDirection.Right);
         EnsureRemotePlayer(state);
 
+        if (IsHost && senderId > 1 && roomId >= 0 && roomId != state.RoomId)
+        {
+            GameApplication.Instance?.DungeonManager?.OnRemotePlayerEnterRoom(roomId, state.Player);
+        }
+        else if (IsHost && senderId > 1 && roomId < 0 && state.RoomId >= 0)
+        {
+            GameApplication.Instance?.DungeonManager?.OnRemotePlayerLeaveRoom(state.Player);
+        }
+        state.RoomId = roomId;
+
         // ENet 的快照先发到房主, 再由房主转发给其他客户端。
         if (IsHost && senderId > 1)
         {
-            Rpc(nameof(ReceivePlayerSnapshot), new Variant[] { peerId, x, y, faceValue, elapsed });
+            Rpc(nameof(ReceivePlayerSnapshot), new Variant[]
+            {
+                peerId, x, y, faceValue, elapsed, isRolling, roomId,
+            });
         }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
+    public void ReceiveEnemySnapshot(long networkId, string activityId, float x, float y, int faceValue, int hp,
+        int maxHp, int gold, bool isDead, string animation, int frame)
+    {
+        if (IsHost)
+        {
+            return;
+        }
+
+        var world = GameApplication.Instance?.DungeonManager?.CurrWorld;
+        var role = world?.Role_InstanceList.Find(item => item.NetworkId == networkId);
+        if ((role == null || role.IsDestroyed) && !string.IsNullOrEmpty(activityId))
+        {
+            role = ActivityObject.Create<Role>(activityId);
+            if (role != null)
+            {
+                role.NetworkId = networkId;
+                role.EnableCustomBehavior = false;
+                role.PutDown(new Vector2(x, y), RoomLayerEnum.YSortLayer, false);
+            }
+        }
+
+        if (role == null || role.IsDestroyed)
+        {
+            return;
+        }
+
+        role.GlobalPosition = new Vector2(x, y);
+        role.Face = (FaceDirection)Mathf.Clamp(faceValue, (int)FaceDirection.Left, (int)FaceDirection.Right);
+        role.ApplyReplicatedEnemyState(hp, maxHp, gold, isDead, animation, frame);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveEnemyDamageRequest(long networkId, Godot.Collections.Array<Variant> damagePacket,
+        Godot.Collections.Array<Variant> abnormalPacket, float angle)
+    {
+        if (!IsHost || damagePacket == null || abnormalPacket == null)
+        {
+            return;
+        }
+
+        var senderId = Multiplayer.GetRemoteSenderId();
+        if (senderId <= 1 || !_remotePlayers.TryGetValue(senderId, out var playerState) ||
+            playerState.Player == null || !GodotObject.IsInstanceValid(playerState.Player))
+        {
+            return;
+        }
+
+        var world = GameApplication.Instance?.DungeonManager?.CurrWorld;
+        var target = world?.Role_InstanceList.Find(item => item.NetworkId == networkId);
+        if (target == null || target.IsDestroyed || !target.IsAi || target.IsDie || target.HurtArea == null ||
+            !target.HurtArea.CanHurt(playerState.Player.Camp))
+        {
+            return;
+        }
+
+        var damages = new List<AttackStats>();
+        for (var i = 0; i + 4 < damagePacket.Count; i += 5)
+        {
+            damages.Add(new AttackStats(
+                (int)damagePacket[i],
+                (DamageType)(int)damagePacket[i + 1],
+                (float)damagePacket[i + 2],
+                (float)damagePacket[i + 3],
+                (float)damagePacket[i + 4]));
+        }
+
+        var abnormals = new List<AbnormalData>();
+        for (var i = 0; i + 1 < abnormalPacket.Count; i += 2)
+        {
+            abnormals.Add(new AbnormalData(
+                (AbnormalStateType)(int)abnormalPacket[i],
+                (int)abnormalPacket[i + 1]));
+        }
+
+        target.HurtArea.Hurt(playerState.Player, damages, abnormals, angle);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
+    public void ReceivePlayerVitals(long peerId, int hp, int shield, int armor)
+    {
+        if (IsHost || peerId != LocalPeerId)
+        {
+            return;
+        }
+
+        GameApplication.Instance?.DungeonManager?.CurrWorld?.Player?.ApplyNetworkVitals(hp, shield, armor);
     }
 
     private void ApplyRemoteHall()

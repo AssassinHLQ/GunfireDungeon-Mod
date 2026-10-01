@@ -764,6 +764,12 @@ public abstract partial class Role : ActivityObject
         {
             World.Role_InstanceList.Add(this);
         }
+
+        var network = LanNetworkManager.Instance;
+        if (IsAi && NetworkId == 0 && network != null && network.IsHost && network.IsLanConnected)
+        {
+            NetworkId = network.AllocateDynamicNetworkId();
+        }
     }
 
     public override void _ExitTree()
@@ -1331,39 +1337,118 @@ public abstract partial class Role : ActivityObject
                 break;
         }
         
-        //死亡判定
         if (isDie)
         {
-            //死亡
-            if (!IsDie)
+            StartDeathSequence();
+        }
+    }
+
+    public void ApplyNetworkVitals(int hp, int shield, int armor)
+    {
+        Hp = hp;
+        Shield = shield;
+        Armor = armor;
+
+        var isDead = RoleState.RoleBase.LiftType switch
+        {
+            LifeTypeEnum.Hp => Hp <= 0,
+            LifeTypeEnum.Shield => Shield <= 0,
+            LifeTypeEnum.Armor => Armor <= 0,
+            _ => false,
+        };
+        if (isDead)
+        {
+            StartDeathSequence();
+        }
+    }
+
+    public void ApplyReplicatedEnemyState(int hp, int maxHp, int gold, bool isDead, string animation, int frame)
+    {
+        if (IsDestroyed)
+        {
+            return;
+        }
+
+        MaxHp = maxHp;
+        Hp = hp;
+        RoleState.Gold = gold;
+        EnableCustomBehavior = false;
+        IsStatic = true;
+        BasisVelocity = Vector2.Zero;
+        if (IsDie)
+        {
+            return;
+        }
+
+        if (isDead)
+        {
+            StartDeathSequence(true);
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(animation) && AnimatedSprite.SpriteFrames.HasAnimation(animation))
+        {
+            if (AnimatedSprite.Animation != animation)
             {
-                IsDie = true;
+                AnimatedSprite.Play(animation);
+            }
 
-                //死亡动画播放期间停止闪烁, 否则受击无敌残留的泛红会和死亡动画抢颜色
-                StopInvincibleFlashing();
-                
-                //禁用状态机控制器
-                var stateController = GetComponent<IStateController>();
-                if (stateController != null)
-                {
-                    stateController.Enable = false;
-                }
+            var frameCount = AnimatedSprite.SpriteFrames.GetFrameCount(animation);
+            AnimatedSprite.Frame = Mathf.Clamp(frame, 0, Mathf.Max(0, frameCount - 1));
+        }
+    }
 
-                //播放死亡动画
-                if (AnimationPlayer.HasAnimation(AnimatorNames.Die))
-                {
-                    StartCoroutine(DoDieWithAnimationPlayer());
-                }
-                else if (AnimatedSprite.SpriteFrames.HasAnimation(AnimatorNames.Die))
-                {
-                    StartCoroutine(DoDieWithAnimatedSprite());
-                }
-                else
-                {
-                    DoDieHandler();
-                }
+    private void StartDeathSequence(bool replicated = false)
+    {
+        if (IsDie)
+        {
+            return;
+        }
+
+        IsDie = true;
+        StopInvincibleFlashing();
+
+        var stateController = GetComponent<IStateController>();
+        if (stateController != null)
+        {
+            stateController.Enable = false;
+        }
+
+        if (replicated)
+        {
+            StartCoroutine(DoReplicatedDeathVisual());
+        }
+        else if (AnimationPlayer.HasAnimation(AnimatorNames.Die))
+        {
+            StartCoroutine(DoDieWithAnimationPlayer());
+        }
+        else if (AnimatedSprite.SpriteFrames.HasAnimation(AnimatorNames.Die))
+        {
+            StartCoroutine(DoDieWithAnimatedSprite());
+        }
+        else
+        {
+            DoDieHandler();
+        }
+    }
+
+    private IEnumerator DoReplicatedDeathVisual()
+    {
+        if (AnimationPlayer.HasAnimation(AnimatorNames.Die))
+        {
+            AnimationPlayer.Play(AnimatorNames.Die);
+            yield return ToSignal(AnimationPlayer, AnimationMixer.SignalName.AnimationFinished);
+        }
+        else if (AnimatedSprite.SpriteFrames.HasAnimation(AnimatorNames.Die))
+        {
+            AnimatedSprite.Play(AnimatorNames.Die);
+            if (AnimatedSprite.SpriteFrames.GetFrameCount(AnimatorNames.Die) > 1)
+            {
+                yield return ToSignal(AnimatedSprite, AnimatedSprite2D.SignalName.AnimationFinished);
             }
         }
+
+        DoDieHandler();
     }
 
     /// <summary>

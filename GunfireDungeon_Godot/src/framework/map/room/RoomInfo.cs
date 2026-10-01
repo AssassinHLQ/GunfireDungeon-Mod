@@ -127,6 +127,8 @@ public class RoomInfo : IDestroy
     /// </summary>
     public bool IsSeclusion { get; private set; } = false;
 
+    public bool HasFirstEntered { get; private set; }
+
     /// <summary>
     /// 用于标记攻击目标位置
     /// </summary>
@@ -468,7 +470,13 @@ public class RoomInfo : IDestroy
     /// </summary>
     public void OnFirstEnter()
     {
-        if (RoomPreinstall == null || RoomPreinstall.IsRunWave)
+        if (RoomPreinstall == null || HasFirstEntered)
+        {
+            return;
+        }
+
+        HasFirstEntered = true;
+        if (RoomPreinstall.IsRunWave)
         {
             return;
         }
