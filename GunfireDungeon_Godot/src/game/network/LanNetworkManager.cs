@@ -675,7 +675,7 @@ public partial class LanNetworkManager : Node
         }
     }
 
-    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestPlayerBulletVisual(string bulletId, float x, float y, float rotation,
         float altitude, float flySpeed, float verticalSpeed, float maxDistance, float lifeTime)
     {
@@ -697,7 +697,7 @@ public partial class LanNetworkManager : Node
             altitude, flySpeed, verticalSpeed, maxDistance, lifeTime);
     }
 
-    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void ReceivePlayerBulletVisual(long sourcePeerId, string bulletId, float x, float y,
         float rotation, float altitude, float flySpeed, float verticalSpeed, float maxDistance, float lifeTime)
     {
