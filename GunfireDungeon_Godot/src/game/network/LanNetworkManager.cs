@@ -128,6 +128,7 @@ public partial class LanNetworkManager : Node
                 BroadcastEnemySnapshots();
                 BroadcastPlayerVitals();
                 BroadcastSharedGold();
+                BroadcastRoomStates();
                 CheckRemoteRoomWaves();
             }
         }
@@ -960,6 +961,29 @@ public partial class LanNetworkManager : Node
             });
         }
 
+    }
+
+    private void BroadcastRoomStates()
+    {
+        if (!IsHost || !IsLanConnected)
+        {
+            return;
+        }
+
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        if (dungeonManager == null)
+        {
+            return;
+        }
+
+        foreach (var room in dungeonManager.RoomInfosForNetwork)
+        {
+            if (room != null && room.HasFirstEntered && !room.IsSeclusion &&
+                room.RoomPreinstall?.HasEnemy() == true)
+            {
+                Rpc(nameof(ReceiveRoomCleared), room.Id);
+            }
+        }
     }
 
     public void BroadcastRoomCleared(int roomId)

@@ -107,6 +107,11 @@ public partial class Gold : ActivityObject, IPoolItem
                 o.InitNetworkDrop(position);
                 network.BroadcastNetworkGoldSpawn(o);
             }
+            else if (network != null && network.IsLanConnected)
+            {
+                // 联机访客只显示房主广播的金币，不自行抛掷或生成 Boss 掉落。
+                o.ReclaimNetworkDrop();
+            }
             else
             {
                 o.Throw(0,
