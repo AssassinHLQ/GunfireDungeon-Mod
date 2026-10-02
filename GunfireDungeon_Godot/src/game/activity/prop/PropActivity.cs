@@ -49,5 +49,13 @@ public abstract partial class PropActivity : ActivityObject
 
         //继承role的移动速度
         InheritVelocity(master);
+
+        var network = LanNetworkManager.Instance;
+        if (network != null && network.IsLanConnected)
+        {
+            // 拾起后的道具可能仍带房间预设 ID；丢弃后改用动态网络 ID。
+            NetworkId = 0;
+            network.RequestNetworkPropDrop(this);
+        }
     }
 }

@@ -1466,6 +1466,11 @@ public abstract partial class Role : ActivityObject
         }
 
         IsDie = true;
+        if (!replicated && !IsNetworkReplica && IsAi)
+        {
+            LanNetworkManager.Instance?.BroadcastEnemyDeath(this);
+        }
+
         StopInvincibleFlashing();
         if (HurtCollision != null)
         {

@@ -532,9 +532,41 @@ public class RoomInfo : IDestroy
 
     public void ForceNetworkClear()
     {
-        IsSeclusion = false;
-        OpenDoor();
+        ApplyNetworkRoomState(true, false);
         if (RoomPreinstall != null && RoomPreinstall.IsRunWave)
+        {
+            RoomPreinstall.OverWave();
+        }
+    }
+
+    public void ApplyNetworkRoomState(bool hasFirstEntered, bool isSeclusion)
+    {
+        HasFirstEntered = hasFirstEntered;
+        IsSeclusion = hasFirstEntered && isSeclusion;
+
+        var doorsMatch = _openDoorFlag == !IsSeclusion;
+        foreach (var doorInfo in Doors)
+        {
+            if (doorInfo.Door.IsClose != IsSeclusion)
+            {
+                doorsMatch = false;
+                break;
+            }
+        }
+
+        if (!doorsMatch)
+        {
+            if (IsSeclusion)
+            {
+                CloseDoor();
+            }
+            else
+            {
+                OpenDoor();
+            }
+        }
+
+        if (hasFirstEntered && !IsSeclusion && RoomPreinstall?.IsRunWave == true)
         {
             RoomPreinstall.OverWave();
         }

@@ -46,6 +46,7 @@ public partial class LanNetworkManager : Node
     private readonly Dictionary<long, RemotePlayerState> _remotePlayers = new();
     private double _snapshotTimer;
     private double _worldSnapshotTimer;
+    private double _roomStateTimer;
     private int _lastSharedGold;
     private ulong _lastSnapshotSentAt;
     private World _lastLocalWorld;
@@ -121,6 +122,13 @@ public partial class LanNetworkManager : Node
             // 不只监听 world 类型, 还要检测楼层/种子变化。
             BroadcastSessionState();
 
+            _roomStateTimer -= delta;
+            if (_roomStateTimer <= 0)
+            {
+                _roomStateTimer = 1.0;
+                BroadcastRoomStates();
+            }
+
             _worldSnapshotTimer -= delta;
             if (_worldSnapshotTimer <= 0)
             {
@@ -128,7 +136,6 @@ public partial class LanNetworkManager : Node
                 BroadcastEnemySnapshots();
                 BroadcastPlayerVitals();
                 BroadcastSharedGold();
-                BroadcastRoomStates();
                 CheckRemoteRoomWaves();
             }
         }
@@ -334,10 +341,58 @@ public partial class LanNetworkManager : Node
             return;
         }
 
-        item.NetworkId = AllocateDynamicNetworkId();
+        if (item.NetworkId == 0)
+        {
+            item.NetworkId = AllocateDynamicNetworkId();
+        }
 
         Rpc(nameof(ReceiveNetworkPickupSpawn), item.NetworkId, item.ActivityBase?.Id ?? string.Empty,
             item.GlobalPosition.X, item.GlobalPosition.Y);
+    }
+
+    public void RequestNetworkPropDrop(PropActivity prop)
+    {
+        if (!IsLanConnected || prop == null || prop.IsDestroyed || string.IsNullOrEmpty(prop.ActivityBase?.Id))
+        {
+            return;
+        }
+
+        if (IsHost)
+        {
+            BroadcastNetworkPickupSpawn(prop);
+            return;
+        }
+
+        RpcId(1, nameof(ReceiveNetworkPropDropRequest), prop.ActivityBase.Id,
+            prop.GlobalPosition.X, prop.GlobalPosition.Y);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveNetworkPropDropRequest(string activityId, float x, float y)
+    {
+        if (!IsHost || string.IsNullOrEmpty(activityId))
+        {
+            return;
+        }
+
+        var senderId = Multiplayer.GetRemoteSenderId();
+        var position = new Vector2(x, y);
+        if (!_remotePlayers.TryGetValue(senderId, out var state) || state.Player == null ||
+            !GodotObject.IsInstanceValid(state.Player) || state.Player.IsDie ||
+            state.Player.GlobalPosition.DistanceTo(position) > 96f)
+        {
+            return;
+        }
+
+        var item = ActivityObject.Create(activityId);
+        if (item is not PropActivity prop)
+        {
+            item?.Destroy();
+            return;
+        }
+
+        prop.PutDown(position, RoomLayerEnum.YSortLayer, false);
+        BroadcastNetworkPickupSpawn(prop);
     }
 
     public void BroadcastNetworkWeaponDrop(Weapon weapon)
@@ -460,8 +515,9 @@ public partial class LanNetworkManager : Node
         var sharedGold = (hostPlayer?.RoleState.Gold ?? 0) + (hostPlayer?.RoleState.CalcGetGold(count) ?? count);
         if (hostPlayer != null)
         {
-            hostPlayer.RoleState.Gold = sharedGold;
+            SetLocalSharedGold(sharedGold);
         }
+        _lastSharedGold = sharedGold;
         gold.ReclaimNetworkDrop();
         Rpc(nameof(ReceiveGoldPickupResult), networkId, peerId, count, sharedGold);
     }
@@ -484,10 +540,7 @@ public partial class LanNetworkManager : Node
             return;
         }
 
-        if (GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is Player player)
-        {
-            player.RoleState.Gold = sharedGold;
-        }
+        SetLocalSharedGold(sharedGold);
 
         gold?.ReclaimNetworkDrop();
     }
@@ -511,10 +564,21 @@ public partial class LanNetworkManager : Node
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void ReceiveSharedGold(int gold)
     {
-        if (!IsHost && GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is Player player)
+        if (!IsHost)
         {
-            player.RoleState.Gold = gold;
+            SetLocalSharedGold(gold);
         }
+    }
+
+    private void SetLocalSharedGold(int gold)
+    {
+        if (GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is not Player player)
+        {
+            return;
+        }
+
+        player.RoleState.Gold = gold;
+        EventManager.EmitEvent(EventEnum.OnPlayerGoldChange, gold);
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -525,14 +589,61 @@ public partial class LanNetworkManager : Node
             return;
         }
 
-        var item = ActivityObject.Create(activityId);
+        var position = new Vector2(x, y);
+        ActivityObject item = FindUnnetworkedPropDrop(activityId, position);
         if (item == null)
         {
-            return;
+            item = ActivityObject.Create(activityId);
+            if (item == null)
+            {
+                return;
+            }
+
+            item.PutDown(position, RoomLayerEnum.YSortLayer, false);
+        }
+        else
+        {
+            item.StopThrow();
+            item.Altitude = 0;
+            item.GlobalPosition = position;
         }
 
         item.NetworkId = networkId;
-        item.PutDown(new Vector2(x, y), RoomLayerEnum.YSortLayer, false);
+    }
+
+    private PropActivity FindUnnetworkedPropDrop(string activityId, Vector2 position)
+    {
+        var root = GetTree()?.Root;
+        if (root == null)
+        {
+            return null;
+        }
+
+        PropActivity nearest = null;
+        var nearestDistanceSquared = 96f * 96f;
+        var pending = new Stack<Node>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var node = pending.Pop();
+            if (node is PropActivity prop && !prop.IsDestroyed && prop.NetworkId == 0 &&
+                prop.ActivityBase?.Id == activityId)
+            {
+                var distanceSquared = prop.GlobalPosition.DistanceSquaredTo(position);
+                if (distanceSquared <= nearestDistanceSquared)
+                {
+                    nearestDistanceSquared = distanceSquared;
+                    nearest = prop;
+                }
+            }
+
+            foreach (var child in node.GetChildren())
+            {
+                pending.Push((Node)child);
+            }
+        }
+
+        return nearest;
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -564,14 +675,17 @@ public partial class LanNetworkManager : Node
             return;
         }
 
-        item.Interactive(player);
         if (peerId == LocalPeerId)
         {
+            item.Interactive(player);
             Rpc(nameof(ReceiveSharedPickupResult), networkId, peerId);
             ApplySharedPickupResult(networkId, peerId);
         }
         else
         {
+            // 访客在自己的进程执行拾取效果；房主只负责占用物品，避免代理玩家
+            // 再执行一次拾取而重复丢出替换道具。
+            item.Destroy();
             Rpc(nameof(ReceiveSharedPickupResult), networkId, peerId);
         }
     }
@@ -963,6 +1077,31 @@ public partial class LanNetworkManager : Node
 
     }
 
+    public void BroadcastEnemyDeath(Role role)
+    {
+        if (!IsHost || !IsLanConnected || role == null || role.IsDestroyed || role.NetworkId == 0 ||
+            !role.IsAi || role.AnimatedSprite == null)
+        {
+            return;
+        }
+
+        Rpc(nameof(ReceiveEnemySnapshot), new Variant[]
+        {
+            role.NetworkId,
+            role.ActivityBase?.Id ?? string.Empty,
+            role.GlobalPosition.X,
+            role.GlobalPosition.Y,
+            (int)role.Face,
+            0,
+            role.MaxHp,
+            role.RoleState.Gold,
+            true,
+            AnimatorNames.Die.ToString(),
+            0,
+            role.ReplicatedHitSequence,
+        });
+    }
+
     private void BroadcastRoomStates()
     {
         if (!IsHost || !IsLanConnected)
@@ -971,18 +1110,26 @@ public partial class LanNetworkManager : Node
         }
 
         var dungeonManager = GameApplication.Instance?.DungeonManager;
-        if (dungeonManager == null)
+        if (dungeonManager?.CurrWorld is not Dungeon)
         {
             return;
         }
 
         foreach (var room in dungeonManager.RoomInfosForNetwork)
         {
-            if (room != null && room.HasFirstEntered && !room.IsSeclusion &&
-                room.RoomPreinstall?.HasEnemy() == true)
+            if (room != null)
             {
-                Rpc(nameof(ReceiveRoomCleared), room.Id);
+                Rpc(nameof(ReceiveNetworkRoomState), room.Id, room.HasFirstEntered, room.IsSeclusion);
             }
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveNetworkRoomState(int roomId, bool hasFirstEntered, bool isSeclusion)
+    {
+        if (!IsHost)
+        {
+            GameApplication.Instance?.DungeonManager?.ApplyNetworkRoomState(roomId, hasFirstEntered, isSeclusion);
         }
     }
 

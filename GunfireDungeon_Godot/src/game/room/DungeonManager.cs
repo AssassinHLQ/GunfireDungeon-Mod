@@ -1384,6 +1384,12 @@ public partial class DungeonManager : Node2D
         room.ForceNetworkClear();
     }
 
+    public void ApplyNetworkRoomState(int roomId, bool hasFirstEntered, bool isSeclusion)
+    {
+        var room = _dungeonGenerator?.RoomInfos.FirstOrDefault(item => item.Id == roomId);
+        room?.ApplyNetworkRoomState(hasFirstEntered, isSeclusion);
+    }
+
     /// <summary>
     /// 玩家进入某个房间回调
     /// </summary>
