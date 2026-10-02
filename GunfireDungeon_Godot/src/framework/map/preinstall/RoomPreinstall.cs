@@ -48,7 +48,16 @@ public class RoomPreinstall : IDestroy
     /// </summary>
     public List<Boss> BossList { get; } = new List<Boss>();
     private readonly HashSet<Role> _roomEnemies = new();
-    public bool HasLivingEnemy => _roomEnemies.Any(role => role != null && !role.IsDestroyed && !role.HasCompletedDeathSequence);
+    /// <summary>
+    /// 房间里是否还有活着的敌人。
+    ///
+    /// 【为什么用 IsDeathStarted 而不是 HasCompletedDeathSequence】
+    /// 死亡流程 = IsDie(掉血到 0) -> 死亡动画 -> HasCompletedDeathSequence。
+    /// 中间那段动画有 1 秒以上, 如果这里只认最终标记, 死亡动画播放期间房间会一直被
+    /// 判成"还有敌人", 门不开; 等动画播完再判又要多等一次每秒检查, 玩家就卡在门口。
+    /// 用 IsDeathStarted 可以在 Hp 归零这一刻立刻把房间算成清空。
+    /// </summary>
+    public bool HasLivingEnemy => _roomEnemies.Any(role => role != null && !role.IsDestroyed && !role.IsDeathStarted);
     
     //是否运行过预处理
     private bool _runPretreatment = false;
@@ -404,6 +413,25 @@ public class RoomPreinstall : IDestroy
     /// </summary>
     public void StartWave()
     {
+        StartWave(IsNetworkClient);
+    }
+
+    /// <summary>
+    /// 联机访客端标记: 敌人由房主权威生成并通过快照同步, 访客不能自己生成/推进敌人波次。
+    /// </summary>
+    private static bool IsNetworkClient => LanNetworkManager.Instance != null &&
+                                           LanNetworkManager.Instance.IsLanConnected &&
+                                           !LanNetworkManager.Instance.IsHost;
+
+    /// <summary>
+    /// 玩家进入房间, 开始执行生成物体(重载)
+    /// </summary>
+    /// <param name="skipEnemyContent">
+    /// true = 跳过敌人内容与后续波次(联机访客端), 只放置首波里的武器/道具/宝箱等非敌人物体。
+    /// 这样访客能看到初始道具, 又不会多生成一套本地敌人与房主快照叠加。
+    /// </param>
+    public void StartWave(bool skipEnemyContent)
+    {
         if (IsRunWave)
         {
             return;
@@ -420,9 +448,17 @@ public class RoomPreinstall : IDestroy
             {
                 //有敌人
                 var activityObject = preloadData.ActivityObject;
-                if (!hasEnemy && activityObject is Role role && role.IsEnemyWithPlayer())
+                var isEnemyRole = activityObject is Role role && role.IsEnemyWithPlayer();
+                if (!hasEnemy && isEnemyRole)
                 {
                     hasEnemy = true;
+                }
+
+                //联机访客端: 敌人交给房主权威生成并同步快照, 本地这份直接销毁, 避免刷出两套敌人。
+                if (skipEnemyContent && isEnemyRole)
+                {
+                    activityObject.Destroy();
+                    continue;
                 }
 
                 //临时处理
@@ -448,10 +484,16 @@ public class RoomPreinstall : IDestroy
             _readyList = null;
         }
 
+        //联机访客端不推进后续波次: 后面的波次里可能有敌人, 一律由房主权威生成并同步。
+        if (skipEnemyContent)
+        {
+            return;
+        }
+
         if (!hasEnemy)
         {
             hasEnemy = RoomInfo.AffiliationArea.ExistIncludeItem(
-                activityObject => activityObject is Role role && role.IsEnemyWithPlayer()
+                activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.IsDeathStarted
             );
         }
 

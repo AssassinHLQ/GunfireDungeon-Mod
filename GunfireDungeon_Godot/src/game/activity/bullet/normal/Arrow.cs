@@ -88,6 +88,7 @@ public partial class Arrow : Bullet, IMountItem
 
     public override void LogicalFinish()
     {
+        BulletTracker.Unregister(this);
         if (State == BulletStateEnum.CollisionTarget) //碰撞到目标, 直接冻结
         {
             SetEnableMovement(false);

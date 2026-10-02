@@ -77,7 +77,7 @@ public partial class Boss : AiRole
     {
         if (!IsNetworkReplica)
         {
-            Gold.CreateGold(Position, RoleState.Gold);
+            Gold.CreateGold(Position, RoleState.Gold, broadcastNetworkDrop: true);
         }
         DropRewardItem();
         base.OnDie();
@@ -119,6 +119,12 @@ public partial class Boss : AiRole
 
     protected override void Process(float delta)
     {
+        //死亡流程跑完后不再有任何移动/攻击行为。
+        if (IsDie || HasCompletedDeathSequence)
+        {
+            return;
+        }
+
         if (Hp <= 0)
         {
             return;

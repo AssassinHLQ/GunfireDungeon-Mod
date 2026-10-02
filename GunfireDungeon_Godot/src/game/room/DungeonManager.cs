@@ -1240,15 +1240,23 @@ public partial class DungeonManager : Node2D
         _checkEnemyTimer = 0;
         var room = (RoomInfo)o;
 
-        // 联机访客不负责生成房间波次。敌人由房主权威生成并通过快照同步，
-        // 否则访客被拉入已开战房间时会再次本地生成一套 Boss。
+        // 联机访客仍然进入房间流程: 需要放置首波的武器/道具/宝箱, 否则访客看不到初始道具。
+        // 敌人本身由房主权威生成并通过快照同步(RoomPreinstall.StartWave 的联机分支会跳过敌人)。
         var network = LanNetworkManager.Instance;
-        if (network != null && network.IsLanConnected && !network.IsHost)
+        var isClient = network != null && network.IsLanConnected && !network.IsHost;
+        if (isClient && room.HasFirstEntered && room.RoomPreinstall != null &&
+            !room.RoomPreinstall.IsRunWave &&
+            (!room.RoomPreinstall.HasEnemy() || room.IsSeclusion))
         {
-            return;
+            //房主的房间状态可能先于"强制传送访客"到达, 这会让 HasFirstEntered 已经是 true,
+            //导致 RoomInfo.OnFirstEnter 直接返回, 访客的首波预生成对象(武器/道具/宝箱)永远不落地。
+            //访客只补放置非敌人内容, 敌人仍由房主权威快照生成。
+            room.RoomPreinstall.StartWave(true);
         }
-
-        room.OnFirstEnter();
+        else
+        {
+            room.OnFirstEnter(isClient);
+        }
         //如果关门了, 那么房间外的敌人就会丢失目标
         if (room.IsSeclusion)
         {
@@ -1354,7 +1362,7 @@ public partial class DungeonManager : Node2D
         }
 
         var hasEnemy = room.RoomPreinstall.HasLivingEnemy || room.AffiliationArea.ExistIncludeItem(
-            activityObject => activityObject is Role role && role.IsEnemyWithPlayer());
+            activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.IsDeathStarted);
         if (hasEnemy)
         {
             return;
@@ -1362,7 +1370,11 @@ public partial class DungeonManager : Node2D
 
         var isFinalWave = room.RoomPreinstall.IsLastWave;
         room.OnClearRoom();
-        LanNetworkManager.Instance?.BroadcastRoomCleared(room.Id);
+        if (isFinalWave)
+        {
+            LanNetworkManager.Instance?.BroadcastRoomCleared(room.Id);
+        }
+
         if (isFinalWave && room.RoomPreinstall.HasEnemy())
         {
             GameNotificationOverlay.ShowRoomCleared(
@@ -1388,6 +1400,20 @@ public partial class DungeonManager : Node2D
     {
         var room = _dungeonGenerator?.RoomInfos.FirstOrDefault(item => item.Id == roomId);
         room?.ApplyNetworkRoomState(hasFirstEntered, isSeclusion);
+    }
+
+    public void ApplyNetworkRoomState(int roomId, bool hasFirstEntered, bool isSeclusion,
+        bool roomExplored, Godot.Collections.Array<Variant> exploredAisles)
+    {
+        var room = _dungeonGenerator?.RoomInfos.FirstOrDefault(item => item.Id == roomId);
+        room?.ApplyNetworkRoomState(hasFirstEntered, isSeclusion, roomExplored, exploredAisles);
+    }
+
+    public void MergeNetworkMapExploration(int roomId, bool roomExplored,
+        Godot.Collections.Array<Variant> exploredAisles)
+    {
+        var room = _dungeonGenerator?.RoomInfos.FirstOrDefault(item => item.Id == roomId);
+        room?.MergeNetworkMapExploration(roomExplored, exploredAisles);
     }
 
     /// <summary>
@@ -1526,6 +1552,15 @@ public partial class DungeonManager : Node2D
     /// </summary>
     private void OnCheckEnemy()
     {
+        //联机时房间波次与门状态只能由房主裁决。
+        //访客快照可能比本地 1 秒清敌检查稍晚到; 若访客自行推进波次,
+        //会出现"门先开后关"、Boss 还活着门却开了等竞态。
+        var network = LanNetworkManager.Instance;
+        if (network != null && network.IsLanConnected && !network.IsHost)
+        {
+            return;
+        }
+
         var activeRoom = ActiveRoomInfo;
         if (activeRoom != null && activeRoom.RoomPreinstall != null)
         {
@@ -1535,14 +1570,18 @@ public partial class DungeonManager : Node2D
                 {
                     //房间内是否有存活的敌人
                     var flag = activeRoom.RoomPreinstall.HasLivingEnemy || ActiveAffiliationArea.ExistIncludeItem(
-                        activityObject => activityObject is Role role && role.IsEnemyWithPlayer()
+                        activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.IsDeathStarted
                     );
                     //Debug.Log("当前房间存活数量: " + count);
                     if (!flag)
                     {
                         var isFinalWave = activeRoom.RoomPreinstall.IsLastWave;
                         activeRoom.OnClearRoom();
-                        LanNetworkManager.Instance?.BroadcastRoomCleared(activeRoom.Id);
+                        if (isFinalWave)
+                        {
+                            LanNetworkManager.Instance?.BroadcastRoomCleared(activeRoom.Id);
+                        }
+
                         // 提示玩家房间已经清空。
                         // 没有这个提示, 玩家不知道是否打完, 会继续浪费子弹。
                         if (isFinalWave && activeRoom.RoomPreinstall.HasEnemy())

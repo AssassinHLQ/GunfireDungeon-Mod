@@ -155,6 +155,13 @@ public partial class RhinoEnemy : Boss
 
     protected override void Process(float delta)
     {
+        //死亡序列跑完之后彻底停手: 常态碰撞伤害也要停,
+        //否则玩家会在 Boss 已经看不见之后继续被撞掉护盾。
+        if (IsDie || HasCompletedDeathSequence)
+        {
+            return;
+        }
+
         base.Process(delta);
         UpdateContactDamage(delta);
     }

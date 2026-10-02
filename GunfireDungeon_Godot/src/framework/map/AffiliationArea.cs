@@ -176,14 +176,21 @@ public partial class AffiliationArea : Area2D, IDestroy
     {
         foreach (var activityObject in _includeItems)
         {
-            if (!activityObject.IsDestroyed && handler(activityObject))
+            //AiRole.OnDie() 会把角色节点 RemoveChild 而不是 Destroy(),
+            //已完成死亡流程的 Boss 仍是 IsDestroyed=false, 所以需要显式排除。
+            if (activityObject.IsDestroyed ||
+                activityObject is Role role && role.HasCompletedDeathSequence ||
+                !handler(activityObject))
             {
-                return true;
+                continue;
             }
+
+            return true;
         }
 
         return false;
     }
+
     
     /// <summary>
     /// 获取进入该区域中物体的总数

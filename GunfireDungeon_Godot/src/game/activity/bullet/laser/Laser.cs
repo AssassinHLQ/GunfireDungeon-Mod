@@ -77,6 +77,7 @@ public partial class Laser : Area2D, IBullet
             _init = true;
         }
 
+        IsDestroyed = false;
         Camp = camp;
         ZIndex = 1;
         BulletData = data;
@@ -162,6 +163,11 @@ public partial class Laser : Area2D, IBullet
 
     public override void _Process(double delta)
     {
+        if (IsDestroyed)
+        {
+            return;
+        }
+
         ProxyCoroutineHandler.ProxyUpdateCoroutine(ref _coroutineList, (float)delta);
     }
 
@@ -172,12 +178,22 @@ public partial class Laser : Area2D, IBullet
             return;
         }
         
+        IsDestroyed = true;
+        BulletTracker.Unregister(this);
+        StopAllCoroutine();
+        _tween?.Kill();
+        _tween = null;
         QueueFree();
     }
 
     //激光撞墙反弹逻辑
     private void OnRebound(Vector2 position, Vector2 normal)
     {
+        if (IsDestroyed || BulletData == null)
+        {
+            return;
+        }
+
         if (BulletData.BounceCount > 0)
         {
             var newDistance = BulletData.MaxDistance - BulletData.Position.DistanceTo(position);
@@ -205,6 +221,11 @@ public partial class Laser : Area2D, IBullet
 
     private void OnBodyEntered(Node2D body)
     {
+        if (IsDestroyed)
+        {
+            return;
+        }
+
         if (body is IHurt hurt)
         {
             HandlerCollision(hurt);
@@ -213,6 +234,11 @@ public partial class Laser : Area2D, IBullet
     
     private void OnArea2dEntered(Area2D other)
     {
+        if (IsDestroyed)
+        {
+            return;
+        }
+
         if (other is IHurt hurt)
         {
             HandlerCollision(hurt);
@@ -221,6 +247,17 @@ public partial class Laser : Area2D, IBullet
 
     private void HandlerCollision(IHurt hurt)
     {
+        if (IsDestroyed || BulletData == null)
+        {
+            return;
+        }
+
+        //发射者已经完蛋: 它的激光不该再结算伤害。
+        if (BulletData?.TriggerRole != null && BulletData.TriggerRole.IsDeathStarted)
+        {
+            return;
+        }
+
         if (hurt.CanHurt(Camp))
         {
             var network = LanNetworkManager.Instance;
@@ -228,7 +265,7 @@ public partial class Laser : Area2D, IBullet
                 hurt.GetActivityObject() is Player remotePlayer && network.IsRemotePlayer(remotePlayer) &&
                 BulletData.TriggerRole?.IsAi == true)
             {
-                network.BroadcastRemotePlayerDamage(remotePlayer, BulletData.Damages,
+                network.BroadcastRemotePlayerDamage(remotePlayer, BulletData.TriggerRole, BulletData.Damages,
                     BulletData.Abnormals, Rotation);
                 return;
             }
@@ -270,6 +307,12 @@ public partial class Laser : Area2D, IBullet
     
     public void LogicalFinish()
     {
+        if (IsDestroyed)
+        {
+            return;
+        }
+
+        BulletTracker.Unregister(this);
         if (OnLogicalFinishEvent != null)
         {
             OnLogicalFinishEvent();
@@ -308,11 +351,12 @@ public partial class Laser : Area2D, IBullet
             _tween.Dispose();
             _tween = null;
         }
-        GetParent().CallDeferred(Node.MethodName.RemoveChild, this);
+        GetParent()?.CallDeferred(Node.MethodName.RemoveChild, this);
     }
 
     public virtual void OnLeavePool()
     {
+        IsDestroyed = false;
         _onLogicalFinishEventList.Clear();
         StopAllCoroutine();
     }

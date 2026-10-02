@@ -40,6 +40,7 @@ public partial class RoomMapPanel : RoomMap
         InitMap();
         AddEventListener(EventEnum.OnPlayerFirstEnterRoom, OnPlayerFirstEnterRoom);
         AddEventListener(EventEnum.OnPlayerFirstEnterAisle, OnPlayerFirstEnterAisle);
+        AddEventListener(EventEnum.OnNetworkMapExplorationChanged, OnNetworkMapExplorationChanged);
         AddEventListener(EventEnum.OnChangeJoypadInputMode, OnChangeJoypadInputMode);
 
         S_JoystickMark.Instance.Visible = InputManager.IsJoystickInput;
@@ -403,7 +404,7 @@ public partial class RoomMapPanel : RoomMap
         startRoom.EachRoom(roomInfo =>
         {
             //房间
-            roomInfo.PreviewSprite.Visible = false;
+            roomInfo.PreviewSprite.Visible = roomInfo.RoomFogMask?.IsExplored == true;
             S_Root.AddChild(roomInfo.PreviewSprite);
 
             roomInfo.PreviewSprite.MouseEntered += () =>
@@ -430,12 +431,35 @@ public partial class RoomMapPanel : RoomMap
                 {
                     if (roomInfoDoor.IsForward)
                     {
-                        roomInfoDoor.AislePreviewSprite.Visible = false;
+                        roomInfoDoor.AislePreviewSprite.Visible = roomInfoDoor.AisleFogMask?.IsExplored == true;
                         S_Root.AddChild(roomInfoDoor.AislePreviewSprite);
+                        RefreshUnknownSprite(roomInfoDoor);
                     }
                 }
             }
         });
+    }
+
+    private void OnNetworkMapExplorationChanged(object data)
+    {
+        if (data is not RoomInfo roomInfo)
+        {
+            return;
+        }
+
+        if (roomInfo.PreviewSprite != null)
+        {
+            roomInfo.PreviewSprite.Visible = roomInfo.RoomFogMask?.IsExplored == true;
+        }
+
+        foreach (var door in roomInfo.Doors)
+        {
+            if (door.IsForward && door.AislePreviewSprite != null)
+            {
+                door.AislePreviewSprite.Visible = door.AisleFogMask?.IsExplored == true;
+            }
+            RefreshUnknownSprite(door);
+        }
     }
 
     private void SetHoverRoom(RoomInfo roomInfo)
@@ -507,6 +531,17 @@ public partial class RoomMapPanel : RoomMap
     //刷新问号
     private void HandlerRefreshUnknownSprite(RoomDoorInfo roomDoorInfo)
     {
+        //只给正向门做问号。
+        //
+        //【为什么会多出问号】每个门都有两个 RoomDoorInfo: 正向的(roomDoor)和反向的(roomDoor.ConnectDoor)。
+        //反向门没有 AislePreviewSprite(见 DungeonManager.CreatePreviewSprite 只给 IsForward 的门建预览图),
+        //但它照样会进 _needRefresh 队列 —— 于是反向门也各画了一个问号, 小地图上就出现
+        //"一个过道两个问号"的重复图标。这里直接挡住反向门即可。
+        if (roomDoorInfo == null || !roomDoorInfo.IsForward)
+        {
+            return;
+        }
+
         //是否探索房间
         var flag1 = roomDoorInfo.RoomInfo.RoomFogMask.IsExplored;
         //是否探索过道

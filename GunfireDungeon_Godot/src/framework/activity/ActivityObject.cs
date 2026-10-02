@@ -25,6 +25,8 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
 
     /// <summary>跨联机实例稳定的活动物体 ID；普通本地物体为 0。</summary>
     public long NetworkId { get; set; }
+
+    public bool IsPerPlayerLoot { get; set; }
     
     /// <summary>
     /// 当前物体对应的配置数据, 如果不是通过 ActivityObject.Create() 函数创建出来的对象那么 ItemConfig 为 null
@@ -417,6 +419,12 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// </summary>
     public void ShowShadowSprite()
     {
+        if (IsDestroyed || !GodotObject.IsInstanceValid(AnimatedSprite) ||
+            !GodotObject.IsInstanceValid(ShadowSprite))
+        {
+            return;
+        }
+
         if (!IsCustomShadowSprite)
         {
             var anim = AnimatedSprite.Animation;
@@ -446,6 +454,11 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// </summary>
     public void HideShadowSprite()
     {
+        if (!GodotObject.IsInstanceValid(ShadowSprite))
+        {
+            return;
+        }
+
         ShadowSprite.Visible = false;
         IsShowShadow = false;
     }
@@ -455,6 +468,11 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// </summary>
     public void SetDefaultTexture(Texture2D texture)
     {
+        if (IsDestroyed || !GodotObject.IsInstanceValid(AnimatedSprite))
+        {
+            return;
+        }
+
         if (AnimatedSprite.SpriteFrames == null)
         {
             SpriteFrames spriteFrames = new SpriteFrames();
@@ -482,6 +500,11 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// </summary>
     public Texture2D GetDefaultTexture()
     {
+        if (!GodotObject.IsInstanceValid(AnimatedSprite) || AnimatedSprite.SpriteFrames == null)
+        {
+            return null;
+        }
+
         return AnimatedSprite.SpriteFrames.GetFrameTexture("default", 0);
     }
     
@@ -490,6 +513,11 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// </summary>
     public Texture2D GetCurrentTexture()
     {
+        if (!GodotObject.IsInstanceValid(AnimatedSprite))
+        {
+            return null;
+        }
+
         var spriteFrames = AnimatedSprite.SpriteFrames;
         if (spriteFrames == null)
         {
@@ -1047,15 +1075,31 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
 #endif
         var newDelta = (float)delta;
         UpdateProcess(newDelta);
+        if (IsDestroyed)
+        {
+            return;
+        }
         
         //更新组件
         UpdateComponentProcess(newDelta);
+        if (IsDestroyed)
+        {
+            return;
+        }
         
         // 更新下坠处理逻辑
         UpdateFall(newDelta);
+        if (IsDestroyed)
+        {
+            return;
+        }
 
         //阴影
         UpdateShadowSprite(newDelta);
+        if (IsDestroyed)
+        {
+            return;
+        }
         
         // Hit 动画
         if (_playHit)
@@ -1082,6 +1126,10 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
         
         //协程更新
         UpdateCoroutine(newDelta);
+        if (IsDestroyed)
+        {
+            return;
+        }
         
         //调试绘制
         if (IsDebug)
@@ -1199,6 +1247,11 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// </summary>
     public void UpdateFall(float delta)
     {
+        if (IsDestroyed)
+        {
+            return;
+        }
+
         // 下坠判定
         if (Altitude > 0 || VerticalSpeed != 0)
         {
@@ -1218,6 +1271,11 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
                     _verticalSpeed -= GameConfig.G * ActivityMaterial.GravityScale * delta;
 
                     //当高度大于32时, 显示在所有物体上, 并且关闭碰撞
+                    if (!GodotObject.IsInstanceValid(AnimatedSprite))
+                    {
+                        return;
+                    }
+
                     if (Altitude >= 32)
                     {
                         AnimatedSprite.ZIndex = 20;
@@ -1248,6 +1306,10 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
                         {
                             _firstFall = false;
                             OnFirstFallToGround();
+                            if (IsDestroyed)
+                            {
+                                return;
+                            }
                         }
 
                         if (_throwForce != null)
@@ -1282,6 +1344,10 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
                             _isFallOver = false;
 
                             OnFallToGround();
+                            if (IsDestroyed)
+                            {
+                                return;
+                            }
                         }
                         else //结束
                         {
@@ -1295,13 +1361,21 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
                             _isFallOver = true;
                             
                             OnFallToGround();
+                            if (IsDestroyed)
+                            {
+                                return;
+                            }
+
                             ThrowOver();
                         }
                     }
                 }
 
                 //计算精灵位置
-                CalcThrowAnimatedPosition();
+                if (!IsDestroyed)
+                {
+                    CalcThrowAnimatedPosition();
+                }
             }
         }
 
@@ -1312,6 +1386,12 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// </summary>
     public void UpdateShadowSprite(float delta)
     {
+        if (IsDestroyed || !GodotObject.IsInstanceValid(AnimatedSprite) ||
+            !GodotObject.IsInstanceValid(ShadowSprite))
+        {
+            return;
+        }
+
         // 阴影
         if (ShadowSprite.Visible)
         {
@@ -1323,7 +1403,10 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
                 if (_prevAnimation != anim || _prevAnimationFrame != frame)
                 {
                     //切换阴影动画
-                    ShadowSprite.Texture = AnimatedSprite.SpriteFrames.GetFrameTexture(anim, AnimatedSprite.Frame);
+                    if (AnimatedSprite.SpriteFrames != null && AnimatedSprite.SpriteFrames.HasAnimation(anim))
+                    {
+                        ShadowSprite.Texture = AnimatedSprite.SpriteFrames.GetFrameTexture(anim, AnimatedSprite.Frame);
+                    }
                 }
 
                 _prevAnimation = anim;
@@ -1352,6 +1435,10 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
 #endif
         var newDelta = (float)delta;
         UpdatePhysicsProcess(newDelta);
+        if (IsDestroyed)
+        {
+            return;
+        }
         
         //更新组件
         UpdateComponentPhysicsProcess(newDelta);
@@ -1416,6 +1503,12 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// </summary>
     public void CalcShadowTransform(bool isInTree)
     {
+        if (IsDestroyed || !GodotObject.IsInstanceValid(AnimatedSprite) ||
+            !GodotObject.IsInstanceValid(ShadowSprite))
+        {
+            return;
+        }
+
         //偏移
         if (!IsCustomShadowSprite)
         {
@@ -1444,6 +1537,11 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// </summary>
     public void CalcThrowAnimatedPosition()
     {
+        if (IsDestroyed || !GodotObject.IsInstanceValid(AnimatedSprite))
+        {
+            return;
+        }
+
         if (Scale.Y < 0)
         {
             var pos = new Vector2(_fallData.OriginSpritePosition.X, -_fallData.OriginSpritePosition.Y);
@@ -1477,13 +1575,17 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
         }
 
         IsDestroyed = true;
+        SetProcess(false);
+        SetPhysicsProcess(false);
+        StopAllCoroutine();
         if (AffiliationArea != null)
         {
             AffiliationArea.RemoveItem(this);
         }
-        
-        QueueFree();
+
         OnDestroy();
+
+        QueueFree();
 
         if (_freezeSprite != null)
         {
@@ -1571,6 +1673,12 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// </summary>
     private void SetFallCollision()
     {
+        if (IsDestroyed || !GodotObject.IsInstanceValid(AnimatedSprite) ||
+            !GodotObject.IsInstanceValid(Collision))
+        {
+            return;
+        }
+
         if (_fallData.UseOrigin)
         {
             _fallData.OriginShape = Collision.Shape;
@@ -1605,6 +1713,12 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// </summary>
     private void RestoreCollision()
     {
+        if (IsDestroyed || !GodotObject.IsInstanceValid(AnimatedSprite) ||
+            !GodotObject.IsInstanceValid(Collision))
+        {
+            return;
+        }
+
         if (!_fallData.UseOrigin)
         {
             Collision.Shape = _fallData.OriginShape;
@@ -1771,6 +1885,11 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// <param name="name">动画名称</param>
     public bool PlaySpriteAnimation(string name)
     {
+        if (IsDestroyed || !GodotObject.IsInstanceValid(AnimatedSprite))
+        {
+            return false;
+        }
+
         var spriteFrames = AnimatedSprite.SpriteFrames;
         if (spriteFrames != null && spriteFrames.HasAnimation(name))
         {
@@ -1846,6 +1965,11 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     /// </summary>
     public virtual Vector2 GetCenterPosition()
     {
+        if (!GodotObject.IsInstanceValid(AnimatedSprite))
+        {
+            return Position;
+        }
+
         return AnimatedSprite.Position + Position;
     }
 

@@ -258,4 +258,8 @@ public enum EventEnum
     /// 地图编辑器保存预览图片完成, 无参数
     /// </summary>
     OnSavePreviewImageFinish,
+    /// <summary>
+    /// 联机房主同步了房间/过道的探索状态, 参数为对应的 <see cref="RoomInfo"/>
+    /// </summary>
+    OnNetworkMapExplorationChanged,
 }

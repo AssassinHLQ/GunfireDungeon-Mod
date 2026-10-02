@@ -44,15 +44,17 @@ public partial class LanNetworkManager : Node
     private UdpClient _discoveryClient;
     private double _hostSearchRemaining;
     private readonly Dictionary<long, RemotePlayerState> _remotePlayers = new();
+    private readonly HashSet<long> _deadEnemyNetworkIds = new();
     private double _snapshotTimer;
     private double _worldSnapshotTimer;
     private double _roomStateTimer;
-    private int _lastSharedGold;
+    private double _mapExplorationTimer;
     private ulong _lastSnapshotSentAt;
     private World _lastLocalWorld;
     private string _lastLocalWorldKind = string.Empty;
     private string _lastBroadcastStateKey = string.Empty;
     private string _lastRequestedStateKey = string.Empty;
+    private string _lastLocalMapKnowledgeKey = string.Empty;
     private int _sessionRevision;
     private bool _applyingRemoteState;
     private Variant[] _pendingRemoteState;
@@ -60,6 +62,9 @@ public partial class LanNetworkManager : Node
     private long _nextDamageSequence = 1;
     private long _lastAppliedDamageSequence;
     private readonly HashSet<int> _broadcastClearedRooms = new();
+    /// <summary>房主已经清空的房间。重开一局要清掉, 否则同 ID 房间不会再同步开门。</summary>
+    private readonly HashSet<int> _hostClearedRooms = new();
+    private readonly Dictionary<long, string> _openedTreasureBoxRewards = new();
 
     private sealed class RemotePlayerState
     {
@@ -134,12 +139,12 @@ public partial class LanNetworkManager : Node
             {
                 _worldSnapshotTimer = 0.05;
                 BroadcastEnemySnapshots();
-                BroadcastPlayerVitals();
-                BroadcastSharedGold();
                 CheckRemoteRoomWaves();
             }
         }
         UpdateRemotePlayers((float)delta);
+        ApplyPendingTreasureBoxStates();
+        SyncLocalMapExploration(delta);
 
         _snapshotTimer -= delta;
         if (_snapshotTimer <= 0)
@@ -168,6 +173,9 @@ public partial class LanNetworkManager : Node
         Multiplayer.MultiplayerPeer = _peer;
         IsHost = true;
         _sessionRevision = 0;
+        _deadEnemyNetworkIds.Clear();
+        _hostClearedRooms.Clear();
+        _openedTreasureBoxRewards.Clear();
         StartHostDiscovery();
         _lastLocalWorld = null;
         _lastLocalWorldKind = string.Empty;
@@ -201,6 +209,7 @@ public partial class LanNetworkManager : Node
         _peer = peer;
         Multiplayer.MultiplayerPeer = _peer;
         IsHost = false;
+        _deadEnemyNetworkIds.Clear();
         _lastLocalWorld = null;
         _lastLocalWorldKind = string.Empty;
         _lastBroadcastStateKey = string.Empty;
@@ -219,6 +228,9 @@ public partial class LanNetworkManager : Node
         StopHostSearch();
         StopHostDiscovery();
         ClearRemotePlayers();
+        _deadEnemyNetworkIds.Clear();
+        _hostClearedRooms.Clear();
+        _openedTreasureBoxRewards.Clear();
         _lastLocalWorld = null;
         _lastLocalWorldKind = string.Empty;
         _lastBroadcastStateKey = string.Empty;
@@ -424,33 +436,6 @@ public partial class LanNetworkManager : Node
         weapon.PutDown(new Vector2(x, y), RoomLayerEnum.YSortLayer, false);
     }
 
-    public void RequestGoldPickup(Gold gold)
-    {
-        if (!IsLanConnected || gold == null || gold.IsDestroyed)
-        {
-            return;
-        }
-
-        if (gold.NetworkId == 0 && IsHost)
-        {
-            gold.NetworkId = AllocateDynamicNetworkId();
-        }
-
-        if (gold.NetworkId == 0)
-        {
-            return;
-        }
-
-        if (IsHost)
-        {
-            ResolveGoldPickup(LocalPeerId, gold.NetworkId);
-        }
-        else
-        {
-            RpcId(1, nameof(ReceiveGoldPickupRequest), gold.NetworkId);
-        }
-    }
-
     public void BroadcastNetworkGoldSpawn(Gold gold)
     {
         if (!IsHost || !IsLanConnected || gold == null)
@@ -477,108 +462,75 @@ public partial class LanNetworkManager : Node
         gold.InitNetworkDrop(new Vector2(x, y));
     }
 
+    public void RequestTreasureBoxOpen(TreasureBox box)
+    {
+        if (!IsLanConnected || box == null || box.IsDestroyed || box.NetworkId == 0)
+        {
+            return;
+        }
+
+        if (IsHost)
+        {
+            ResolveTreasureBoxOpen(LocalPeerId, box.NetworkId);
+        }
+        else
+        {
+            RpcId(1, nameof(ReceiveTreasureBoxOpenRequest), box.NetworkId);
+        }
+    }
+
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveGoldPickupRequest(long networkId)
+    public void ReceiveTreasureBoxOpenRequest(long networkId)
     {
         if (IsHost)
         {
-            ResolveGoldPickup(Multiplayer.GetRemoteSenderId(), networkId);
+            ResolveTreasureBoxOpen(Multiplayer.GetRemoteSenderId(), networkId);
         }
     }
 
-    private void ResolveGoldPickup(long peerId, long networkId)
+    private void ResolveTreasureBoxOpen(long peerId, long networkId)
     {
-        var gold = FindActivityObject(networkId) as Gold;
+        if (!IsHost || !IsLanConnected || networkId == 0)
+        {
+            return;
+        }
+
+        if (_openedTreasureBoxRewards.TryGetValue(networkId, out var openedRewardId))
+        {
+            if (peerId > 1)
+            {
+                RpcId(peerId, nameof(ReceiveTreasureBoxOpened), networkId, openedRewardId);
+            }
+            return;
+        }
+
+        var box = FindActivityObject(networkId) as TreasureBox;
         var player = peerId == LocalPeerId
             ? GameApplication.Instance?.DungeonManager?.CurrWorld?.Player
             : _remotePlayers.TryGetValue(peerId, out var state) ? state.Player : null;
-        if (!IsHost || gold == null)
+        if (box == null || player == null || player.IsDestroyed ||
+            box.GlobalPosition.DistanceTo(player.GlobalPosition) > 72f ||
+            !box.CheckInteractive(player).CanInteractive)
         {
             return;
         }
 
-        if (player == null || player.IsDestroyed || gold.GlobalPosition.DistanceTo(player.GlobalPosition) > 24f)
-        {
-            if (peerId == LocalPeerId)
-            {
-                gold.ResetNetworkClaimPending();
-            }
-            else if (peerId > 1)
-            {
-                RpcId(peerId, nameof(ReceiveGoldPickupResult), networkId, -1L, 0);
-            }
-            return;
-        }
-
-        var count = gold.GoldCount;
-        var hostPlayer = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player as Player;
-        var sharedGold = (hostPlayer?.RoleState.Gold ?? 0) + (hostPlayer?.RoleState.CalcGetGold(count) ?? count);
-        if (hostPlayer != null)
-        {
-            SetLocalSharedGold(sharedGold);
-        }
-        _lastSharedGold = sharedGold;
-        gold.ReclaimNetworkDrop();
-        Rpc(nameof(ReceiveGoldPickupResult), networkId, peerId, count, sharedGold);
+        var rewardId = GameApplication.Instance?.DungeonManager?.CurrWorld?.RandomPool?.GetRandomProp()?.Id ?? string.Empty;
+        _openedTreasureBoxRewards[networkId] = rewardId;
+        box.OpenWithReward(rewardId);
+        Rpc(nameof(ReceiveTreasureBoxOpened), networkId, rewardId);
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveGoldPickupResult(long networkId, long winnerPeerId, int count, int sharedGold)
+    public void ReceiveTreasureBoxOpened(long networkId, string rewardId)
     {
-        if (!IsHost)
-        {
-            ApplyGoldPickupResult(networkId, winnerPeerId, count, sharedGold);
-        }
-    }
-
-    private void ApplyGoldPickupResult(long networkId, long winnerPeerId, int count, int sharedGold)
-    {
-        var gold = FindActivityObject(networkId) as Gold;
-        if (winnerPeerId < 0)
-        {
-            gold?.ResetNetworkClaimPending();
-            return;
-        }
-
-        SetLocalSharedGold(sharedGold);
-
-        gold?.ReclaimNetworkDrop();
-    }
-
-    private void BroadcastSharedGold()
-    {
-        if (!IsHost || GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is not Player player)
+        if (IsHost || networkId == 0)
         {
             return;
         }
 
-        if (_lastSharedGold == player.RoleState.Gold)
-        {
-            return;
-        }
-
-        _lastSharedGold = player.RoleState.Gold;
-        Rpc(nameof(ReceiveSharedGold), _lastSharedGold);
-    }
-
-    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveSharedGold(int gold)
-    {
-        if (!IsHost)
-        {
-            SetLocalSharedGold(gold);
-        }
-    }
-
-    private void SetLocalSharedGold(int gold)
-    {
-        if (GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is not Player player)
-        {
-            return;
-        }
-
-        player.RoleState.Gold = gold;
-        EventManager.EmitEvent(EventEnum.OnPlayerGoldChange, gold);
+        _openedTreasureBoxRewards[networkId] = rewardId ?? string.Empty;
+        ApplyPendingTreasureBoxStates();
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -745,6 +697,22 @@ public partial class LanNetworkManager : Node
         return null;
     }
 
+    private void ApplyPendingTreasureBoxStates()
+    {
+        if (IsHost || _openedTreasureBoxRewards.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var pair in _openedTreasureBoxRewards)
+        {
+            if (FindActivityObject(pair.Key) is TreasureBox box && !box.IsOpen)
+            {
+                box.OpenWithReward(pair.Value);
+            }
+        }
+    }
+
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void ReceiveForceRoomEntry(int roomId, float x, float y)
     {
@@ -763,6 +731,9 @@ public partial class LanNetworkManager : Node
         if (IsHost && IsLanConnected)
         {
             ClearRemotePlayers();
+            _broadcastClearedRooms.Clear();
+            _hostClearedRooms.Clear();
+            _openedTreasureBoxRewards.Clear();
             _lastBroadcastStateKey = string.Empty;
             _sessionRevision++;
         }
@@ -940,6 +911,7 @@ public partial class LanNetworkManager : Node
     private void DisconnectPeerOnly()
     {
         ClearRemotePlayers();
+        _openedTreasureBoxRewards.Clear();
         if (Multiplayer.MultiplayerPeer != null)
         {
             Multiplayer.MultiplayerPeer.Close();
@@ -987,7 +959,14 @@ public partial class LanNetworkManager : Node
 
         _lastLocalWorld = world;
         _lastLocalWorldKind = worldKind;
+        _lastLocalMapKnowledgeKey = string.Empty;
         ClearRemotePlayers();
+        _deadEnemyNetworkIds.Clear();
+        //房间 ID 每层都会从 0 开始, 清除上层的"已广播清房"记录,
+        //避免新楼层同 ID 房间永远无法再同步开门。
+        _broadcastClearedRooms.Clear();
+        _hostClearedRooms.Clear();
+        _openedTreasureBoxRewards.Clear();
 
         if (!string.IsNullOrEmpty(worldKind))
         {
@@ -1053,7 +1032,7 @@ public partial class LanNetworkManager : Node
         foreach (var role in world.Role_InstanceList)
         {
             if (role == null || role.IsDestroyed || !role.IsAi || role.NetworkId == 0 ||
-                role.AnimatedSprite == null)
+                role.AnimatedSprite == null || !GodotObject.IsInstanceValid(role.AnimatedSprite))
             {
                 continue;
             }
@@ -1080,7 +1059,7 @@ public partial class LanNetworkManager : Node
     public void BroadcastEnemyDeath(Role role)
     {
         if (!IsHost || !IsLanConnected || role == null || role.IsDestroyed || role.NetworkId == 0 ||
-            !role.IsAi || role.AnimatedSprite == null)
+            !role.IsAi || role.AnimatedSprite == null || !GodotObject.IsInstanceValid(role.AnimatedSprite))
         {
             return;
         }
@@ -1119,18 +1098,155 @@ public partial class LanNetworkManager : Node
         {
             if (room != null)
             {
-                Rpc(nameof(ReceiveNetworkRoomState), room.Id, room.HasFirstEntered, room.IsSeclusion);
+                var exploredAisles = new Godot.Collections.Array<Variant>();
+                foreach (var door in room.Doors)
+                {
+                    exploredAisles.Add(door.AisleFogMask?.IsExplored == true);
+                }
+
+                Rpc(nameof(ReceiveNetworkRoomState), room.Id, room.HasFirstEntered, room.IsSeclusion,
+                    room.HasFirstEntered || room.RoomFogMask?.IsExplored == true, exploredAisles);
+
+                //已经清空的房间要把"清空"这件事单独补发一次。
+                //
+                //【为什么要补发】房主开门的事实由房间状态(isSeclusion=false)表达, 但访客只有在
+                //执行过自己的本地清房流程(RoomInfo.OnClearRoom / ForceNetworkClear)之后才认这个状态 ——
+                //见 RoomPreinstall.HasLivingEnemy。新加入的访客本地房间还没清过, 会一直把自己当成
+                //"战斗中的闭关房间", 于是门不开、地图上也看不到已探索的房间。
+                if (room.HasFirstEntered && !room.IsSeclusion && _hostClearedRooms.Contains(room.Id))
+                {
+                    Rpc(nameof(ReceiveRoomCleared), room.Id);
+                }
             }
+        }
+
+        foreach (var pair in _openedTreasureBoxRewards)
+        {
+            Rpc(nameof(ReceiveTreasureBoxOpened), pair.Key, pair.Value);
         }
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveNetworkRoomState(int roomId, bool hasFirstEntered, bool isSeclusion)
+    public void ReceiveNetworkRoomState(int roomId, bool hasFirstEntered, bool isSeclusion,
+        bool roomExplored, Godot.Collections.Array<Variant> exploredAisles)
     {
         if (!IsHost)
         {
-            GameApplication.Instance?.DungeonManager?.ApplyNetworkRoomState(roomId, hasFirstEntered, isSeclusion);
+            GameApplication.Instance?.DungeonManager?.ApplyNetworkRoomState(
+                roomId, hasFirstEntered, isSeclusion, roomExplored, exploredAisles);
         }
+    }
+
+    /// <summary>
+    /// 访客把新发现的地图区域发给房主; 房主只合并已探索标记, 再通过房间状态广播给全队。
+    /// </summary>
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveMapExploration(Godot.Collections.Array<Variant> packet)
+    {
+        if (!IsHost || !IsLanConnected || packet == null)
+        {
+            return;
+        }
+
+        var senderId = Multiplayer.GetRemoteSenderId();
+        if (senderId <= 1)
+        {
+            return;
+        }
+
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        if (dungeonManager?.CurrWorld is not Dungeon)
+        {
+            return;
+        }
+
+        foreach (var rowValue in packet)
+        {
+            var row = rowValue.AsGodotArray();
+            if (row.Count < 3)
+            {
+                continue;
+            }
+
+            var roomId = (int)row[0];
+            var roomExplored = row[1].AsBool();
+            var doorCount = Math.Clamp((int)row[2], 0, row.Count - 3);
+            var exploredAisles = new Godot.Collections.Array<Variant>();
+            for (var i = 0; i < doorCount; i++)
+            {
+                exploredAisles.Add(row[i + 3].AsBool());
+            }
+
+            dungeonManager.MergeNetworkMapExploration(roomId, roomExplored, exploredAisles);
+        }
+    }
+
+    private void SyncLocalMapExploration(double delta)
+    {
+        if (IsHost || !IsLanConnected ||
+            GameApplication.Instance?.DungeonManager is not { CurrWorld: Dungeon } dungeonManager)
+        {
+            return;
+        }
+
+        _mapExplorationTimer -= delta;
+        if (_mapExplorationTimer > 0)
+        {
+            return;
+        }
+
+        _mapExplorationTimer = 0.25;
+        var key = MakeLocalMapKnowledgeKey(dungeonManager);
+        if (key == _lastLocalMapKnowledgeKey)
+        {
+            return;
+        }
+
+        _lastLocalMapKnowledgeKey = key;
+        var packet = new Godot.Collections.Array<Variant>();
+        foreach (var room in dungeonManager.RoomInfosForNetwork)
+        {
+            if (room == null)
+            {
+                continue;
+            }
+
+            var row = new Godot.Collections.Array<Variant>
+            {
+                room.Id,
+                room.RoomFogMask?.IsExplored == true,
+                room.Doors.Count,
+            };
+            foreach (var door in room.Doors)
+            {
+                row.Add(door.AisleFogMask?.IsExplored == true);
+            }
+            packet.Add(row);
+        }
+
+        RpcId(1, nameof(ReceiveMapExploration), packet);
+    }
+
+    private static string MakeLocalMapKnowledgeKey(DungeonManager dungeonManager)
+    {
+        var key = new StringBuilder();
+        foreach (var room in dungeonManager.RoomInfosForNetwork)
+        {
+            if (room == null)
+            {
+                continue;
+            }
+
+            key.Append(room.Id).Append(':')
+                .Append(room.RoomFogMask?.IsExplored == true ? '1' : '0');
+            foreach (var door in room.Doors)
+            {
+                key.Append(door.AisleFogMask?.IsExplored == true ? '1' : '0');
+            }
+            key.Append(';');
+        }
+
+        return key.ToString();
     }
 
     public void BroadcastRoomCleared(int roomId)
@@ -1140,6 +1256,9 @@ public partial class LanNetworkManager : Node
             return;
         }
 
+        //记录房主已经清空的房间。后进/重连的访客加入时房间状态里已经是"未闭关",
+        //它的本地房间却还停在"有敌人"的状态, 于是永远等不到那条清房 RPC。加入时补发一次。
+        _hostClearedRooms.Add(roomId);
         Rpc(nameof(ReceiveRoomCleared), roomId);
     }
 
@@ -1287,10 +1406,10 @@ public partial class LanNetworkManager : Node
         RequestEnemyDamage(enemy.NetworkId, damages, abnormals, angle);
     }
 
-    public void BroadcastRemotePlayerDamage(Player player,
+    public void BroadcastRemotePlayerDamage(Player player, Role source,
         List<AttackStats> damages, List<AbnormalData> abnormals, float angle)
     {
-        if (!IsHost || player == null)
+        if (!IsHost || player == null || source == null || source.IsDie)
         {
             return;
         }
@@ -1305,10 +1424,13 @@ public partial class LanNetworkManager : Node
             }
         }
 
-        if (peerId <= 1 || player.IsDie)
+        if (peerId <= 1 || player.IsDie || player.HurtArea == null)
         {
             return;
         }
+
+        //房主端也要更新访客代理的生命状态, 保持房主的目标选择和死亡判断与访客一致。
+        player.HurtArea.Hurt(source, damages, abnormals, angle, true);
 
         var damagePacket = new Godot.Collections.Array<Variant>();
         foreach (var damage in damages ?? new List<AttackStats>())
@@ -1327,12 +1449,13 @@ public partial class LanNetworkManager : Node
             abnormalPacket.Add(abnormal.Value);
         }
 
-        RpcId(peerId, nameof(ReceiveRemotePlayerDamage), _nextDamageSequence++, damagePacket, abnormalPacket, angle);
+        RpcId(peerId, nameof(ReceiveRemotePlayerDamage), _nextDamageSequence++, source.NetworkId,
+            damagePacket, abnormalPacket, angle);
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveRemotePlayerDamage(long damageSequence, Godot.Collections.Array<Variant> damagePacket,
-        Godot.Collections.Array<Variant> abnormalPacket, float angle)
+    public void ReceiveRemotePlayerDamage(long damageSequence, long sourceNetworkId,
+        Godot.Collections.Array<Variant> damagePacket, Godot.Collections.Array<Variant> abnormalPacket, float angle)
     {
         if (IsHost || damagePacket == null || damageSequence <= _lastAppliedDamageSequence)
         {
@@ -1340,9 +1463,13 @@ public partial class LanNetworkManager : Node
         }
 
         _lastAppliedDamageSequence = damageSequence;
+        if (_deadEnemyNetworkIds.Contains(sourceNetworkId))
+        {
+            return;
+        }
 
         var player = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player;
-        if (player == null || player.IsDestroyed)
+        if (player == null || player.IsDestroyed || player.HurtArea == null)
         {
             return;
         }
@@ -1761,6 +1888,12 @@ public partial class LanNetworkManager : Node
         if (IsHost)
         {
             return;
+        }
+
+        if (isDead || hp <= 0)
+        {
+            //先登记终态, 再处理精灵/死亡动画。后续到达的旧伤害 RPC 不得在尸体消失后继续扣盾。
+            _deadEnemyNetworkIds.Add(networkId);
         }
 
         var world = GameApplication.Instance?.DungeonManager?.CurrWorld;

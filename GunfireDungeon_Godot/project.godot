@@ -19,7 +19,7 @@ run/main_scene="uid://lbe753cb8heb"
 config/features=PackedStringArray("4.7", "C#")
 boot_splash/use_filter=false
 boot_splash/image="uid://7wr4wvchxt5o"
-config/icon="res://icon.png"
+config/icon="res://pixel-art-1789380797663.ico"
 
 [autoload]
 

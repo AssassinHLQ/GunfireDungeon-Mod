@@ -470,6 +470,18 @@ public class RoomInfo : IDestroy
     /// </summary>
     public void OnFirstEnter()
     {
+        OnFirstEnter(false);
+    }
+
+    /// <summary>
+    /// 玩家第一次进入房间(重载)
+    /// </summary>
+    /// <param name="skipEnemyContent">
+    /// true = 联机访客端: 不本地生成/推进敌人波次(敌人由房主权威同步),
+    /// 但会照常放置首波里的武器、道具、宝箱等非敌人物体, 保证访客能看到初始道具。
+    /// </param>
+    public void OnFirstEnter(bool skipEnemyContent)
+    {
         if (RoomPreinstall == null || HasFirstEntered)
         {
             return;
@@ -483,7 +495,7 @@ public class RoomInfo : IDestroy
         
         //房间内有敌人, 或者会刷新敌人才会关门
         var hasEnemy = false;
-        if (AffiliationArea.ExistEnterItem(activityObject => activityObject is Role role && role.IsEnemyWithPlayer())) //先判断房间里面是否有敌人
+        if (AffiliationArea.ExistEnterItem(activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.IsDeathStarted)) //先判断房间里面是否有敌人
         {
             hasEnemy = true;
         }
@@ -496,7 +508,7 @@ public class RoomInfo : IDestroy
         {
             IsSeclusion = false;
             //执行第一波生成
-            RoomPreinstall.StartWave();
+            RoomPreinstall.StartWave(skipEnemyContent);
             return;
         }
 
@@ -505,7 +517,7 @@ public class RoomInfo : IDestroy
         IsSeclusion = true;
 
         //执行第一波生成
-        RoomPreinstall.StartWave();
+        RoomPreinstall.StartWave(skipEnemyContent);
     }
 
     /// <summary>
@@ -541,8 +553,49 @@ public class RoomInfo : IDestroy
 
     public void ApplyNetworkRoomState(bool hasFirstEntered, bool isSeclusion)
     {
+        var exploredAisles = new Godot.Collections.Array<Variant>();
+        foreach (var doorInfo in Doors)
+        {
+            exploredAisles.Add(doorInfo.AisleFogMask?.IsExplored == true);
+        }
+
+        ApplyNetworkRoomState(hasFirstEntered, isSeclusion,
+            RoomFogMask?.IsExplored == true, exploredAisles);
+    }
+
+    public void ApplyNetworkRoomState(bool hasFirstEntered, bool isSeclusion,
+        bool roomExplored, Godot.Collections.Array<Variant> exploredAisles)
+    {
         HasFirstEntered = hasFirstEntered;
         IsSeclusion = hasFirstEntered && isSeclusion;
+
+        var explorationChanged = RoomFogMask != null && RoomFogMask.IsExplored != roomExplored;
+        if (RoomFogMask != null)
+        {
+            RoomFogMask.IsExplored = roomExplored;
+        }
+
+        if (PreviewSprite != null)
+        {
+            PreviewSprite.Visible = roomExplored;
+        }
+
+        for (var i = 0; i < Doors.Count; i++)
+        {
+            var doorInfo = Doors[i];
+            var aisleExplored = exploredAisles != null && i < exploredAisles.Count &&
+                                exploredAisles[i].AsBool();
+            if (doorInfo.AisleFogMask != null && doorInfo.AisleFogMask.IsExplored != aisleExplored)
+            {
+                doorInfo.AisleFogMask.IsExplored = aisleExplored;
+                explorationChanged = true;
+            }
+
+            if (doorInfo.AislePreviewSprite != null)
+            {
+                doorInfo.AislePreviewSprite.Visible = aisleExplored;
+            }
+        }
 
         var doorsMatch = _openDoorFlag == !IsSeclusion;
         foreach (var doorInfo in Doors)
@@ -570,6 +623,54 @@ public class RoomInfo : IDestroy
         {
             RoomPreinstall.OverWave();
         }
+
+        if (explorationChanged)
+        {
+            EventManager.EmitEvent(EventEnum.OnNetworkMapExplorationChanged, this);
+        }
+    }
+
+    /// <summary>
+    /// 把合作玩家发现的地图知识合并到本地。探索是单调的: 只将 false 提升成 true,
+    /// 不会因延迟或旧客户端状态把已经发现的区域重置成未知。
+    /// </summary>
+    public bool MergeNetworkMapExploration(bool roomExplored,
+        Godot.Collections.Array<Variant> exploredAisles)
+    {
+        var changed = false;
+        if (roomExplored && RoomFogMask != null && !RoomFogMask.IsExplored)
+        {
+            RoomFogMask.IsExplored = true;
+            changed = true;
+        }
+
+        if (RoomFogMask?.IsExplored == true && PreviewSprite != null)
+        {
+            PreviewSprite.Visible = true;
+        }
+
+        for (var i = 0; i < Doors.Count && exploredAisles != null && i < exploredAisles.Count; i++)
+        {
+            if (!exploredAisles[i].AsBool() || Doors[i].AisleFogMask == null ||
+                Doors[i].AisleFogMask.IsExplored)
+            {
+                continue;
+            }
+
+            Doors[i].AisleFogMask.IsExplored = true;
+            if (Doors[i].AislePreviewSprite != null)
+            {
+                Doors[i].AislePreviewSprite.Visible = true;
+            }
+            changed = true;
+        }
+
+        if (changed)
+        {
+            EventManager.EmitEvent(EventEnum.OnNetworkMapExplorationChanged, this);
+        }
+
+        return changed;
     }
 
     /// <summary>

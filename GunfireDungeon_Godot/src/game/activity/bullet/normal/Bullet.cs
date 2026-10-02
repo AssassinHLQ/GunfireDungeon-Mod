@@ -193,6 +193,12 @@ public partial class Bullet : ActivityObject, IBullet
     /// </summary>
     public virtual void OnCollisionTarget(IHurt hurt)
     {
+        //发射者一旦开始死亡流程, 残留攻击就不再结算(见 BulletTracker 的说明)。
+        if (BulletData?.TriggerRole != null && BulletData.TriggerRole.IsDeathStarted)
+        {
+            return;
+        }
+
         if (NetworkVisualOnly)
         {
             if (hurt.CanHurt(Camp))
@@ -219,7 +225,7 @@ public partial class Bullet : ActivityObject, IBullet
                 hurt.GetActivityObject() is Player remotePlayer && network.IsRemotePlayer(remotePlayer) &&
                 BulletData.TriggerRole?.IsAi == true)
             {
-                network.BroadcastRemotePlayerDamage(remotePlayer, BulletData.Damages,
+                network.BroadcastRemotePlayerDamage(remotePlayer, BulletData.TriggerRole, BulletData.Damages,
                     BulletData.Abnormals, Rotation);
                 OnPlayDisappearEffect();
                 State = BulletStateEnum.CollisionTarget;
@@ -366,6 +372,13 @@ public partial class Bullet : ActivityObject, IBullet
             return;
         }
 
+        //发射者一旦开始死亡流程: 它打出的攻击不该继续结算,
+        //否则玩家会在"Boss 尸体都没了"之后还吃到技能/弹幕伤害。
+        if (BulletData?.TriggerRole != null && BulletData.TriggerRole.IsDeathStarted)
+        {
+            return;
+        }
+
         if (body is IHurt hurt)
         {
             OnCollisionTarget(hurt);
@@ -379,6 +392,11 @@ public partial class Bullet : ActivityObject, IBullet
             return;
         }
         
+        if (BulletData?.TriggerRole != null && BulletData.TriggerRole.IsDeathStarted)
+        {
+            return;
+        }
+
         if (other is IHurt hurt)
         {
             OnCollisionTarget(hurt);
@@ -387,6 +405,7 @@ public partial class Bullet : ActivityObject, IBullet
 
     public virtual void LogicalFinish()
     {
+        BulletTracker.Unregister(this);
         if (OnLogicalFinishEvent != null)
         {
             OnLogicalFinishEvent();

@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections.Generic;
 using Config;
 using Godot;
@@ -104,6 +104,11 @@ public partial class Explode : Area2D, IPoolItem
     /// </summary>
     public void RunPlay(Role triggerRole = null)
     {
+        if (IsDestroyed || AnimationPlayer == null || !GodotObject.IsInstanceValid(AnimationPlayer))
+        {
+            return;
+        }
+
         GameCamera.Main.CreateShake(new Vector2(6, 6), 0.7f, true);
         AnimationPlayer.Play(AnimatorNames.Play);
         //播放爆炸音效
@@ -124,17 +129,17 @@ public partial class Explode : Area2D, IPoolItem
 
     public void OnReclaim()
     {
-        GetParent().CallDeferred(Node.MethodName.RemoveChild, this);
+        GetParent()?.CallDeferred(Node.MethodName.RemoveChild, this);
     }
 
     public void OnLeavePool()
     {
-        
+        IsDestroyed = false;
     }
 
     private void OnAnimationFinish(StringName name)
     {
-        if (name == AnimatorNames.Play)
+        if (!IsDestroyed && name == AnimatorNames.Play)
         {
             ObjectPool.Reclaim(this);
         }
@@ -142,6 +147,11 @@ public partial class Explode : Area2D, IPoolItem
 
     private void OnBodyEntered(Node2D node)
     {
+        if (IsDestroyed)
+        {
+            return;
+        }
+
         if (node is IHurt hurt)
         {
             HandlerCollision(hurt);
@@ -158,6 +168,11 @@ public partial class Explode : Area2D, IPoolItem
     
     private void OnArea2dEntered(Area2D other)
     {
+        if (IsDestroyed)
+        {
+            return;
+        }
+
         if (other is IHurt hurt)
         {
             HandlerCollision(hurt);
@@ -166,6 +181,17 @@ public partial class Explode : Area2D, IPoolItem
 
     private void HandlerCollision(IHurt hurt)
     {
+        if (IsDestroyed || BulletData == null)
+        {
+            return;
+        }
+
+        //产生爆炸的角色已经死亡: 它的爆炸不再结算伤害。
+        if (BulletData?.TriggerRole != null && BulletData.TriggerRole.IsDeathStarted)
+        {
+            return;
+        }
+
         var temp = hurt.GetPosition() - Position;
         var len = temp.Length();
         var angle = temp.Angle();

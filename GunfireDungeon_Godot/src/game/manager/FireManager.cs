@@ -154,6 +154,8 @@ public static class FireManager
         //创建子弹
         var bulletInstance = ObjectManager.GetBullet(bulletData.BulletBase.Prefab);
         bulletInstance.InitData(bulletData, camp);
+        //登记"谁打出去的", 敌人死亡时才能把它还没落地的攻击一起收走。
+        BulletTracker.Register(bulletInstance);
         return bulletInstance;
     }
 
@@ -166,6 +168,7 @@ public static class FireManager
         var laser = ObjectManager.GetLaser(bulletData.BulletBase.Prefab);
         laser.AddToActivityRoot(RoomLayerEnum.YSortLayer);
         laser.InitData(bulletData, camp, Laser.LaserDefaultWidth);
+        BulletTracker.Register(laser);
         return laser;
     }
     

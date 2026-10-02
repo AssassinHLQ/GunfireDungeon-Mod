@@ -19,7 +19,6 @@ public partial class Gold : ActivityObject, IPoolItem
     private float _maxSpeed = 250;
     private float _speed = 0;
     private Role _moveTarget;
-    private bool _networkClaimPending;
     
     public override void OnInit()
     {
@@ -41,24 +40,21 @@ public partial class Gold : ActivityObject, IPoolItem
 
     protected override void Process(float delta)
     {
-        var network = LanNetworkManager.Instance;
-        if (network != null && network.IsLanConnected)
+        if (IsRecycled || IsDestroyed)
         {
-            var player = World.Player;
-            if (player != null && NetworkId != 0 && GlobalPosition.DistanceSquaredTo(player.GlobalPosition) <= 36f * 36f &&
-                !_networkClaimPending)
-            {
-                _networkClaimPending = true;
-                network.RequestGoldPickup(this);
-            }
             return;
+        }
+
+        if (_moveTarget == null || _moveTarget.IsDestroyed)
+        {
+            _moveTarget = World?.Player;
         }
 
         if (_moveTarget != null && !_moveTarget.IsDestroyed)
         {
-            var position = Position;
-            var targetPosition = _moveTarget.Position;
-            if (position.DistanceSquaredTo(targetPosition) < 3 * 3)
+            var position = GlobalPosition;
+            var targetPosition = _moveTarget.GlobalPosition;
+            if (position.DistanceSquaredTo(targetPosition) <= 8f * 8f)
             {
                 _moveTarget.AddGold(GoldCount);
                 ObjectPool.Reclaim(this);
@@ -66,21 +62,21 @@ public partial class Gold : ActivityObject, IPoolItem
             else
             {
                 _speed = Mathf.MoveToward(_speed, _maxSpeed, _maxSpeed * delta);
-                Position = position.MoveToward(targetPosition, _speed * delta);
+                GlobalPosition = position.MoveToward(targetPosition, _speed * delta);
             }
         }
     }
     
     public void OnReclaim()
     {
-        GetParent().RemoveChild(this);
+        StopAllCoroutine();
+        GetParent()?.RemoveChild(this);
         _moveTarget = null;
     }
 
     public void OnLeavePool()
     {
         _speed = 0;
-        _networkClaimPending = false;
         NetworkId = 0;
         MoveController.Enable = true;
         MoveController.ClearForce();
@@ -93,7 +89,8 @@ public partial class Gold : ActivityObject, IPoolItem
     /// <param name="position">位置</param>
     /// <param name="count">金币数量</param>
     /// <param name="force">投抛力度</param>
-    public static List<Gold> CreateGold(Vector2 position, int count, int force = 10)
+    public static List<Gold> CreateGold(Vector2 position, int count, int force = 10,
+        bool broadcastNetworkDrop = false)
     {
         var list = new List<Gold>();
         var goldList = Utils.GetGoldList(count);
@@ -102,15 +99,13 @@ public partial class Gold : ActivityObject, IPoolItem
             var o = ObjectManager.GetActivityObject<Gold>(id);
             o.Position = position;
             var network = LanNetworkManager.Instance;
-            if (network != null && network.IsHost && network.IsLanConnected)
+            if (network != null && network.IsLanConnected)
             {
                 o.InitNetworkDrop(position);
-                network.BroadcastNetworkGoldSpawn(o);
-            }
-            else if (network != null && network.IsLanConnected)
-            {
-                // 联机访客只显示房主广播的金币，不自行抛掷或生成 Boss 掉落。
-                o.ReclaimNetworkDrop();
+                if (broadcastNetworkDrop && network.IsHost)
+                {
+                    network.BroadcastNetworkGoldSpawn(o);
+                }
             }
             else
             {
@@ -130,7 +125,6 @@ public partial class Gold : ActivityObject, IPoolItem
     {
         PutDown(position, RoomLayerEnum.YSortLayer, false);
         _moveTarget = World.Player;
-        _networkClaimPending = false;
     }
 
     public void ReclaimNetworkDrop()
@@ -138,8 +132,4 @@ public partial class Gold : ActivityObject, IPoolItem
         ObjectPool.Reclaim(this);
     }
 
-    public void ResetNetworkClaimPending()
-    {
-        _networkClaimPending = false;
-    }
 }

@@ -302,6 +302,17 @@ public abstract partial class Role : ActivityObject
     public bool IsNetworkReplica { get; private set; }
     public bool HasCompletedDeathSequence { get; private set; }
 
+    /// <summary>
+    /// 是否已经进入死亡流程(死后置为 true, 且只有 <see cref="ResetForNewRun"/> 会清掉)。
+    ///
+    /// 【为什么需要它】<see cref="IsDie"/> 也是"已经死了", 但它和 <see cref="HasCompletedDeathSequence"/>
+    /// 之间隔着一整段死亡动画 —— Boss 的死亡动画有 1 秒以上。房间清敌检查(每秒一次)如果只看
+    /// "IsDestroyed / HasCompletedDeathSequence", 就会在死亡动画播放期间认为 Boss 还活着,
+    /// 于是门一直不开; 而如果只等动画跑完再判, 玩家又已经站在门口了。
+    /// 用这个属性可以在 Hp 归零的那一刻就把房间判定为"没有存活敌人"。
+    /// </summary>
+    public bool IsDeathStarted => IsDie;
+
     public void ResetForNewRun()
     {
         IsDie = false;
@@ -1231,6 +1242,19 @@ public abstract partial class Role : ActivityObject
         if (HasInteractive())
         {
             var item = InteractiveItem;
+            if (this is Player && item is TreasureBox &&
+                LanNetworkManager.Instance is { IsLanConnected: true })
+            {
+                item.Interactive(this);
+                return item;
+            }
+
+            if (this is Player && item is ActivityObject perPlayerItem && perPlayerItem.IsPerPlayerLoot)
+            {
+                item.Interactive(this);
+                return item;
+            }
+
             if (this is Player && item is ActivityObject activityObject &&
                 (activityObject is Weapon || activityObject is PropActivity) &&
                 LanNetworkManager.Instance is { IsLanConnected: true } network)
@@ -1446,7 +1470,8 @@ public abstract partial class Role : ActivityObject
             PlayHitAnimation();
         }
 
-        if (!string.IsNullOrEmpty(animation) && AnimatedSprite.SpriteFrames.HasAnimation(animation))
+        if (GodotObject.IsInstanceValid(AnimatedSprite) && AnimatedSprite.SpriteFrames != null &&
+            !string.IsNullOrEmpty(animation) && AnimatedSprite.SpriteFrames.HasAnimation(animation))
         {
             if (AnimatedSprite.Animation != animation)
             {
@@ -1472,6 +1497,17 @@ public abstract partial class Role : ActivityObject
         }
 
         StopInvincibleFlashing();
+        if (IsAi)
+        {
+            //无论走哪条死亡分支(动画/deferred/广播), 统一停止 Boss 攻击协程。
+            //放在 IsDie = true 之后、死亡动画之前, 防止死亡协程再执行技能结算。
+            StopAllCoroutine();
+            if (!replicated && !IsNetworkReplica)
+            {
+                BulletTracker.ClearInFlight(this);
+            }
+        }
+
         if (HurtCollision != null)
         {
             HurtCollision.Disabled = true;
@@ -1492,11 +1528,12 @@ public abstract partial class Role : ActivityObject
         {
             StartCoroutine(DoReplicatedDeathVisual());
         }
-        else if (AnimationPlayer.HasAnimation(AnimatorNames.Die))
+        else if (GodotObject.IsInstanceValid(AnimationPlayer) && AnimationPlayer.HasAnimation(AnimatorNames.Die))
         {
             StartCoroutine(DoDieWithAnimationPlayer());
         }
-        else if (AnimatedSprite.SpriteFrames.HasAnimation(AnimatorNames.Die))
+        else if (GodotObject.IsInstanceValid(AnimatedSprite) && AnimatedSprite.SpriteFrames != null &&
+                 AnimatedSprite.SpriteFrames.HasAnimation(AnimatorNames.Die))
         {
             StartCoroutine(DoDieWithAnimatedSprite());
         }
@@ -1508,12 +1545,13 @@ public abstract partial class Role : ActivityObject
 
     private IEnumerator DoReplicatedDeathVisual()
     {
-        if (AnimationPlayer.HasAnimation(AnimatorNames.Die))
+        if (GodotObject.IsInstanceValid(AnimationPlayer) && AnimationPlayer.HasAnimation(AnimatorNames.Die))
         {
             AnimationPlayer.Play(AnimatorNames.Die);
             yield return ToSignal(AnimationPlayer, AnimationMixer.SignalName.AnimationFinished);
         }
-        else if (AnimatedSprite.SpriteFrames.HasAnimation(AnimatorNames.Die))
+        else if (GodotObject.IsInstanceValid(AnimatedSprite) && AnimatedSprite.SpriteFrames != null &&
+                 AnimatedSprite.SpriteFrames.HasAnimation(AnimatorNames.Die))
         {
             AnimatedSprite.Play(AnimatorNames.Die);
             if (AnimatedSprite.SpriteFrames.GetFrameCount(AnimatorNames.Die) > 1)
@@ -1537,6 +1575,12 @@ public abstract partial class Role : ActivityObject
 
     private IEnumerator DoDieWithAnimationPlayer()
     {
+        if (!GodotObject.IsInstanceValid(AnimationPlayer))
+        {
+            DoDieHandler();
+            yield break;
+        }
+
         AnimationPlayer.Play(AnimatorNames.Die);
         yield return ToSignal(AnimationPlayer, AnimationMixer.SignalName.AnimationFinished);
         DoDieHandler();
@@ -1544,6 +1588,12 @@ public abstract partial class Role : ActivityObject
     
     private IEnumerator DoDieWithAnimatedSprite()
     {
+        if (!GodotObject.IsInstanceValid(AnimatedSprite) || AnimatedSprite.SpriteFrames == null)
+        {
+            DoDieHandler();
+            yield break;
+        }
+
         AnimatedSprite.Play(AnimatorNames.Die);
         if (AnimatedSprite.SpriteFrames.GetFrameCount(AnimatorNames.Die) > 1)
         {
@@ -1555,6 +1605,11 @@ public abstract partial class Role : ActivityObject
     //死亡逻辑
     private void DoDieHandler()
     {
+        if (IsDestroyed || HasCompletedDeathSequence)
+        {
+            return;
+        }
+
         HasCompletedDeathSequence = true;
         OnDie();
         //死亡事件
@@ -2338,6 +2393,11 @@ public abstract partial class Role : ActivityObject
 
     public override Vector2 GetCenterPosition()
     {
+        if (!GodotObject.IsInstanceValid(AnimatedSprite))
+        {
+            return Position;
+        }
+
         return AnimatedSprite.Position + Position + new Vector2(0, MountPoint.Position.Y);
     }
 }

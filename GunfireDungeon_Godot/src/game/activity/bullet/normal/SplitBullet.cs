@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using Config;
 using Godot;
@@ -32,7 +32,8 @@ public partial class SplitBullet : Bullet
         base.LogicalFinish();
 
         //创建分裂子弹
-        if (_count > 0 && _bulletData != null)
+        // Boss 死亡清理父弹时不能再裂变出新弹, 否则新弹虽已追踪却会在死亡动画期间继续飞行。
+        if (_count > 0 && _bulletData != null && _bulletData.TriggerRole?.IsDeathStarted != true)
         {
             var a = Mathf.Pi * 2 / _count;
             for (var i = 0; i < _count; i++)

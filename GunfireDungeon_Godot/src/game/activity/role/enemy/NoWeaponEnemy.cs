@@ -71,6 +71,12 @@ public partial class NoWeaponEnemy : Enemy
 
     protected override void OnDie()
     {
+        if (IsNetworkReplica)
+        {
+            GetParent()?.RemoveChild(this);
+            return;
+        }
+
         var realVelocity = GetRealVelocity();
         var effPos = Position;
         var debris = Create<AutoFreezeObject>(Ids.Id_enemy_dead0002);
@@ -80,7 +86,7 @@ public partial class NoWeaponEnemy : Enemy
         debris.BrushPrevPosition =  BrushPrevPosition;
         
         //创建金币
-        Gold.CreateGold(Position, RoleState.Gold);
+        Gold.CreateGold(Position, RoleState.Gold, broadcastNetworkDrop: true);
         
         //派发敌人死亡信号
         EventManager.EmitEvent(EventEnum.OnEnemyDie, this);

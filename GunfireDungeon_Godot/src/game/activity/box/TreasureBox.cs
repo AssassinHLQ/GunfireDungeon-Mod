@@ -12,6 +12,8 @@ public partial class TreasureBox : ObstacleObject
     private const float RewardThrowVerticalSpeed = 30f;
 
     public bool IsOpen { get; private set; }
+    private string _rewardActivityId = string.Empty;
+    private bool _rewardCreated;
 
     public override void OnInit()
     {
@@ -31,15 +33,55 @@ public partial class TreasureBox : ObstacleObject
             return;
         }
 
+        var network = LanNetworkManager.Instance;
+        if (network != null && network.IsLanConnected && NetworkId != 0)
+        {
+            network.RequestTreasureBoxOpen(this);
+            return;
+        }
+
+        OpenWithReward(World?.RandomPool?.GetRandomProp()?.Id ?? string.Empty);
+    }
+
+    public void OpenWithReward(string activityId)
+    {
+        if (IsOpen)
+        {
+            return;
+        }
+
         IsOpen = true;
+        _rewardActivityId = activityId ?? string.Empty;
         AnimatedSprite.SpeedScale = RewardAnimationSpeedScale;
         AnimatedSprite.Play(AnimatorNames.Open);
     }
 
     private void OnAnimationFinished()
     {
-        var weapon = Create(World.RandomPool.GetRandomProp());
-        weapon.Throw(Position, RewardThrowAltitude, RewardThrowVerticalSpeed, new Vector2(0, 11), 0);
+        if (IsDestroyed || _rewardCreated || string.IsNullOrEmpty(_rewardActivityId))
+        {
+            return;
+        }
+
+        _rewardCreated = true;
+        var reward = Create(_rewardActivityId);
+        if (reward == null)
+        {
+            return;
+        }
+
+        reward.IsPerPlayerLoot = true;
+        reward.Throw(Position, RewardThrowAltitude, RewardThrowVerticalSpeed, new Vector2(0, 11), 0);
+    }
+
+    protected override void OnDestroy()
+    {
+        if (GodotObject.IsInstanceValid(AnimatedSprite))
+        {
+            AnimatedSprite.AnimationFinished -= OnAnimationFinished;
+        }
+
+        base.OnDestroy();
     }
 
     public override void Hurt(ActivityObject target, List<AttackStats> damages, List<AbnormalData> abnormals, float angle)

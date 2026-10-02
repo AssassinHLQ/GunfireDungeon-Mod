@@ -34,8 +34,14 @@ public partial class HurtArea : Area2D, IHurt
 
     public void Hurt(ActivityObject target, List<AttackStats> damages, List<AbnormalData> abnormals, float angle)
     {
+        Hurt(target, damages, abnormals, angle, false);
+    }
+
+    public void Hurt(ActivityObject target, List<AttackStats> damages, List<AbnormalData> abnormals,
+        float angle, bool forceLocal)
+    {
         var network = LanNetworkManager.Instance;
-        if (network != null && network.IsLanConnected && !network.IsHost &&
+        if (!forceLocal && network != null && network.IsLanConnected && !network.IsHost &&
             Master.NetworkId != 0 && Master.IsAi)
         {
             if (target is Player)
@@ -43,6 +49,14 @@ public partial class HurtArea : Area2D, IHurt
                 network.RequestEnemyDamage(Master.NetworkId, damages, abnormals, angle);
             }
 
+            return;
+        }
+
+        if (!forceLocal && network != null && network.IsLanConnected && network.IsHost &&
+            Master is Player remotePlayer && network.IsRemotePlayer(remotePlayer) &&
+            target is Role source && source.IsAi)
+        {
+            network.BroadcastRemotePlayerDamage(remotePlayer, source, damages, abnormals, angle);
             return;
         }
 
