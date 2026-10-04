@@ -57,7 +57,8 @@ public class RoomPreinstall : IDestroy
     /// 判成"还有敌人", 门不开; 等动画播完再判又要多等一次每秒检查, 玩家就卡在门口。
     /// 等到死亡动画结束再清房, 避免 Boss 尸体还显示在场上时就提示房间已清理。
     /// </summary>
-    public bool HasLivingEnemy => _roomEnemies.Any(role => role != null && !role.IsDestroyed && !role.HasCompletedDeathSequence);
+    public bool HasLivingEnemy => _roomEnemies.Any(role => role != null && role.IsAi &&
+        !role.IsDestroyed && !role.IsDie && !role.HasCompletedDeathSequence);
     
     //是否运行过预处理
     private bool _runPretreatment = false;
@@ -449,7 +450,7 @@ public class RoomPreinstall : IDestroy
             {
                 //有敌人
                 var activityObject = preloadData.ActivityObject;
-                var isEnemyRole = activityObject is Role role && role.IsEnemyWithPlayer();
+                var isEnemyRole = activityObject is Role role && role.IsAi;
                 if (!hasEnemy && isEnemyRole)
                 {
                     hasEnemy = true;
@@ -494,7 +495,8 @@ public class RoomPreinstall : IDestroy
         if (!hasEnemy)
         {
             hasEnemy = RoomInfo.AffiliationArea.ExistIncludeItem(
-                activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.HasCompletedDeathSequence
+                activityObject => activityObject is Role role && role.IsAi &&
+                    !role.IsDie && !role.HasCompletedDeathSequence
             );
         }
 
@@ -656,7 +658,7 @@ public class RoomPreinstall : IDestroy
         activityObject.VerticalSpeed = activityMark.VerticalSpeed;
         activityObject.Altitude = activityMark.Altitude;
         activityObject.NetworkId = activityMark.NetworkId;
-        if (activityObject is Role trackedRole && trackedRole.IsEnemyWithPlayer())
+        if (activityObject is Role trackedRole && trackedRole.IsAi)
         {
             _roomEnemies.Add(trackedRole);
         }

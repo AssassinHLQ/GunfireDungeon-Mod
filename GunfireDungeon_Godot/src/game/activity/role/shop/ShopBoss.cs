@@ -52,19 +52,19 @@ public partial class ShopBoss : AiRole
     /// 5 个货架时总宽 = 4 x 28 = 112px, 房间宽 21 格 x 16px = 336px, 不会出格。
     /// </summary>
     [Export]
-    public float DefaultSlotSpacing = 28f;
+    public float DefaultSlotSpacing = 40f;
 
     /// <summary>
     /// 自动排布时货架相对 NPC 的垂直偏移(像素)。正数在下(房间原点在左上)。
     /// </summary>
     [Export]
-    public float DefaultSlotOffsetY = 34f;
+    public float DefaultSlotOffsetY = 42f;
 
     /// <summary>
     /// 商品图标显示的边长(像素)。
     /// </summary>
     [Export]
-    public float SlotIconSize = 14f;
+    public float SlotIconSize = 22f;
 
     /// <summary>
     /// 刷新商品的【基础】价格(金币)。实际价格每刷一次翻一倍:
@@ -177,7 +177,7 @@ public partial class ShopBoss : AiRole
         base.OnCreateWithMark(roomPreinstall, activityMark);
         ShopRoomId = roomPreinstall?.RoomInfo?.Id ?? -1;
 
-        _slotLayer = World.GetRoomLayer(RoomLayerEnum.NormalLayer);
+        _slotLayer = World.GetRoomLayer(RoomLayerEnum.YSortLayer);
 
         //【踩坑记录】原来这里是把货架摆在 (0, 34) —— 那是【房间原点】的坐标,
         //而房间原点是房间左上角, 通常正好在墙里, 所以玩家在商店房里看不到任何商品图标。
@@ -248,19 +248,32 @@ public partial class ShopBoss : AiRole
         var stockIds = new string[_slotPositions.Count];
         for (var i = 0; i < stockIds.Length; i++)
         {
-            for (var attempt = 0; attempt < 64; attempt++)
-            {
-                var config = World?.RandomPool?.GetRandomProp();
-                if (config != null && ShopItemSlot.IsSupportedShopItem(config.Id))
-                {
-                    stockIds[i] = config.Id;
-                    break;
-                }
-            }
+            stockIds[i] = GetRandomShopItemId();
         }
 
         ApplySharedShopState(stockIds, _refreshCount);
         BroadcastSharedStateIfHost();
+    }
+
+    private string GetRandomShopItemId()
+    {
+        for (var attempt = 0; attempt < 64; attempt++)
+        {
+            var config = World?.RandomPool?.GetRandomProp();
+            if (config != null && ShopItemSlot.IsSupportedShopItem(config.Id))
+            {
+                return config.Id;
+            }
+        }
+
+        var candidates = ExcelConfig.ActivityBase_List?.Where(item =>
+            item != null && ShopItemSlot.IsSupportedShopItem(item.Id)).ToArray();
+        if (candidates == null || candidates.Length == 0 || World?.Random == null)
+        {
+            return string.Empty;
+        }
+
+        return candidates[World.Random.RandomRangeInt(0, candidates.Length - 1)].Id;
     }
 
     public string[] GetSharedStockIds()
@@ -295,6 +308,7 @@ public partial class ShopBoss : AiRole
                     slot.GlobalPosition = _slotPositions[i];
                 }
 
+                slot.ZIndex = 5;
                 slot.BindShop(this, i);
                 _slot.Add(slot);
             }

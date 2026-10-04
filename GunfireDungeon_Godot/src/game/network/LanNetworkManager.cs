@@ -398,8 +398,15 @@ public partial class LanNetworkManager : Node
             return;
         }
 
+        var currentFloor = dungeonManager.CurrentFloor;
+
         foreach (var state in _remotePlayers.Values)
         {
+            if (state.Floor != currentFloor)
+            {
+                continue;
+            }
+
             if (state.PeerId == entrantPeerId)
             {
                 state.RoomId = roomId;
@@ -2543,6 +2550,10 @@ public partial class LanNetworkManager : Node
                 (previousFloor != floor || previousRoomId != roomId))
             {
                 dungeonManager.OnRemotePlayerEnterRoom(roomId, state.Player);
+                if (!isDead)
+                {
+                    ForcePartyIntoRoom(roomId, newPosition, senderId);
+                }
             }
         }
         state.RoomId = roomId;
