@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using Config;
 using Godot;
 using Godot.Collections;
 
@@ -103,6 +105,9 @@ public partial class ShopBoss : AiRole
         }
     }
 
+    public int SharedRefreshCount => _refreshCount;
+    public bool IsShopStockBuilt => _built;
+
     /// <summary>
     /// 互动提示条上显示的文案。把"下次刷新多少钱"直接写进去,
     /// 否则玩家不知道按 E 会扣钱(见 InteractiveTipBarHandler.GetDisplayName)。
@@ -132,6 +137,7 @@ public partial class ShopBoss : AiRole
     /// 货架挂到哪个节点下(房间的 NormalLayer)。
     /// </summary>
     private Node _slotLayer;
+    public int ShopRoomId { get; private set; } = -1;
 
     /// <summary>
     /// 是否已经摆过货架。刷新只在摆过之后才有意义。
@@ -169,6 +175,7 @@ public partial class ShopBoss : AiRole
     public override void OnCreateWithMark(RoomPreinstall roomPreinstall, ActivityMark activityMark)
     {
         base.OnCreateWithMark(roomPreinstall, activityMark);
+        ShopRoomId = roomPreinstall?.RoomInfo?.Id ?? -1;
 
         _slotLayer = World.GetRoomLayer(RoomLayerEnum.NormalLayer);
 
@@ -219,7 +226,17 @@ public partial class ShopBoss : AiRole
                      $"(间距 {DefaultSlotSpacing} 下移 {DefaultSlotOffsetY})");
         }
 
-        BuildSlots();
+        var network = LanNetworkManager.Instance;
+        if (network is { IsLanConnected: true, IsHost: false } &&
+            !network.IsLocalDungeonAuthority)
+        {
+            ApplySharedShopState(new string[_slotPositions.Count], 0);
+            network.RequestSharedShopState(this);
+        }
+        else
+        {
+            BuildSlots();
+        }
     }
 
     /// <summary>
@@ -228,44 +245,149 @@ public partial class ShopBoss : AiRole
     /// </summary>
     private void BuildSlots()
     {
-        ClearSlots();
+        var stockIds = new string[_slotPositions.Count];
+        for (var i = 0; i < stockIds.Length; i++)
+        {
+            for (var attempt = 0; attempt < 64; attempt++)
+            {
+                var config = World?.RandomPool?.GetRandomProp();
+                if (config != null && ShopItemSlot.IsSupportedShopItem(config.Id))
+                {
+                    stockIds[i] = config.Id;
+                    break;
+                }
+            }
+        }
 
+        ApplySharedShopState(stockIds, _refreshCount);
+        BroadcastSharedStateIfHost();
+    }
+
+    public string[] GetSharedStockIds()
+    {
+        return _slot.Select(slot => slot?.ActivityId ?? string.Empty).ToArray();
+    }
+
+    public void ApplySharedShopState(string[] stockIds, int refreshCount)
+    {
         if (_slotLayer == null || _slotPositions.Count == 0)
         {
             return;
         }
 
-        foreach (var position in _slotPositions)
+        if (_slot.Count != _slotPositions.Count || _slot.Any(slot => slot == null || !GodotObject.IsInstanceValid(slot)))
         {
-            var config = World.RandomPool.GetRandomProp();
-            if (config == null)
+            ClearSlots();
+            for (var i = 0; i < _slotPositions.Count; i++)
             {
-                continue;
-            }
+                ShopItemSlot slot;
+                if (SlotPrefab != null)
+                {
+                    slot = SlotPrefab.Instantiate<ShopItemSlot>();
+                    _slotLayer.AddChild(slot);
+                    slot.GlobalPosition = _slotPositions[i];
+                    slot.InitItem(null);
+                }
+                else
+                {
+                    slot = ShopItemSlot.Create(null, SlotIconSize, ResourceManager.DefaultFont12Px);
+                    _slotLayer.AddChild(slot);
+                    slot.GlobalPosition = _slotPositions[i];
+                }
 
-            ShopItemSlot slot;
-            if (SlotPrefab != null)
-            {
-                //编辑器里指定了预制体, 用它
-                slot = SlotPrefab.Instantiate<ShopItemSlot>();
-                _slotLayer.AddChild(slot);
-                slot.GlobalPosition = position;
-                slot.InitItem(config);
+                slot.BindShop(this, i);
+                _slot.Add(slot);
             }
-            else
-            {
-                //没有预制体: 代码构建
-                slot = ShopItemSlot.Create(config, SlotIconSize, ResourceManager.DefaultFont12Px);
-                _slotLayer.AddChild(slot);
-                slot.GlobalPosition = position;
-            }
-
-            _slot.Add(slot);
         }
 
-        _built = true;
+        for (var i = 0; i < _slot.Count; i++)
+        {
+            var id = stockIds != null && i < stockIds.Length ? stockIds[i] : string.Empty;
+            var config = ShopItemSlot.IsSupportedShopItem(id) && ExcelConfig.ActivityBase_Map.TryGetValue(id, out var itemConfig)
+                ? itemConfig
+                : null;
+            _slot[i].SetItemConfig(config);
+        }
 
-        TempDebug.LogShop($"[商店] 摆好 {_slot.Count} 个商品");
+        _refreshCount = Mathf.Max(0, refreshCount);
+        _built = true;
+        RefreshLocalTip();
+    }
+
+    public bool TryGetSharedPurchase(int slotIndex, out string activityId, out int price)
+    {
+        activityId = string.Empty;
+        price = 0;
+        if (!_built || slotIndex < 0 || slotIndex >= _slot.Count)
+        {
+            return false;
+        }
+
+        var slot = _slot[slotIndex];
+        if (slot == null || string.IsNullOrEmpty(slot.ActivityId))
+        {
+            return false;
+        }
+
+        if (slot.FinalPrice > int.MaxValue)
+        {
+            return false;
+        }
+
+        activityId = slot.ActivityId;
+        price = (int)slot.FinalPrice;
+        return true;
+    }
+
+    public bool TryPurchaseLocally(int slotIndex, Role role)
+    {
+        if (role == null || slotIndex < 0 || slotIndex >= _slot.Count || !_slot[slotIndex].TryPurchaseLocally(role))
+        {
+            return false;
+        }
+
+        BroadcastSharedStateIfHost();
+        return true;
+    }
+
+    public void MarkSharedSlotSold(int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= _slot.Count)
+        {
+            return;
+        }
+
+        _slot[slotIndex].SetItemConfig(null);
+        BroadcastSharedStateIfHost();
+    }
+
+    public void RequestPurchase(int slotIndex, Role role)
+    {
+        var network = LanNetworkManager.Instance;
+        if (network is { IsLanConnected: true } && !network.IsLocalDungeonAuthority)
+        {
+            network.RequestSharedShopPurchase(this, slotIndex);
+            return;
+        }
+
+        TryPurchaseLocally(slotIndex, role);
+    }
+
+    private void BroadcastSharedStateIfHost()
+    {
+        if (LanNetworkManager.Instance is { IsLanConnected: true, IsHost: true } network)
+        {
+            network.BroadcastSharedShopState(this);
+        }
+    }
+
+    private void RefreshLocalTip()
+    {
+        if (World?.Player?.InteractiveItem == this)
+        {
+            EventManager.EmitEvent(EventEnum.OnPlayerChangeInteractiveItem,
+                new CheckInteractiveResult(this, true));
+        }
     }
 
     /// <summary>
@@ -305,6 +427,23 @@ public partial class ShopBoss : AiRole
             return;
         }
 
+        if (LanNetworkManager.Instance is { IsLanConnected: true } network &&
+            !network.IsLocalDungeonAuthority)
+        {
+            network.RequestSharedShopRefresh(this);
+            return;
+        }
+
+        TryRefreshLocally(role);
+    }
+
+    public bool TryRefreshLocally(Role role)
+    {
+        if (!_built || role == null)
+        {
+            return false;
+        }
+
         var cost = CurrentRefreshCost;
         if (cost > 0)
         {
@@ -312,14 +451,14 @@ public partial class ShopBoss : AiRole
             {
                 TempDebug.LogShop($"[商店] 第 {_refreshCount + 1} 次刷新需要 {cost} 金币, " +
                                   $"玩家只有 {role.RoleState.Gold}, 已取消");
-                return;
+                return false;
             }
 
             role.UseGold(cost);
         }
 
-        BuildSlots();
         _refreshCount++;
+        BuildSlots();
 
         //提示条上的价格要跟着变成下一次的价(5 → 10 → 20)。
         //走的是玩家切换互动对象时用的同一个事件, 见 InteractiveTipBarHandler.OnPlayerChangeInteractiveItem。
@@ -328,6 +467,18 @@ public partial class ShopBoss : AiRole
 
         TempDebug.LogShop($"[商店] 第 {_refreshCount} 次刷新完成, 花费 {cost} 金币, " +
                           $"新上架 {_slot.Count} 个商品, 下次刷新 {CurrentRefreshCost} 金币");
+        return true;
+    }
+
+    public void RefreshFromNetworkAuthority()
+    {
+        if (!_built)
+        {
+            return;
+        }
+
+        _refreshCount++;
+        BuildSlots();
     }
 
     protected override void OnDestroy()

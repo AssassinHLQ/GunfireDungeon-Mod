@@ -2,6 +2,7 @@ using DsUi;
 using Config;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -17,6 +18,7 @@ using Godot;
 public partial class LanNetworkManager : Node
 {
     public const int DefaultPort = 24567;
+    public const int DungeonFloorSeedStep = 104729;
     private const int DiscoveryPort = 24568;
     public const int MaxPlayers = 4;
     private const string DiscoveryRequest = "GFDISCOVER1";
@@ -29,6 +31,50 @@ public partial class LanNetworkManager : Node
                                 Multiplayer.MultiplayerPeer.GetConnectionStatus() == MultiplayerPeer.ConnectionStatus.Connected;
     public long LocalPeerId => IsLanConnected ? Multiplayer.GetUniqueId() : 1;
     public string LastStatus { get; private set; } = "未连接";
+
+    /// <summary>
+    /// 当前客户端是否已经进入与房主不同的楼层。
+    /// 不同楼层时由本机生成敌人和处理房间，避免房主切层把访客拉回去。
+    /// </summary>
+    public bool IsLocalDungeonAuthority
+    {
+        get
+        {
+            if (!IsLanConnected || IsHost)
+            {
+                return true;
+            }
+
+            var dungeonManager = GameApplication.Instance?.DungeonManager;
+            if (dungeonManager?.CurrWorld is not Dungeon)
+            {
+                return false;
+            }
+
+            if (_knownHostFloor > 0)
+            {
+                return _locallyOwnedFloor == dungeonManager.CurrentFloor ||
+                       _knownHostFloor != dungeonManager.CurrentFloor;
+            }
+
+            //刚切层还没收到房主的新快照时，二层及以上默认按本机独立层处理，
+            //避免先跳过敌人生成、等快照到达后却没有第一波敌人。
+            return _locallyOwnedFloor == dungeonManager.CurrentFloor || dungeonManager.CurrentFloor > 1;
+        }
+    }
+
+    public void ClaimIndependentFloor(int floor)
+    {
+        if (!IsLanConnected || IsHost || floor <= 0)
+        {
+            return;
+        }
+
+        if (_knownHostFloor <= 0 || _knownHostFloor != floor)
+        {
+            _locallyOwnedFloor = floor;
+        }
+    }
 
     /// <summary>状态文字发生变化。</summary>
     public event Action<string> StatusChanged;
@@ -49,6 +95,7 @@ public partial class LanNetworkManager : Node
     private double _worldSnapshotTimer;
     private double _roomStateTimer;
     private double _mapExplorationTimer;
+    private long _localGoldRevision;
     private ulong _lastSnapshotSentAt;
     private World _lastLocalWorld;
     private string _lastLocalWorldKind = string.Empty;
@@ -56,15 +103,20 @@ public partial class LanNetworkManager : Node
     private string _lastRequestedStateKey = string.Empty;
     private string _lastLocalMapKnowledgeKey = string.Empty;
     private int _sessionRevision;
+    private int _knownHostFloor;
+    private int _locallyOwnedFloor;
     private bool _applyingRemoteState;
     private Variant[] _pendingRemoteState;
     private long _nextDynamicNetworkId = 1;
     private long _nextDamageSequence = 1;
+    private long _nextShopTransactionId = 1;
     private long _lastAppliedDamageSequence;
     private readonly HashSet<int> _broadcastClearedRooms = new();
     /// <summary>房主已经清空的房间。重开一局要清掉, 否则同 ID 房间不会再同步开门。</summary>
     private readonly HashSet<int> _hostClearedRooms = new();
     private readonly Dictionary<long, string> _openedTreasureBoxRewards = new();
+    private readonly Dictionary<long, SharedShopState> _pendingSharedShopStates = new();
+    private readonly Dictionary<long, PendingShopTransaction> _pendingShopTransactions = new();
 
     private sealed class RemotePlayerState
     {
@@ -78,6 +130,26 @@ public partial class LanNetworkManager : Node
         public bool IsMeleeAttacking;
         public long MeleeAttackSequence;
         public int RoomId = -1;
+        public int Floor;
+        public bool IsDead;
+        public string DeathAnimation = string.Empty;
+        public int DeathFrame;
+        public int Gold;
+        public long GoldRevision = -1;
+    }
+
+    private sealed class SharedShopState
+    {
+        public string[] StockIds;
+        public int RefreshCount;
+        public int Floor;
+        public int SessionRevision;
+    }
+
+    private sealed class PendingShopTransaction
+    {
+        public int RefundAmount;
+        public string PurchaseActivityId;
     }
 
     public override void _Ready()
@@ -144,6 +216,7 @@ public partial class LanNetworkManager : Node
         }
         UpdateRemotePlayers((float)delta);
         ApplyPendingTreasureBoxStates();
+        ApplyPendingSharedShopStates();
         SyncLocalMapExploration(delta);
 
         _snapshotTimer -= delta;
@@ -173,9 +246,15 @@ public partial class LanNetworkManager : Node
         Multiplayer.MultiplayerPeer = _peer;
         IsHost = true;
         _sessionRevision = 0;
+        _knownHostFloor = 0;
+        _locallyOwnedFloor = 0;
         _deadEnemyNetworkIds.Clear();
         _hostClearedRooms.Clear();
         _openedTreasureBoxRewards.Clear();
+        _pendingSharedShopStates.Clear();
+        _pendingShopTransactions.Clear();
+        _nextShopTransactionId = 1;
+        _localGoldRevision = 0;
         StartHostDiscovery();
         _lastLocalWorld = null;
         _lastLocalWorldKind = string.Empty;
@@ -210,6 +289,13 @@ public partial class LanNetworkManager : Node
         Multiplayer.MultiplayerPeer = _peer;
         IsHost = false;
         _deadEnemyNetworkIds.Clear();
+        _pendingSharedShopStates.Clear();
+        _pendingShopTransactions.Clear();
+        _nextShopTransactionId = 1;
+        _localGoldRevision = 0;
+        _sessionRevision = 0;
+        _knownHostFloor = 0;
+        _locallyOwnedFloor = 0;
         _lastLocalWorld = null;
         _lastLocalWorldKind = string.Empty;
         _lastBroadcastStateKey = string.Empty;
@@ -231,10 +317,15 @@ public partial class LanNetworkManager : Node
         _deadEnemyNetworkIds.Clear();
         _hostClearedRooms.Clear();
         _openedTreasureBoxRewards.Clear();
+        _pendingSharedShopStates.Clear();
+        _pendingShopTransactions.Clear();
+        _localGoldRevision = 0;
         _lastLocalWorld = null;
         _lastLocalWorldKind = string.Empty;
         _lastBroadcastStateKey = string.Empty;
         _lastRequestedStateKey = string.Empty;
+        _knownHostFloor = 0;
+        _locallyOwnedFloor = 0;
         _pendingRemoteState = null;
         _applyingRemoteState = false;
         _lastSnapshotSentAt = 0;
@@ -329,9 +420,82 @@ public partial class LanNetworkManager : Node
         }
     }
 
+    public void NotifyPortalEntered(int currentFloor)
+    {
+        if (!IsLanConnected)
+        {
+            return;
+        }
+
+        if (IsHost)
+        {
+            BroadcastPortalEntered(LocalPeerId, currentFloor);
+        }
+        else
+        {
+            RpcId(1, nameof(ReceivePortalEnteredRequest), currentFloor);
+        }
+    }
+
+    private void BroadcastPortalEntered(long peerId, int currentFloor)
+    {
+        if (!IsHost || !IsLanConnected)
+        {
+            return;
+        }
+
+        if (peerId != LocalPeerId)
+        {
+            GameNotificationOverlay.ShowPortalEntered(peerId == 1 ? "房主" : "访客", currentFloor + 1);
+        }
+
+        Rpc(nameof(ReceivePortalEntered), peerId, currentFloor);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceivePortalEnteredRequest(int currentFloor)
+    {
+        if (!IsHost || !IsLanConnected)
+        {
+            return;
+        }
+
+        var peerId = Multiplayer.GetRemoteSenderId();
+        if (peerId > 1)
+        {
+            BroadcastPortalEntered(peerId, currentFloor);
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceivePortalEntered(long peerId, int currentFloor)
+    {
+        if (IsHost || peerId == LocalPeerId)
+        {
+            return;
+        }
+
+        GameNotificationOverlay.ShowPortalEntered(peerId == 1 ? "房主" : "访客", currentFloor + 1);
+    }
+
     public void RequestSharedPickup(ActivityObject item)
     {
-        if (item == null || item.IsDestroyed || item.NetworkId == 0)
+        if (item == null || item.IsDestroyed)
+        {
+            return;
+        }
+
+        if (IsLocalDungeonAuthority)
+        {
+            var player = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player;
+            if (player != null && item.CheckInteractive(player).CanInteractive)
+            {
+                item.Interactive(player);
+            }
+            return;
+        }
+
+        if (item.NetworkId == 0)
         {
             return;
         }
@@ -422,7 +586,8 @@ public partial class LanNetworkManager : Node
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void ReceiveNetworkWeaponDrop(long networkId, string activityId, float x, float y)
     {
-        if (IsHost || networkId == 0 || string.IsNullOrEmpty(activityId) || FindActivityObject(networkId) != null)
+        if (IsHost || IsLocalDungeonAuthority || networkId == 0 || string.IsNullOrEmpty(activityId) ||
+            FindActivityObject(networkId) != null)
         {
             return;
         }
@@ -451,7 +616,8 @@ public partial class LanNetworkManager : Node
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void ReceiveNetworkGoldSpawn(long networkId, string activityId, int count, float x, float y)
     {
-        if (IsHost || networkId == 0 || string.IsNullOrEmpty(activityId) || FindActivityObject(networkId) != null)
+        if (IsHost || IsLocalDungeonAuthority || networkId == 0 || string.IsNullOrEmpty(activityId) ||
+            FindActivityObject(networkId) != null)
         {
             return;
         }
@@ -460,6 +626,427 @@ public partial class LanNetworkManager : Node
         gold.NetworkId = networkId;
         gold.GoldCount = count;
         gold.InitNetworkDrop(new Vector2(x, y));
+    }
+
+    public void OnLocalPlayerGoldChanged(Player player)
+    {
+        if (IsLanConnected && player == GameApplication.Instance?.DungeonManager?.CurrWorld?.Player)
+        {
+            _localGoldRevision++;
+        }
+    }
+
+    public void BroadcastSharedShopState(ShopBoss shop)
+    {
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        if (!IsHost || !IsLanConnected || dungeonManager?.CurrWorld is not Dungeon ||
+            shop == null || shop.IsDestroyed || shop.ShopRoomId < 0 ||
+            !shop.IsShopStockBuilt)
+        {
+            return;
+        }
+
+        Rpc(nameof(ReceiveSharedShopState), shop.ShopRoomId, dungeonManager.CurrentFloor, _sessionRevision,
+            shop.SharedRefreshCount,
+            PackShopStock(shop.GetSharedStockIds()));
+    }
+
+    public void RequestSharedShopState(ShopBoss shop)
+    {
+        if (!IsLanConnected || IsHost || shop == null || shop.IsDestroyed || shop.ShopRoomId < 0)
+        {
+            return;
+        }
+
+        RpcId(1, nameof(ReceiveSharedShopStateRequest), shop.ShopRoomId);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveSharedShopStateRequest(int shopRoomId)
+    {
+        if (!IsHost || !IsLanConnected)
+        {
+            return;
+        }
+
+        var peerId = Multiplayer.GetRemoteSenderId();
+        if (peerId <= 1 || FindShopByRoomId(shopRoomId) is not ShopBoss shop || !shop.IsShopStockBuilt)
+        {
+            return;
+        }
+
+        SendSharedShopStateToPeer(peerId, shop);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveSharedShopState(int shopRoomId, int floor, int sessionRevision, int refreshCount,
+        Godot.Collections.Array<Variant> stockPacket)
+    {
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        if (IsHost || IsLocalDungeonAuthority || shopRoomId < 0 || stockPacket == null ||
+            dungeonManager?.CurrWorld is not Dungeon || dungeonManager.CurrentFloor != floor ||
+            sessionRevision != _sessionRevision)
+        {
+            return;
+        }
+
+        var stockIds = new string[stockPacket.Count];
+        for (var i = 0; i < stockPacket.Count; i++)
+        {
+            stockIds[i] = stockPacket[i].AsString();
+        }
+
+        _pendingSharedShopStates[shopRoomId] = new SharedShopState
+        {
+            StockIds = stockIds,
+            RefreshCount = refreshCount,
+            Floor = floor,
+            SessionRevision = sessionRevision,
+        };
+        ApplyPendingSharedShopStates();
+    }
+
+    private void ApplyPendingSharedShopStates()
+    {
+        if (IsHost || _pendingSharedShopStates.Count == 0)
+        {
+            return;
+        }
+
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        foreach (var pair in _pendingSharedShopStates.ToArray())
+        {
+            if (dungeonManager?.CurrWorld is not Dungeon ||
+                pair.Value.Floor != dungeonManager.CurrentFloor || pair.Value.SessionRevision != _sessionRevision)
+            {
+                _pendingSharedShopStates.Remove(pair.Key);
+                continue;
+            }
+
+            if (FindShopByRoomId((int)pair.Key) is not ShopBoss shop || !shop.IsShopStockBuilt)
+            {
+                continue;
+            }
+
+            shop.ApplySharedShopState(pair.Value.StockIds, pair.Value.RefreshCount);
+            _pendingSharedShopStates.Remove(pair.Key);
+        }
+    }
+
+    private static Godot.Collections.Array<Variant> PackShopStock(string[] stockIds)
+    {
+        var packet = new Godot.Collections.Array<Variant>();
+        foreach (var id in stockIds ?? System.Array.Empty<string>())
+        {
+            packet.Add(id ?? string.Empty);
+        }
+
+        return packet;
+    }
+
+    private static ShopBoss FindShopByRoomId(int roomId)
+    {
+        var roles = GameApplication.Instance?.DungeonManager?.CurrWorld?.Role_InstanceList;
+        return roles?.OfType<ShopBoss>().FirstOrDefault(shop =>
+            !shop.IsDestroyed && shop.ShopRoomId == roomId);
+    }
+
+    private void SendSharedShopStateToPeer(long peerId, ShopBoss shop)
+    {
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        if (peerId <= 1 || dungeonManager?.CurrWorld is not Dungeon ||
+            shop == null || shop.IsDestroyed || !shop.IsShopStockBuilt)
+        {
+            return;
+        }
+
+        RpcId(peerId, nameof(ReceiveSharedShopState), shop.ShopRoomId, dungeonManager.CurrentFloor,
+            _sessionRevision, shop.SharedRefreshCount,
+            PackShopStock(shop.GetSharedStockIds()));
+    }
+
+    private void BroadcastSharedShopStatesToPeer(long peerId)
+    {
+        var roles = GameApplication.Instance?.DungeonManager?.CurrWorld?.Role_InstanceList;
+        if (!IsHost || !IsLanConnected || peerId <= 1 || roles == null)
+        {
+            return;
+        }
+
+        foreach (var role in roles)
+        {
+            if (role is ShopBoss shop && !shop.IsDestroyed && shop.ShopRoomId >= 0 && shop.IsShopStockBuilt)
+            {
+                SendSharedShopStateToPeer(peerId, shop);
+            }
+        }
+    }
+
+    private void BroadcastAllSharedShopStates()
+    {
+        var roles = GameApplication.Instance?.DungeonManager?.CurrWorld?.Role_InstanceList;
+        if (!IsHost || !IsLanConnected || roles == null)
+        {
+            return;
+        }
+
+        foreach (var role in roles)
+        {
+            if (role is ShopBoss shop && !shop.IsDestroyed && shop.ShopRoomId >= 0 && shop.IsShopStockBuilt)
+            {
+                BroadcastSharedShopState(shop);
+            }
+        }
+    }
+
+    public void RequestSharedShopPurchase(ShopBoss shop, int slotIndex)
+    {
+        if (!IsLanConnected || shop == null || shop.IsDestroyed || shop.ShopRoomId < 0 ||
+            !shop.TryGetSharedPurchase(slotIndex, out _, out _))
+        {
+            return;
+        }
+
+        if (IsHost)
+        {
+            ResolveSharedShopPurchase(LocalPeerId, 0, shop.ShopRoomId, slotIndex,
+                string.Empty, 0, 0, 0);
+            return;
+        }
+
+        if (GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is not Player player)
+        {
+            return;
+        }
+
+        if (!shop.TryGetSharedPurchase(slotIndex, out var activityId, out var price) ||
+            player.RoleState.Gold < price || !ShopItemSlot.IsSupportedShopItem(activityId))
+        {
+            return;
+        }
+
+        var requestId = _nextShopTransactionId++;
+        var goldBeforePurchase = player.RoleState.Gold;
+        var revisionBeforePurchase = _localGoldRevision;
+        _pendingShopTransactions[requestId] = new PendingShopTransaction
+        {
+            RefundAmount = price,
+            PurchaseActivityId = activityId,
+        };
+        player.UseGold(price);
+        RpcId(1, nameof(ReceiveSharedShopPurchaseRequest), requestId, shop.ShopRoomId, slotIndex,
+            activityId, price, goldBeforePurchase, revisionBeforePurchase);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveSharedShopPurchaseRequest(long requestId, int shopRoomId, int slotIndex,
+        string expectedActivityId, int expectedPrice, int reportedGoldBeforePurchase, long goldRevisionBeforePurchase)
+    {
+        if (!IsHost || !IsLanConnected)
+        {
+            return;
+        }
+
+        ResolveSharedShopPurchase(Multiplayer.GetRemoteSenderId(), requestId, shopRoomId, slotIndex,
+            expectedActivityId, expectedPrice, reportedGoldBeforePurchase, goldRevisionBeforePurchase);
+    }
+
+    private void ResolveSharedShopPurchase(long peerId, long requestId, int shopRoomId, int slotIndex,
+        string expectedActivityId, int expectedPrice, int reportedGoldBeforePurchase,
+        long goldRevisionBeforePurchase)
+    {
+        if (!IsHost || !IsLanConnected)
+        {
+            return;
+        }
+
+        if (FindShopByRoomId(shopRoomId) is not ShopBoss shop ||
+            !shop.TryGetSharedPurchase(slotIndex, out var activityId, out var price) ||
+            !ShopItemSlot.IsSupportedShopItem(activityId) ||
+            (peerId != LocalPeerId && (activityId != expectedActivityId || price != expectedPrice)))
+        {
+            SendSharedShopTransactionResult(peerId, requestId, false, string.Empty);
+            return;
+        }
+
+        if (peerId == LocalPeerId)
+        {
+            if (GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is Player hostPlayer &&
+                IsPlayerAtShop(hostPlayer, shop, hostPlayer.AffiliationArea?.RoomInfo?.Id ?? -1))
+            {
+                var purchased = shop.TryPurchaseLocally(slotIndex, hostPlayer);
+                SendSharedShopTransactionResult(peerId, requestId, purchased, purchased ? activityId : string.Empty);
+            }
+
+            return;
+        }
+
+        if (peerId <= 1 || !_remotePlayers.TryGetValue(peerId, out var state) ||
+            state.Player == null || !GodotObject.IsInstanceValid(state.Player) ||
+            !IsPlayerAtShop(state.Player, shop, state.RoomId))
+        {
+            SendSharedShopTransactionResult(peerId, requestId, false, string.Empty);
+            return;
+        }
+
+        if (!ApplyRemoteShopCharge(state, reportedGoldBeforePurchase, goldRevisionBeforePurchase, price))
+        {
+            SendSharedShopTransactionResult(peerId, requestId, false, string.Empty);
+            return;
+        }
+
+        state.Player.RoleState.Gold = state.Gold;
+        shop.MarkSharedSlotSold(slotIndex);
+        SendSharedShopTransactionResult(peerId, requestId, true, activityId);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveSharedShopTransactionResult(long requestId, bool accepted, string activityId)
+    {
+        if (IsHost || !_pendingShopTransactions.Remove(requestId, out var pending))
+        {
+            return;
+        }
+
+        var player = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player;
+        if (!accepted)
+        {
+            player?.AddGold(pending.RefundAmount);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(activityId))
+        {
+            return;
+        }
+
+        if (activityId != pending.PurchaseActivityId || !ShopItemSlot.TryGrantItemToPlayer(player, activityId))
+        {
+            player?.AddGold(pending.RefundAmount);
+            GD.PushWarning($"商店同步购买物品失败，已退款: {activityId}");
+        }
+    }
+
+    private void SendSharedShopTransactionResult(long peerId, long requestId, bool accepted, string activityId)
+    {
+        if (peerId > 1 && requestId > 0)
+        {
+            RpcId(peerId, nameof(ReceiveSharedShopTransactionResult), requestId, accepted, activityId ?? string.Empty);
+        }
+    }
+
+    private static bool ApplyRemoteShopCharge(RemotePlayerState state, int reportedGoldBeforeCharge,
+        long reportedRevisionBeforeCharge, int price)
+    {
+        if (reportedRevisionBeforeCharge < 0 || reportedGoldBeforeCharge < price)
+        {
+            return false;
+        }
+
+        if (state.GoldRevision <= reportedRevisionBeforeCharge)
+        {
+            if (state.GoldRevision == reportedRevisionBeforeCharge && state.Gold < price)
+            {
+                return false;
+            }
+
+            state.Gold = Math.Max(0, reportedGoldBeforeCharge - price);
+            state.GoldRevision = reportedRevisionBeforeCharge + 1;
+        }
+
+        return true;
+    }
+
+    public void RequestSharedShopRefresh(ShopBoss shop)
+    {
+        if (!IsLanConnected || shop == null || shop.IsDestroyed || shop.ShopRoomId < 0 ||
+            !shop.IsShopStockBuilt)
+        {
+            return;
+        }
+
+        if (IsHost)
+        {
+            if (GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is Player hostPlayer &&
+                IsPlayerAtShop(hostPlayer, shop, hostPlayer.AffiliationArea?.RoomInfo?.Id ?? -1))
+            {
+                shop.TryRefreshLocally(hostPlayer);
+            }
+
+            return;
+        }
+
+        if (GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is not Player player)
+        {
+            return;
+        }
+
+        var cost = shop.CurrentRefreshCost;
+        if (player.RoleState.Gold < cost)
+        {
+            return;
+        }
+
+        var requestId = _nextShopTransactionId++;
+        var goldBeforeRefresh = player.RoleState.Gold;
+        var revisionBeforeRefresh = _localGoldRevision;
+        _pendingShopTransactions[requestId] = new PendingShopTransaction
+        {
+            RefundAmount = cost,
+            PurchaseActivityId = string.Empty,
+        };
+        player.UseGold(cost);
+        RpcId(1, nameof(ReceiveSharedShopRefreshRequest), requestId, shop.ShopRoomId,
+            cost, goldBeforeRefresh, revisionBeforeRefresh);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveSharedShopRefreshRequest(long requestId, int shopRoomId, int expectedCost,
+        int reportedGoldBeforeRefresh, long goldRevisionBeforeRefresh)
+    {
+        if (!IsHost || !IsLanConnected)
+        {
+            return;
+        }
+
+        ResolveSharedShopRefresh(Multiplayer.GetRemoteSenderId(), requestId, shopRoomId,
+            expectedCost, reportedGoldBeforeRefresh, goldRevisionBeforeRefresh);
+    }
+
+    private void ResolveSharedShopRefresh(long peerId, long requestId, int shopRoomId,
+        int expectedCost, int reportedGoldBeforeRefresh, long goldRevisionBeforeRefresh)
+    {
+        if (!IsHost || !IsLanConnected || peerId <= 1 ||
+            !_remotePlayers.TryGetValue(peerId, out var state) ||
+            state.Player == null || !GodotObject.IsInstanceValid(state.Player) ||
+            FindShopByRoomId(shopRoomId) is not ShopBoss shop || !IsPlayerAtShop(state.Player, shop, state.RoomId))
+        {
+            SendSharedShopTransactionResult(peerId, requestId, false, string.Empty);
+            return;
+        }
+
+        var cost = shop.CurrentRefreshCost;
+        if (cost != expectedCost ||
+            !ApplyRemoteShopCharge(state, reportedGoldBeforeRefresh, goldRevisionBeforeRefresh, cost))
+        {
+            SendSharedShopTransactionResult(peerId, requestId, false, string.Empty);
+            return;
+        }
+
+        state.Player.RoleState.Gold = state.Gold;
+        shop.RefreshFromNetworkAuthority();
+        SendSharedShopTransactionResult(peerId, requestId, true, string.Empty);
+    }
+
+    private static bool IsPlayerAtShop(Player player, ShopBoss shop, int playerRoomId)
+    {
+        if (player == null || player.IsDestroyed || player.IsDie || shop == null || shop.IsDestroyed ||
+            shop.ShopRoomId < 0 || playerRoomId != shop.ShopRoomId)
+        {
+            return false;
+        }
+
+        return player.GlobalPosition.DistanceSquaredTo(shop.GlobalPosition) <= 112f * 112f;
     }
 
     public void RequestTreasureBoxOpen(TreasureBox box)
@@ -524,7 +1111,7 @@ public partial class LanNetworkManager : Node
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void ReceiveTreasureBoxOpened(long networkId, string rewardId)
     {
-        if (IsHost || networkId == 0)
+        if (IsHost || IsLocalDungeonAuthority || networkId == 0)
         {
             return;
         }
@@ -536,7 +1123,8 @@ public partial class LanNetworkManager : Node
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void ReceiveNetworkPickupSpawn(long networkId, string activityId, float x, float y)
     {
-        if (IsHost || networkId == 0 || string.IsNullOrEmpty(activityId) || FindActivityObject(networkId) != null)
+        if (IsHost || IsLocalDungeonAuthority || networkId == 0 || string.IsNullOrEmpty(activityId) ||
+            FindActivityObject(networkId) != null)
         {
             return;
         }
@@ -892,6 +1480,8 @@ public partial class LanNetworkManager : Node
     {
         SetStatus("已连接房主，等待房主开始游戏...");
         _lastRequestedStateKey = string.Empty;
+        _knownHostFloor = 0;
+        _locallyOwnedFloor = 0;
         // 连接信号触发时网络对象刚切换完成, 延迟请求一次初始状态更稳。
         CallDeferred(nameof(RequestSessionStateDeferred));
     }
@@ -912,6 +1502,8 @@ public partial class LanNetworkManager : Node
     {
         ClearRemotePlayers();
         _openedTreasureBoxRewards.Clear();
+        _pendingSharedShopStates.Clear();
+        _pendingShopTransactions.Clear();
         if (Multiplayer.MultiplayerPeer != null)
         {
             Multiplayer.MultiplayerPeer.Close();
@@ -924,6 +1516,8 @@ public partial class LanNetworkManager : Node
         _lastLocalWorldKind = string.Empty;
         _lastBroadcastStateKey = string.Empty;
         _lastRequestedStateKey = string.Empty;
+        _knownHostFloor = 0;
+        _locallyOwnedFloor = 0;
         _pendingRemoteState = null;
         _applyingRemoteState = false;
         _lastSnapshotSentAt = 0;
@@ -967,6 +1561,8 @@ public partial class LanNetworkManager : Node
         _broadcastClearedRooms.Clear();
         _hostClearedRooms.Clear();
         _openedTreasureBoxRewards.Clear();
+        _pendingSharedShopStates.Clear();
+        _pendingShopTransactions.Clear();
 
         if (!string.IsNullOrEmpty(worldKind))
         {
@@ -996,11 +1592,16 @@ public partial class LanNetworkManager : Node
 
     private void SendLocalPlayerSnapshot()
     {
-        var player = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player as Player;
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        var player = dungeonManager?.CurrWorld?.Player as Player;
         if (player == null || player.IsDestroyed || string.IsNullOrEmpty(_lastLocalWorldKind))
         {
             return;
         }
+
+        var floor = dungeonManager.CurrWorld is Dungeon ? dungeonManager.CurrentFloor : 0;
+        var animation = player.AnimatedSprite?.Animation.ToString() ?? string.Empty;
+        var frame = player.AnimatedSprite?.Frame ?? 0;
 
         var now = Time.GetTicksMsec();
         var elapsed = _lastSnapshotSentAt == 0 ? 0.05f : Mathf.Max(0.001f, (float)(now - _lastSnapshotSentAt) / 1000f);
@@ -1017,6 +1618,12 @@ public partial class LanNetworkManager : Node
             player.MeleeAttackTimer > 0 || player.IsAttack && player.AnimatedSprite?.Animation == AnimatorNames.Attack,
             player.MeleeAttackSequence,
             player.AffiliationArea?.RoomInfo?.Id ?? -1,
+            floor,
+            player.IsDie,
+            animation,
+            frame,
+            player.RoleState.Gold,
+            _localGoldRevision,
         };
         Rpc(nameof(ReceivePlayerSnapshot), args);
     }
@@ -1029,6 +1636,8 @@ public partial class LanNetworkManager : Node
             return;
         }
 
+        var floor = GameApplication.Instance.DungeonManager.CurrentFloor;
+
         foreach (var role in world.Role_InstanceList)
         {
             if (role == null || role.IsDestroyed || !role.IsAi || role.NetworkId == 0 ||
@@ -1040,6 +1649,7 @@ public partial class LanNetworkManager : Node
             Rpc(nameof(ReceiveEnemySnapshot), new Variant[]
             {
                 role.NetworkId,
+                floor,
                 role.ActivityBase?.Id ?? string.Empty,
                 role.GlobalPosition.X,
                 role.GlobalPosition.Y,
@@ -1067,6 +1677,7 @@ public partial class LanNetworkManager : Node
         Rpc(nameof(ReceiveEnemySnapshot), new Variant[]
         {
             role.NetworkId,
+            GameApplication.Instance?.DungeonManager?.CurrentFloor ?? 0,
             role.ActivityBase?.Id ?? string.Empty,
             role.GlobalPosition.X,
             role.GlobalPosition.Y,
@@ -1104,7 +1715,7 @@ public partial class LanNetworkManager : Node
                     exploredAisles.Add(door.AisleFogMask?.IsExplored == true);
                 }
 
-                Rpc(nameof(ReceiveNetworkRoomState), room.Id, room.HasFirstEntered, room.IsSeclusion,
+                Rpc(nameof(ReceiveNetworkRoomState), dungeonManager.CurrentFloor, room.Id, room.HasFirstEntered, room.IsSeclusion,
                     room.HasFirstEntered || room.RoomFogMask?.IsExplored == true, exploredAisles);
 
                 //已经清空的房间要把"清空"这件事单独补发一次。
@@ -1115,7 +1726,7 @@ public partial class LanNetworkManager : Node
                 //"战斗中的闭关房间", 于是门不开、地图上也看不到已探索的房间。
                 if (room.HasFirstEntered && !room.IsSeclusion && _hostClearedRooms.Contains(room.Id))
                 {
-                    Rpc(nameof(ReceiveRoomCleared), room.Id);
+                    Rpc(nameof(ReceiveRoomCleared), dungeonManager.CurrentFloor, _sessionRevision, room.Id, false);
                 }
             }
         }
@@ -1124,15 +1735,18 @@ public partial class LanNetworkManager : Node
         {
             Rpc(nameof(ReceiveTreasureBoxOpened), pair.Key, pair.Value);
         }
+
+        BroadcastAllSharedShopStates();
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveNetworkRoomState(int roomId, bool hasFirstEntered, bool isSeclusion,
+    public void ReceiveNetworkRoomState(int floor, int roomId, bool hasFirstEntered, bool isSeclusion,
         bool roomExplored, Godot.Collections.Array<Variant> exploredAisles)
     {
-        if (!IsHost)
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        if (!IsHost && dungeonManager?.CurrWorld is Dungeon && dungeonManager.CurrentFloor == floor)
         {
-            GameApplication.Instance?.DungeonManager?.ApplyNetworkRoomState(
+            dungeonManager.ApplyNetworkRoomState(
                 roomId, hasFirstEntered, isSeclusion, roomExplored, exploredAisles);
         }
     }
@@ -1141,7 +1755,7 @@ public partial class LanNetworkManager : Node
     /// 访客把新发现的地图区域发给房主; 房主只合并已探索标记, 再通过房间状态广播给全队。
     /// </summary>
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveMapExploration(Godot.Collections.Array<Variant> packet)
+    public void ReceiveMapExploration(int floor, Godot.Collections.Array<Variant> packet)
     {
         if (!IsHost || !IsLanConnected || packet == null)
         {
@@ -1155,7 +1769,7 @@ public partial class LanNetworkManager : Node
         }
 
         var dungeonManager = GameApplication.Instance?.DungeonManager;
-        if (dungeonManager?.CurrWorld is not Dungeon)
+        if (dungeonManager?.CurrWorld is not Dungeon || dungeonManager.CurrentFloor != floor)
         {
             return;
         }
@@ -1224,7 +1838,7 @@ public partial class LanNetworkManager : Node
             packet.Add(row);
         }
 
-        RpcId(1, nameof(ReceiveMapExploration), packet);
+        RpcId(1, nameof(ReceiveMapExploration), dungeonManager.CurrentFloor, packet);
     }
 
     private static string MakeLocalMapKnowledgeKey(DungeonManager dungeonManager)
@@ -1259,18 +1873,22 @@ public partial class LanNetworkManager : Node
         //记录房主已经清空的房间。后进/重连的访客加入时房间状态里已经是"未闭关",
         //它的本地房间却还停在"有敌人"的状态, 于是永远等不到那条清房 RPC。加入时补发一次。
         _hostClearedRooms.Add(roomId);
-        Rpc(nameof(ReceiveRoomCleared), roomId);
+        var floor = GameApplication.Instance?.DungeonManager?.CurrentFloor ?? 0;
+        Rpc(nameof(ReceiveRoomCleared), floor, _sessionRevision, roomId, true);
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveRoomCleared(int roomId)
+    public void ReceiveRoomCleared(int floor, int sessionRevision, int roomId, bool showNotification)
     {
-        if (IsHost)
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        if (IsHost || IsLocalDungeonAuthority || dungeonManager?.CurrWorld is not Dungeon ||
+            dungeonManager.CurrentFloor != floor ||
+            sessionRevision != _sessionRevision)
         {
             return;
         }
 
-        GameApplication.Instance?.DungeonManager?.ApplyNetworkRoomCleared(roomId);
+        dungeonManager.ApplyNetworkRoomCleared(roomId, showNotification);
     }
 
     private void BroadcastPlayerVitals()
@@ -1316,7 +1934,7 @@ public partial class LanNetworkManager : Node
     public void RequestEnemyDamage(long networkId, List<AttackStats> damages,
         List<AbnormalData> abnormals, float angle)
     {
-        if (!IsLanConnected || IsHost || networkId == 0)
+        if (!IsLanConnected || IsHost || IsLocalDungeonAuthority || networkId == 0)
         {
             return;
         }
@@ -1598,6 +2216,8 @@ public partial class LanNetworkManager : Node
 
     private void UpdateRemotePlayers(float delta)
     {
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        var localFloor = dungeonManager?.CurrWorld is Dungeon ? dungeonManager.CurrentFloor : 0;
         foreach (var state in _remotePlayers.Values)
         {
             if (state.Player == null || !GodotObject.IsInstanceValid(state.Player))
@@ -1606,10 +2226,22 @@ public partial class LanNetworkManager : Node
                 continue;
             }
 
+            state.Player.Visible = state.Floor == localFloor;
+            if (!state.Player.Visible)
+            {
+                continue;
+            }
+
             var blend = Mathf.Clamp(delta * 18f, 0f, 1f);
             state.Player.GlobalPosition = state.Player.GlobalPosition.Lerp(state.TargetPosition, blend);
             state.Player.Face = state.Face;
             state.Player.MountPoint?.ApplyNetworkRotation(state.AimRotationDegrees);
+
+            if (state.IsDead)
+            {
+                state.Player.ApplyReplicatedPlayerState(true, state.DeathAnimation, state.DeathFrame);
+                continue;
+            }
 
             if (state.Player.AnimatedSprite != null)
             {
@@ -1706,6 +2338,7 @@ public partial class LanNetworkManager : Node
         }
 
         RpcId(peerId, nameof(ReceiveSessionState), GetSessionState());
+        BroadcastSharedShopStatesToPeer(peerId);
     }
 
     private Variant[] GetSessionState()
@@ -1733,7 +2366,9 @@ public partial class LanNetworkManager : Node
 
     private static string MakeStateKey(Variant[] state)
     {
-        return $"{state[0]}|{state[1]}|{state[2]}|{state[3]}|{state[4]}|{state[5]}|{state[6]}";
+        //楼层和种子是每个玩家本地推进的状态，不能用它们触发全队换层。
+        //世界类型、地牢组、模式和会话版本变化时，才需要重建会话。
+        return $"{state[0]}|{state[1]}|{state[3]}|{state[6]}";
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
@@ -1759,6 +2394,9 @@ public partial class LanNetworkManager : Node
         {
             return;
         }
+
+        _sessionRevision = sessionRevision;
+        _knownHostFloor = worldKind == "dungeon" ? floor : 0;
 
         var state = new Variant[]
         {
@@ -1827,12 +2465,18 @@ public partial class LanNetworkManager : Node
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
     public void ReceivePlayerSnapshot(long peerId, float x, float y, int faceValue, float aimRotationDegrees, float elapsed,
-        bool isRolling, bool isMeleeAttacking, long meleeAttackSequence, int roomId)
+        bool isRolling, bool isMeleeAttacking, long meleeAttackSequence, int roomId, int floor,
+        bool isDead, string animation, int frame, int gold, long goldRevision)
     {
         var senderId = Multiplayer.GetRemoteSenderId();
         if (senderId > 1)
         {
             peerId = senderId;
+        }
+
+        if (!IsHost && peerId == 1)
+        {
+            _knownHostFloor = floor;
         }
 
         if (peerId <= 0 || peerId == LocalPeerId)
@@ -1846,10 +2490,16 @@ public partial class LanNetworkManager : Node
             _remotePlayers.Add(peerId, state);
         }
 
+        var previousFloor = state.Floor;
+        var previousRoomId = state.RoomId;
         var newPosition = new Vector2(x, y);
         state.IsMoving = state.TargetPosition.DistanceTo(newPosition) > Mathf.Max(0.25f, 4f * elapsed);
         state.IsRolling = isRolling;
         state.IsMeleeAttacking = isMeleeAttacking;
+        state.Floor = floor;
+        state.IsDead = isDead;
+        state.DeathAnimation = animation ?? string.Empty;
+        state.DeathFrame = frame;
         if (state.MeleeAttackSequence != meleeAttackSequence)
         {
             state.MeleeAttackSequence = meleeAttackSequence;
@@ -1858,16 +2508,42 @@ public partial class LanNetworkManager : Node
         state.TargetPosition = newPosition;
         state.Face = (FaceDirection)Mathf.Clamp(faceValue, (int)FaceDirection.Left, (int)FaceDirection.Right);
         state.AimRotationDegrees = aimRotationDegrees;
-        EnsureRemotePlayer(state);
-
-        if (IsHost && senderId > 1 && roomId >= 0 && roomId != state.RoomId)
+        if (goldRevision >= state.GoldRevision)
         {
-            GameApplication.Instance?.DungeonManager?.OnRemotePlayerEnterRoom(roomId, state.Player);
-            ForcePartyIntoRoom(roomId, newPosition, senderId);
+            state.Gold = Math.Max(0, gold);
+            state.GoldRevision = goldRevision;
         }
-        else if (IsHost && senderId > 1 && roomId < 0 && state.RoomId >= 0)
+        EnsureRemotePlayer(state);
+        if (state.Player != null && state.GoldRevision == goldRevision)
         {
-            GameApplication.Instance?.DungeonManager?.OnRemotePlayerLeaveRoom(state.Player);
+            state.Player.RoleState.Gold = state.Gold;
+        }
+
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        var localFloor = dungeonManager?.CurrWorld is Dungeon ? dungeonManager.CurrentFloor : 0;
+        if (state.Player != null)
+        {
+            state.Player.Visible = floor == localFloor;
+            if (state.Player.Visible && isDead)
+            {
+                state.Player.ApplyReplicatedPlayerState(true, state.DeathAnimation, state.DeathFrame);
+            }
+        }
+
+        if (IsHost && senderId > 1 && dungeonManager?.CurrWorld is Dungeon)
+        {
+            if (previousRoomId >= 0 &&
+                (previousFloor != floor || roomId < 0 ||
+                 (floor == dungeonManager.CurrentFloor && previousRoomId != roomId)))
+            {
+                dungeonManager.OnRemotePlayerLeaveRoom(state.Player);
+            }
+
+            if (floor == dungeonManager.CurrentFloor && roomId >= 0 &&
+                (previousFloor != floor || previousRoomId != roomId))
+            {
+                dungeonManager.OnRemotePlayerEnterRoom(roomId, state.Player);
+            }
         }
         state.RoomId = roomId;
 
@@ -1876,16 +2552,25 @@ public partial class LanNetworkManager : Node
         {
             Rpc(nameof(ReceivePlayerSnapshot), new Variant[]
             {
-                peerId, x, y, faceValue, aimRotationDegrees, elapsed, isRolling, isMeleeAttacking, meleeAttackSequence, roomId,
+                peerId, x, y, faceValue, aimRotationDegrees, elapsed, isRolling, isMeleeAttacking,
+                meleeAttackSequence, roomId, floor, isDead, animation ?? string.Empty, frame,
+                state.Gold, state.GoldRevision,
             });
         }
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveEnemySnapshot(long networkId, string activityId, float x, float y, int faceValue, int hp,
+    public void ReceiveEnemySnapshot(long networkId, int floor, string activityId, float x, float y, int faceValue, int hp,
         int maxHp, int gold, bool isDead, string animation, int frame, long hitSequence)
     {
         if (IsHost)
+        {
+            return;
+        }
+
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        if (dungeonManager?.CurrWorld is not Dungeon || IsLocalDungeonAuthority ||
+            dungeonManager.CurrentFloor != floor)
         {
             return;
         }
@@ -1971,6 +2656,7 @@ public partial class LanNetworkManager : Node
         var world = GameApplication.Instance?.DungeonManager?.CurrWorld;
         var target = world?.Role_InstanceList.Find(item => item.NetworkId == networkId);
         if (target == null || target.IsDestroyed || !target.IsAi || target.IsDie || target.HurtArea == null ||
+            playerState.Floor != GameApplication.Instance?.DungeonManager?.CurrentFloor ||
             playerState.RoomId < 0 || target.AffiliationArea?.RoomInfo?.Id != playerState.RoomId ||
             !target.HurtArea.CanHurt(playerState.Player.Camp))
         {
@@ -2060,6 +2746,7 @@ public partial class LanNetworkManager : Node
             groupName = app.FirstDungeonConfig?.GroupName ?? string.Empty;
         }
 
+        var showFloorNotification = dungeonManager.CurrWorld is Dungeon && dungeonManager.CurrentFloor != floor;
         SyncPlanFloor(dungeonManager, floor);
         var config = app.GetDungeonConfig(groupName, Mathf.Max(1, floor), (DungeonMode)modeValue);
         if (hasSeed)
@@ -2074,6 +2761,10 @@ public partial class LanNetworkManager : Node
         {
             _applyingRemoteState = false;
             UiManager.Destroy_Game_Loading();
+            if (showFloorNotification)
+            {
+                dungeonManager.ShowFloorNotification();
+            }
             CallDeferred(nameof(ApplyPendingRemoteState));
         });
 
@@ -2084,7 +2775,7 @@ public partial class LanNetworkManager : Node
         else if (dungeonManager.CurrWorld is Dungeon)
         {
             // 房主切换楼层时, 客户端重建自己的本地世界。
-            dungeonManager.ExitDungeon(false, loadDungeon);
+            dungeonManager.ExitDungeon(true, loadDungeon);
         }
         else
         {

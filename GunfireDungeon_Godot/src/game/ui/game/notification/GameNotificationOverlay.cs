@@ -34,6 +34,7 @@ public partial class GameNotificationOverlay : CanvasLayer
     private ProgressBar _bossHealthBar;
     private Label _bossHealthLabel;
     private Font _font;
+    private bool _isShowingRoomClearMessage;
 
     public static void Init(Node parent)
     {
@@ -105,7 +106,27 @@ public partial class GameNotificationOverlay : CanvasLayer
         var subtitle = isExitRoom
             ? $"第 {floor} 层已完成 · 前往楼梯进入下一层"
             : "房门已经开启 · 可以继续探索";
-        _instance.ShowMessage("房间已清理！", subtitle, 2.0f);
+        _instance.ShowMessage("房间已清理！", subtitle, 2.0f, true);
+    }
+
+    public static void HideRoomCleared()
+    {
+        if (_instance?._isShowingRoomClearMessage == true)
+        {
+            _instance._messageTween?.Kill();
+            _instance._messageTween = null;
+            _instance._messagePanel.Visible = false;
+            _instance._isShowingRoomClearMessage = false;
+        }
+    }
+
+    public static void ShowPortalEntered(string playerName, int targetFloor)
+    {
+        _instance?.ShowMessage(
+            $"{playerName}已进入下一层",
+            $"已前往第 {targetFloor} 层",
+            2.0f
+        );
     }
 
     private void BuildUi()
@@ -340,9 +361,10 @@ public partial class GameNotificationOverlay : CanvasLayer
         _bossHealthLabel.Text = $"{boss.Hp} / {boss.MaxHp}";
     }
 
-    private void ShowMessage(string title, string subtitle, float holdTime)
+    private void ShowMessage(string title, string subtitle, float holdTime, bool isRoomClear = false)
     {
         _messageTween?.Kill();
+        _isShowingRoomClearMessage = isRoomClear;
         _titleLabel.Text = title;
         _subtitleLabel.Text = subtitle;
         _messagePanel.Visible = true;
@@ -358,6 +380,10 @@ public partial class GameNotificationOverlay : CanvasLayer
         _messageTween.SetParallel(false);
         _messageTween.TweenInterval(holdTime);
         _messageTween.TweenProperty(_messagePanel, "modulate:a", 0.0f, 0.35f);
-        _messageTween.TweenCallback(Callable.From(() => _messagePanel.Visible = false));
+        _messageTween.TweenCallback(Callable.From(() =>
+        {
+            _messagePanel.Visible = false;
+            _isShowingRoomClearMessage = false;
+        }));
     }
 }

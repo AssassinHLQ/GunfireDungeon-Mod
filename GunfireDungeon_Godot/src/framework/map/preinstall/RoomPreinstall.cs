@@ -51,13 +51,13 @@ public class RoomPreinstall : IDestroy
     /// <summary>
     /// 房间里是否还有活着的敌人。
     ///
-    /// 【为什么用 IsDeathStarted 而不是 HasCompletedDeathSequence】
+    /// 【为什么必须等 HasCompletedDeathSequence】
     /// 死亡流程 = IsDie(掉血到 0) -> 死亡动画 -> HasCompletedDeathSequence。
     /// 中间那段动画有 1 秒以上, 如果这里只认最终标记, 死亡动画播放期间房间会一直被
     /// 判成"还有敌人", 门不开; 等动画播完再判又要多等一次每秒检查, 玩家就卡在门口。
-    /// 用 IsDeathStarted 可以在 Hp 归零这一刻立刻把房间算成清空。
+    /// 等到死亡动画结束再清房, 避免 Boss 尸体还显示在场上时就提示房间已清理。
     /// </summary>
-    public bool HasLivingEnemy => _roomEnemies.Any(role => role != null && !role.IsDestroyed && !role.IsDeathStarted);
+    public bool HasLivingEnemy => _roomEnemies.Any(role => role != null && !role.IsDestroyed && !role.HasCompletedDeathSequence);
     
     //是否运行过预处理
     private bool _runPretreatment = false;
@@ -421,7 +421,8 @@ public class RoomPreinstall : IDestroy
     /// </summary>
     private static bool IsNetworkClient => LanNetworkManager.Instance != null &&
                                            LanNetworkManager.Instance.IsLanConnected &&
-                                           !LanNetworkManager.Instance.IsHost;
+                                           !LanNetworkManager.Instance.IsHost &&
+                                           !LanNetworkManager.Instance.IsLocalDungeonAuthority;
 
     /// <summary>
     /// 玩家进入房间, 开始执行生成物体(重载)
@@ -493,7 +494,7 @@ public class RoomPreinstall : IDestroy
         if (!hasEnemy)
         {
             hasEnemy = RoomInfo.AffiliationArea.ExistIncludeItem(
-                activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.IsDeathStarted
+                activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.HasCompletedDeathSequence
             );
         }
 

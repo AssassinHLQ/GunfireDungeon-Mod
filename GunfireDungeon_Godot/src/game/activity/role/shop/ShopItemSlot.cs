@@ -21,6 +21,9 @@ public partial class ShopItemSlot : Area2D, IInteractive, IOutline
     private Label _price;
     private Sprite2D _icon;
     private ExcelConfig.ActivityBase _config;
+    private ShopBoss _shopBoss;
+    private int _shopIndex = -1;
+    private float _iconSize = 14f;
 
     private uint _finalPrice;
     //是否买得起
@@ -31,6 +34,8 @@ public partial class ShopItemSlot : Area2D, IInteractive, IOutline
     /// 提示条不能再用 ActivityObject.ActivityBase 取名(本类不是 ActivityObject), 改走这个属性。
     /// </summary>
     public string DisplayName => _config?.Name ?? "";
+    public string ActivityId => _config?.Id ?? string.Empty;
+    public uint FinalPrice => _finalPrice;
 
     public bool ShowOutline { get; set; } = true;
     public Color OutlineColor
@@ -62,6 +67,7 @@ public partial class ShopItemSlot : Area2D, IInteractive, IOutline
             Monitorable = true,
             Monitoring = true,
         };
+        slot._iconSize = iconSize;
 
         //碰撞形状 (略大于图标, 便于玩家靠近就能选中)
         var shape = new CollisionShape2D { Name = "Collision" };
@@ -163,10 +169,7 @@ public partial class ShopItemSlot : Area2D, IInteractive, IOutline
         _icon = icon;
         _blendShaderMaterial = _icon?.Material as ShaderMaterial;
 
-        _config = config;
-        _name.Text = config?.Name ?? "";
-        _finalPrice = config?.Price ?? 0;
-        _price.Text = _finalPrice.ToString();
+        SetItemConfig(config);
 
         //临时诊断: 打印槽位创建时的关键状态, 确认层/尺寸/图标是否正常
         TempDebug.LogShop(
@@ -188,15 +191,48 @@ public partial class ShopItemSlot : Area2D, IInteractive, IOutline
         _name.Visible = false;
         _blendShaderMaterial = _icon.Material as ShaderMaterial;
 
+        SetItemConfig(config);
+    }
+
+    public void BindShop(ShopBoss shopBoss, int slotIndex)
+    {
+        _shopBoss = shopBoss;
+        _shopIndex = slotIndex;
+    }
+
+    public void SetItemConfig(ExcelConfig.ActivityBase config)
+    {
         _config = config;
-        _name.Text = config.Name;
-        _finalPrice = config.Price;
-        _price.Text = _finalPrice.ToString();
-        var tex = LoadIcon(config);
-        if (tex != null)
+        _finalPrice = config?.Price ?? 0;
+
+        if (_name != null)
         {
-            _icon.Texture = tex;
+            _name.Text = config?.Name ?? string.Empty;
         }
+
+        if (_price != null)
+        {
+            _price.Text = _finalPrice.ToString();
+        }
+
+        if (_icon != null)
+        {
+            _icon.Texture = LoadIcon(config);
+            _icon.Scale = Vector2.One;
+            if (_icon.Texture != null)
+            {
+                var size = _icon.Texture.GetSize();
+                if (size.X > 0 && size.Y > 0)
+                {
+                    var scale = _iconSize / Mathf.Max(size.X, size.Y);
+                    _icon.Scale = new Vector2(scale, scale);
+                }
+            }
+        }
+
+        Visible = config != null;
+        Monitorable = config != null;
+        Monitoring = config != null;
     }
 
     public override void _Process(double delta)
@@ -264,19 +300,44 @@ public partial class ShopItemSlot : Area2D, IInteractive, IOutline
     public void Interactive(ActivityObject master)
     {
         var role = (Role)master;
-        TempDebug.LogShop($"按下E交互 name={_config?.Name} 价格={_finalPrice} 玩家金币={role.RoleState.Gold}");
-
-        if (role.RoleState.Gold < _finalPrice)
+        if (_shopBoss != null && _shopIndex >= 0)
         {
-            TempDebug.LogShop("  金币不足, 已取消");
+            _shopBoss.RequestPurchase(_shopIndex, role);
             return;
         }
-        
-        Monitorable = false;
-        Visible = false;
-        role.UseGold((int)_finalPrice);
 
-        var item = ActivityObject.Create(_config);
+        TryPurchaseLocally(role);
+    }
+
+    public bool TryPurchaseLocally(Role role)
+    {
+        if (role == null || _config == null || role.RoleState.Gold < _finalPrice)
+        {
+            return false;
+        }
+
+        var activityId = _config.Id;
+        var price = (int)_finalPrice;
+        TempDebug.LogShop($"按下E交互 name={_config.Name} 价格={price} 玩家金币={role.RoleState.Gold}");
+        role.UseGold(price);
+        if (TryGrantItemToPlayer(role, activityId))
+        {
+            SetItemConfig(null);
+            return true;
+        }
+
+        role.AddGold(price);
+        return false;
+    }
+
+    public static bool TryGrantItemToPlayer(Role role, string activityId)
+    {
+        if (role == null || string.IsNullOrEmpty(activityId))
+        {
+            return false;
+        }
+
+        var item = ActivityObject.Create(activityId);
         if (item is Weapon weapon)
         {
             if (!role.PickUpWeapon(weapon))
@@ -299,17 +360,19 @@ public partial class ShopItemSlot : Area2D, IInteractive, IOutline
         }
         else
         {
-            //原来这里直接 throw, 会把整局游戏打断。
-            //改成: 不支持的物品就当买不了, 把金币退回去, 槽位保持可见。
-            role.AddGold((int)_finalPrice);
-            Monitorable = true;
-            Visible = true;
-            _config = null;
             GD.PushWarning($"商店: 不支持的物品类型, 已取消购买并退款: {item?.ActivityBase?.Id ?? "null"}");
-            return;
+            item?.Destroy();
+            return false;
         }
 
-        _config = null;
+        return true;
+    }
+
+    public static bool IsSupportedShopItem(string activityId)
+    {
+        return !string.IsNullOrEmpty(activityId) &&
+               (ExcelConfig.BuffPropBase_Map.ContainsKey(activityId) ||
+                ExcelConfig.ActivePropBase_Map.ContainsKey(activityId));
     }
     
     public virtual void OnTargetEnterd(ActivityObject target)

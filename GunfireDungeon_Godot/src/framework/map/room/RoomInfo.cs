@@ -495,7 +495,7 @@ public class RoomInfo : IDestroy
         
         //房间内有敌人, 或者会刷新敌人才会关门
         var hasEnemy = false;
-        if (AffiliationArea.ExistEnterItem(activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.IsDeathStarted)) //先判断房间里面是否有敌人
+        if (AffiliationArea.ExistEnterItem(activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.HasCompletedDeathSequence)) //先判断房间里面是否有敌人
         {
             hasEnemy = true;
         }

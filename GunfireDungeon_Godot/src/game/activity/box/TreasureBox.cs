@@ -34,7 +34,8 @@ public partial class TreasureBox : ObstacleObject
         }
 
         var network = LanNetworkManager.Instance;
-        if (network != null && network.IsLanConnected && NetworkId != 0)
+        if (network != null && network.IsLanConnected && NetworkId != 0 &&
+            !network.IsLocalDungeonAuthority)
         {
             network.RequestTreasureBoxOpen(this);
             return;

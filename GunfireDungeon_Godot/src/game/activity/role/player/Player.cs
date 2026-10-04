@@ -634,9 +634,17 @@ public partial class Player : Role
     protected override void OnDie()
     {
         StateController.Enable = false;
-        GameCamera.Main.SetFollowTarget(null);
         BasisVelocity = Vector2.Zero;
         MoveController.ClearForce();
+
+        if (IsNetworkReplica)
+        {
+            //远程玩家只保留死亡动画最后一帧，不影响本机镜头、暂停和结算界面。
+            Visible = true;
+            return;
+        }
+
+        GameCamera.Main.SetFollowTarget(null);
         Visible = false;
 
         World.CallDelay(0.5f, () =>
@@ -795,12 +803,14 @@ public partial class Player : Role
     {
         base.AddGold(goldCount);
         EventManager.EmitEvent(EventEnum.OnPlayerGoldChange, RoleState.Gold);
+        LanNetworkManager.Instance?.OnLocalPlayerGoldChanged(this);
     }
 
     public override void UseGold(int goldCount)
     {
         base.UseGold(goldCount);
         EventManager.EmitEvent(EventEnum.OnPlayerGoldChange, RoleState.Gold);
+        LanNetworkManager.Instance?.OnLocalPlayerGoldChanged(this);
     }
 
     /// <summary>

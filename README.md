@@ -180,12 +180,20 @@ This section lists every change made in this modified version relative to the up
 
 The same list is shown **in-game** via the **「修改说明」** button on the main menu.
 
+### Recent Updates — 2026-10-04
+
+* Co-op shops now use one host-authoritative stock and refresh state. All players share the same offers, while each buyer pays from their own wallet.
+* Fixed stale room-clear messages being applied after a floor change, and delayed room-clear completion until the boss death sequence finishes.
+* Fixed co-op guests losing their wallet, weapons, and items when advancing to another floor.
+* Dungeon-generation retries now use distinct deterministic seeds instead of replaying the same failed layout in Erlkoenig (Boss-ratio) mode.
+* **Development pace:** The maintainer is currently taking part-time work to cover AI coding token/API costs, so updates may arrive more slowly. Thank you for your patience and support.
+
 ### 1. Gameplay & Progression
 
 * Added a **floor loop system** — the dungeon now has **10 floors**
 * Reaching the exit **advances to the next floor** instead of ending the run immediately
 * Victory condition changed to **clearing floor 10**
-* Player **HP / shield / weapons / items are preserved across floors**
+* Player **HP / shield / gold / weapons / items are preserved across floors**
 * **Enemy HP scales with floor number** (+16% per floor)
 * A notification pops up when entering a new floor
 * Added a **current-floor indicator** at the top of the HUD

@@ -22,29 +22,27 @@ public partial class RoomExit : Area2D
     {
         TempDebug.LogPortal($"有物体进入: {body?.GetType().Name} name={body?.Name} 是Role={body is Role}");
 
-        if (body is Role role)
+        if (body is Player)
         {
-            // 联机时由房主统一推进楼层, 客户端只跟随房主广播的状态。
             var lan = LanNetworkManager.Instance;
-            if (lan != null && lan.IsLanConnected && !lan.IsHost)
-            {
-                return;
-            }
-            //Debug.Log("::RoomExit::OnBodyEntered");
             var gameApplication = GameApplication.Instance;
+            var dungeonManager = gameApplication.DungeonManager;
+            if (lan != null && lan.IsLanConnected)
+            {
+                lan.NotifyPortalEntered(dungeonManager.CurrentFloor);
+            }
 
             TempDebug.LogPortal(
-                $"玩家进入 楼层={gameApplication.DungeonManager.CurrentFloor} " +
-                $"是最后一层={gameApplication.DungeonManager.IsLastFloor} " +
-                $"编辑器模式={gameApplication.DungeonManager.IsEditorMode}");
+                $"玩家进入 楼层={dungeonManager.CurrentFloor} " +
+                $"是最后一层={dungeonManager.IsLastFloor} " +
+                $"编辑器模式={dungeonManager.IsEditorMode}");
 
-            if (gameApplication.DungeonManager.IsEditorMode) //编辑器模式下下一层就是当前层, 相当于重新开始
+            if (dungeonManager.IsEditorMode) //编辑器模式下下一层就是当前层, 相当于重新开始
             {
                 EditorPlayManager.Restart();
             }
             else
             {
-                var dungeonManager = gameApplication.DungeonManager;
                 if (!dungeonManager.IsLastFloor)
                 {
                     //还没到最后楼层, 保留玩家状态直接进入下一层

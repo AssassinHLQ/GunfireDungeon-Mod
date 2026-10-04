@@ -1257,7 +1257,8 @@ public abstract partial class Role : ActivityObject
 
             if (this is Player && item is ActivityObject activityObject &&
                 (activityObject is Weapon || activityObject is PropActivity) &&
-                LanNetworkManager.Instance is { IsLanConnected: true } network)
+                LanNetworkManager.Instance is { IsLanConnected: true } network &&
+                !network.IsLocalDungeonAuthority)
             {
                 network.RequestSharedPickup(activityObject);
                 return item;
@@ -1456,6 +1457,7 @@ public abstract partial class Role : ActivityObject
             {
                 StartDeathSequence(true);
             }
+            ApplyReplicatedAnimation(animation, frame);
             return;
         }
 
@@ -1470,6 +1472,38 @@ public abstract partial class Role : ActivityObject
             PlayHitAnimation();
         }
 
+        ApplyReplicatedAnimation(animation, frame);
+    }
+
+    public void ApplyReplicatedPlayerState(bool isDead, string animation, int frame)
+    {
+        if (IsDestroyed)
+        {
+            return;
+        }
+
+        IsNetworkReplica = true;
+        if (isDead)
+        {
+            if (!IsDie)
+            {
+                StartDeathSequence(true);
+            }
+
+            ApplyReplicatedAnimation(animation, frame);
+            return;
+        }
+
+        if (IsDie)
+        {
+            return;
+        }
+
+        ApplyReplicatedAnimation(animation, frame);
+    }
+
+    private void ApplyReplicatedAnimation(string animation, int frame)
+    {
         if (GodotObject.IsInstanceValid(AnimatedSprite) && AnimatedSprite.SpriteFrames != null &&
             !string.IsNullOrEmpty(animation) && AnimatedSprite.SpriteFrames.HasAnimation(animation))
         {
@@ -1548,15 +1582,24 @@ public abstract partial class Role : ActivityObject
         if (GodotObject.IsInstanceValid(AnimationPlayer) && AnimationPlayer.HasAnimation(AnimatorNames.Die))
         {
             AnimationPlayer.Play(AnimatorNames.Die);
-            yield return ToSignal(AnimationPlayer, AnimationMixer.SignalName.AnimationFinished);
+            var duration = AnimationPlayer.CurrentAnimationLength;
+            if (duration > 0)
+            {
+                yield return new WaitForSeconds((float)(duration + 0.05));
+            }
         }
         else if (GodotObject.IsInstanceValid(AnimatedSprite) && AnimatedSprite.SpriteFrames != null &&
                  AnimatedSprite.SpriteFrames.HasAnimation(AnimatorNames.Die))
         {
             AnimatedSprite.Play(AnimatorNames.Die);
-            if (AnimatedSprite.SpriteFrames.GetFrameCount(AnimatorNames.Die) > 1)
+            var frameCount = AnimatedSprite.SpriteFrames.GetFrameCount(AnimatorNames.Die);
+            if (frameCount > 1)
             {
-                yield return ToSignal(AnimatedSprite, AnimatedSprite2D.SignalName.AnimationFinished);
+                var speed = Mathf.Max(0.01f,
+                    AnimatedSprite.SpriteFrames.GetAnimationSpeed(AnimatorNames.Die));
+                yield return new WaitForSeconds((float)(frameCount / speed + 0.05));
+                AnimatedSprite.Stop();
+                AnimatedSprite.Frame = frameCount - 1;
             }
         }
 
@@ -1582,7 +1625,11 @@ public abstract partial class Role : ActivityObject
         }
 
         AnimationPlayer.Play(AnimatorNames.Die);
-        yield return ToSignal(AnimationPlayer, AnimationMixer.SignalName.AnimationFinished);
+        var duration = AnimationPlayer.CurrentAnimationLength;
+        if (duration > 0)
+        {
+            yield return new WaitForSeconds((float)(duration + 0.05));
+        }
         DoDieHandler();
     }
     
@@ -1595,9 +1642,14 @@ public abstract partial class Role : ActivityObject
         }
 
         AnimatedSprite.Play(AnimatorNames.Die);
-        if (AnimatedSprite.SpriteFrames.GetFrameCount(AnimatorNames.Die) > 1)
+        var frameCount = AnimatedSprite.SpriteFrames.GetFrameCount(AnimatorNames.Die);
+        if (frameCount > 1)
         {
-            yield return ToSignal(AnimatedSprite, AnimatedSprite2D.SignalName.AnimationFinished);
+            var speed = Mathf.Max(0.01f,
+                AnimatedSprite.SpriteFrames.GetAnimationSpeed(AnimatorNames.Die));
+            yield return new WaitForSeconds((float)(frameCount / speed + 0.05));
+            AnimatedSprite.Stop();
+            AnimatedSprite.Frame = frameCount - 1;
         }
         DoDieHandler();
     }

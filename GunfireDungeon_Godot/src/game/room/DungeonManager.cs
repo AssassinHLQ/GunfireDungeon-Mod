@@ -415,11 +415,17 @@ public partial class DungeonManager : Node2D
             return;
         }
 
-        // 联机时由房主为下一层生成新种子, 客户端会从会话状态同步该种子。
-        if (LanNetworkManager.Instance != null && LanNetworkManager.Instance.IsLanConnected &&
-            LanNetworkManager.Instance.IsHost)
+        // 联机时每个玩家独立切层，但同一局仍使用同一套可复现的种子序列。
+        // 这样房主先进入下一层不会改写访客当前楼层；访客之后自己进门时仍能生成对应地图。
+        if (LanNetworkManager.Instance is { IsLanConnected: true } network)
         {
-            CurrConfig.RandomSeed = LanNetworkManager.Instance.MakeDungeonSeed();
+            if (!network.IsHost)
+            {
+                network.ClaimIndependentFloor(Plan.CurrentNumber);
+            }
+
+            var currentSeed = CurrConfig.RandomSeed ?? network.MakeDungeonSeed();
+            CurrConfig.RandomSeed = unchecked(currentSeed + LanNetworkManager.DungeonFloorSeedStep);
         }
 
         Debug.Log($"进入 {Plan.CurrentName}");
@@ -692,22 +698,15 @@ public partial class DungeonManager : Node2D
         yield return 0;
         //生成地牢房间
         
-        //最多尝试 20 次。
-        //原来是 10 次。每次是一整套独立随机的地牢生成, 理论上重试一次就该成功,
-        //但魔王模式房间多、又要连 Boss 房, 单次成功率没那么高, 翻倍留些余量。
-        //重试只在真正失败时才发生, 不影响正常情况下的耗时。
+        //最多尝试 20 套布局。每次失败必须换种子；若固定种子每次都从头重播，
+        //所有重试都会得到同一张失败地图，重试次数再多也无效。
         const int maxCount = 20;
+        var keepSeedForNetworkSync = CurrConfig.RandomSeed != null;
+        var baseSeed = CurrConfig.RandomSeed ?? new SeedRandom().Seed;
         for (var i = 0; i < maxCount; i++)
         {
-            SeedRandom random;
-            if (CurrConfig.RandomSeed != null)
-            {
-                random = new SeedRandom(CurrConfig.RandomSeed.Value);
-            }
-            else
-            {
-                random = new SeedRandom();
-            }
+            var attemptSeed = i == 0 ? baseSeed : unchecked(baseSeed + i * 104729);
+            var random = new SeedRandom(attemptSeed);
 
             //把"本层要不要在出口前放 Boss 房"从楼层计划同步进配置。
             //CurrConfig 是跨层复用的同一个对象(AdvanceToNextFloor 直接把它传回来),
@@ -752,6 +751,10 @@ public partial class DungeonManager : Node2D
             else //生成成功!
             {
                 _dungeonGenerator = dungeonGenerator;
+                if (keepSeedForNetworkSync)
+                {
+                    CurrConfig.RandomSeed = attemptSeed;
+                }
                 break;
             }
         }
@@ -1239,11 +1242,13 @@ public partial class DungeonManager : Node2D
     {
         _checkEnemyTimer = 0;
         var room = (RoomInfo)o;
+        GameNotificationOverlay.HideRoomCleared();
 
         // 联机访客仍然进入房间流程: 需要放置首波的武器/道具/宝箱, 否则访客看不到初始道具。
         // 敌人本身由房主权威生成并通过快照同步(RoomPreinstall.StartWave 的联机分支会跳过敌人)。
         var network = LanNetworkManager.Instance;
-        var isClient = network != null && network.IsLanConnected && !network.IsHost;
+        var isClient = network != null && network.IsLanConnected && !network.IsHost &&
+                       !network.IsLocalDungeonAuthority;
         if (isClient && room.HasFirstEntered && room.RoomPreinstall != null &&
             !room.RoomPreinstall.IsRunWave &&
             (!room.RoomPreinstall.HasEnemy() || room.IsSeclusion))
@@ -1362,7 +1367,7 @@ public partial class DungeonManager : Node2D
         }
 
         var hasEnemy = room.RoomPreinstall.HasLivingEnemy || room.AffiliationArea.ExistIncludeItem(
-            activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.IsDeathStarted);
+            activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.HasCompletedDeathSequence);
         if (hasEnemy)
         {
             return;
@@ -1385,7 +1390,7 @@ public partial class DungeonManager : Node2D
 
     public IEnumerable<RoomInfo> RoomInfosForNetwork => _dungeonGenerator?.RoomInfos ?? Enumerable.Empty<RoomInfo>();
 
-    public void ApplyNetworkRoomCleared(int roomId)
+    public void ApplyNetworkRoomCleared(int roomId, bool showNotification = false)
     {
         var room = _dungeonGenerator?.RoomInfos.FirstOrDefault(item => item.Id == roomId);
         if (room == null)
@@ -1394,6 +1399,10 @@ public partial class DungeonManager : Node2D
         }
 
         room.ForceNetworkClear();
+        if (showNotification && ActiveRoomInfo?.Id == roomId && room.RoomPreinstall?.HasEnemy() == true)
+        {
+            GameNotificationOverlay.ShowRoomCleared(CurrentFloor, room.RoomType == DungeonRoomType.Outlet);
+        }
     }
 
     public void ApplyNetworkRoomState(int roomId, bool hasFirstEntered, bool isSeclusion)
@@ -1422,12 +1431,7 @@ public partial class DungeonManager : Node2D
     private void OnPlayerEnterRoom(object o)
     {
         var roomInfo = (RoomInfo)o;
-        var network = LanNetworkManager.Instance;
-        if (network != null && network.IsHost && network.IsLanConnected && roomInfo.HasFirstEntered &&
-            roomInfo.RoomPreinstall?.HasEnemy() == true)
-        {
-            network.ForcePartyIntoRoom(roomInfo.Id, CurrWorld.Player.GlobalPosition, network.LocalPeerId);
-        }
+        GameNotificationOverlay.HideRoomCleared();
 
         if (_affiliationAreaFlag != roomInfo.AffiliationArea)
         {
@@ -1556,7 +1560,8 @@ public partial class DungeonManager : Node2D
         //访客快照可能比本地 1 秒清敌检查稍晚到; 若访客自行推进波次,
         //会出现"门先开后关"、Boss 还活着门却开了等竞态。
         var network = LanNetworkManager.Instance;
-        if (network != null && network.IsLanConnected && !network.IsHost)
+        if (network != null && network.IsLanConnected && !network.IsHost &&
+            !network.IsLocalDungeonAuthority)
         {
             return;
         }
@@ -1570,7 +1575,7 @@ public partial class DungeonManager : Node2D
                 {
                     //房间内是否有存活的敌人
                     var flag = activeRoom.RoomPreinstall.HasLivingEnemy || ActiveAffiliationArea.ExistIncludeItem(
-                        activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.IsDeathStarted
+                        activityObject => activityObject is Role role && role.IsEnemyWithPlayer() && !role.HasCompletedDeathSequence
                     );
                     //Debug.Log("当前房间存活数量: " + count);
                     if (!flag)
