@@ -2127,30 +2127,38 @@ public partial class LanNetworkManager : Node
 
     public void OnPlayerBulletFired(Role shooter, IBullet bullet)
     {
-        var localPlayer = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player;
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        var localPlayer = dungeonManager?.CurrWorld?.Player;
         if (!IsLanConnected || shooter != localPlayer || bullet?.BulletData?.BulletBase == null ||
             bullet.BulletData.BulletBase.Type != 1)
         {
             return;
         }
 
+        if (dungeonManager.CurrWorld is not Dungeon)
+        {
+            return;
+        }
+
+        var floor = dungeonManager.CurrentFloor;
+
         var data = bullet.BulletData;
         if (IsHost)
         {
-            Rpc(nameof(ReceivePlayerBulletVisual), LocalPeerId, data.BulletBase.Id,
+            Rpc(nameof(ReceivePlayerBulletVisual), LocalPeerId, floor, data.BulletBase.Id,
                 data.Position.X, data.Position.Y, data.Rotation, data.Altitude, data.FlySpeed,
                 data.VerticalSpeed, data.MaxDistance, data.LifeTime);
         }
         else
         {
-            RpcId(1, nameof(RequestPlayerBulletVisual), data.BulletBase.Id,
+            RpcId(1, nameof(RequestPlayerBulletVisual), floor, data.BulletBase.Id,
                 data.Position.X, data.Position.Y, data.Rotation, data.Altitude, data.FlySpeed,
                 data.VerticalSpeed, data.MaxDistance, data.LifeTime);
         }
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void RequestPlayerBulletVisual(string bulletId, float x, float y, float rotation,
+    public void RequestPlayerBulletVisual(int sourceFloor, string bulletId, float x, float y, float rotation,
         float altitude, float flySpeed, float verticalSpeed, float maxDistance, float lifeTime)
     {
         if (!IsHost || !ExcelConfig.BulletBase_Map.TryGetValue(bulletId, out var bulletBase) || bulletBase.Type != 1)
@@ -2160,23 +2168,37 @@ public partial class LanNetworkManager : Node
 
         var senderId = Multiplayer.GetRemoteSenderId();
         if (senderId <= 1 || !_remotePlayers.TryGetValue(senderId, out var state) ||
-            state.Player == null || !GodotObject.IsInstanceValid(state.Player))
+            state.Player == null || !GodotObject.IsInstanceValid(state.Player) ||
+            sourceFloor <= 0 || state.Floor != sourceFloor)
         {
             return;
         }
 
-        SpawnNetworkVisualBullet(senderId, bulletBase, new Vector2(x, y), rotation,
-            altitude, flySpeed, verticalSpeed, maxDistance, lifeTime);
-        Rpc(nameof(ReceivePlayerBulletVisual), senderId, bulletId, x, y, rotation,
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        if (dungeonManager?.CurrWorld is Dungeon && dungeonManager.CurrentFloor == sourceFloor)
+        {
+            SpawnNetworkVisualBullet(senderId, bulletBase, new Vector2(x, y), rotation,
+                altitude, flySpeed, verticalSpeed, maxDistance, lifeTime);
+        }
+
+        // 房主即使在其他楼层也要继续做中继, 但是否显示由接收端按楼层过滤。
+        Rpc(nameof(ReceivePlayerBulletVisual), senderId, sourceFloor, bulletId, x, y, rotation,
             altitude, flySpeed, verticalSpeed, maxDistance, lifeTime);
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceivePlayerBulletVisual(long sourcePeerId, string bulletId, float x, float y,
+    public void ReceivePlayerBulletVisual(long sourcePeerId, int sourceFloor, string bulletId, float x, float y,
         float rotation, float altitude, float flySpeed, float verticalSpeed, float maxDistance, float lifeTime)
     {
         if (IsHost || sourcePeerId == LocalPeerId ||
             !ExcelConfig.BulletBase_Map.TryGetValue(bulletId, out var bulletBase) || bulletBase.Type != 1)
+        {
+            return;
+        }
+
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        if (sourceFloor <= 0 || dungeonManager?.CurrWorld is not Dungeon ||
+            dungeonManager.CurrentFloor != sourceFloor)
         {
             return;
         }
@@ -2412,8 +2434,23 @@ public partial class LanNetworkManager : Node
             return;
         }
 
+        var previousSessionRevision = _sessionRevision;
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        var preserveLocalFloor = worldKind == "dungeon" &&
+                                 dungeonManager?.CurrWorld is Dungeon &&
+                                 _lastRequestedStateKey.Length > 0 &&
+                                 previousSessionRevision == sessionRevision &&
+                                 dungeonManager.CurrentFloor != floor;
+
         _sessionRevision = sessionRevision;
         _knownHostFloor = worldKind == "dungeon" ? floor : 0;
+
+        if (preserveLocalFloor)
+        {
+            // 同一局中房主和访客可以处于不同楼层, 房主的新快照不能把访客拉回去。
+            _pendingRemoteState = null;
+            return;
+        }
 
         var state = new Variant[]
         {

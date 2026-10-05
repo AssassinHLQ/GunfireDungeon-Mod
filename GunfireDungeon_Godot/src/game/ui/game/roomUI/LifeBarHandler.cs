@@ -17,6 +17,7 @@ public partial class LifeBarHandler : Control, IUiNodeScript
     private HBoxContainer _shieldIcons;
 
     private Role _player;
+    private World _world;
 
     public void SetUiNode(IUiNode uiNode)
     {
@@ -56,10 +57,12 @@ public partial class LifeBarHandler : Control, IUiNodeScript
         {
             return;
         }
-        if (!_refreshGoldFlag && World.Current != null && _player != World.Current.Player)
+        if (World.Current != null && (_world != World.Current || _player != World.Current.Player))
         {
+            _world = World.Current;
             _player = World.Current.Player;
             _refreshHpFlag = true;
+            _refreshGoldFlag = true;
             _refreshArmorFlag = true;
         }
         

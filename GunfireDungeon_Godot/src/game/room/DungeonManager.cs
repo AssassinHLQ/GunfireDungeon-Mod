@@ -428,6 +428,8 @@ public partial class DungeonManager : Node2D
             CurrConfig.RandomSeed = unchecked(currentSeed + LanNetworkManager.DungeonFloorSeedStep);
         }
 
+        CurrConfig.DungeonLayer = Plan.CurrentNumber;
+
         Debug.Log($"进入 {Plan.CurrentName}");
         UiManager.Open_Game_Loading();
         RestartDungeon(true, CurrConfig, () =>

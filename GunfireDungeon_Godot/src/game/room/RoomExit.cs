@@ -7,6 +7,8 @@ using Godot;
 /// </summary>
 public partial class RoomExit : Area2D
 {
+    private bool _activated;
+
     public override void _Ready()
     {
         BodyEntered += OnBodyEntered;
@@ -22,11 +24,30 @@ public partial class RoomExit : Area2D
     {
         TempDebug.LogPortal($"有物体进入: {body?.GetType().Name} name={body?.Name} 是Role={body is Role}");
 
-        if (body is Player)
+        if (body is not Player player)
+        {
+            return;
+        }
+
+        var gameApplication = GameApplication.Instance;
+        var dungeonManager = gameApplication?.DungeonManager;
+        if (dungeonManager?.CurrWorld?.Player != player)
+        {
+            // 联机远端玩家也属于 Player 类型, 但不能替本机触发传送门。
+            TempDebug.LogPortal($"忽略远端玩家进入出口: {player.Name}");
+            return;
+        }
+
+        if (_activated)
+        {
+            return;
+        }
+
+        _activated = true;
+
+        if (dungeonManager != null)
         {
             var lan = LanNetworkManager.Instance;
-            var gameApplication = GameApplication.Instance;
-            var dungeonManager = gameApplication.DungeonManager;
             if (lan != null && lan.IsLanConnected)
             {
                 lan.NotifyPortalEntered(dungeonManager.CurrentFloor);
