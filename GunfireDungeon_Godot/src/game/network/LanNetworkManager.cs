@@ -53,8 +53,7 @@ public partial class LanNetworkManager : Node
 
             if (_knownHostFloor > 0)
             {
-                return _locallyOwnedFloor == dungeonManager.CurrentFloor ||
-                       _knownHostFloor != dungeonManager.CurrentFloor;
+                return _knownHostFloor != dungeonManager.CurrentFloor;
             }
 
             //刚切层还没收到房主的新快照时，二层及以上默认按本机独立层处理，
@@ -1926,7 +1925,7 @@ public partial class LanNetworkManager : Node
 
         foreach (var state in _remotePlayers.Values)
         {
-            if (state.RoomId >= 0)
+            if (state.Floor == dungeonManager.CurrentFloor && state.RoomId >= 0)
             {
                 dungeonManager.CheckRemoteRoomWave(state.RoomId);
             }
@@ -1992,6 +1991,8 @@ public partial class LanNetworkManager : Node
             return null;
         }
 
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        var currentFloor = dungeonManager?.CurrWorld is Dungeon ? dungeonManager.CurrentFloor : 0;
         Player result = null;
         var bestDistance = float.MaxValue;
         if (GameApplication.Instance?.DungeonManager?.CurrWorld?.Player is Player host &&
@@ -2003,7 +2004,7 @@ public partial class LanNetworkManager : Node
 
         foreach (var state in _remotePlayers.Values)
         {
-            if (state.Player == null || !GodotObject.IsInstanceValid(state.Player) ||
+            if (state.Floor != currentFloor || state.Player == null || !GodotObject.IsInstanceValid(state.Player) ||
                 state.Player.IsDie || state.Player.AffiliationArea != area)
             {
                 continue;
@@ -2040,16 +2041,22 @@ public partial class LanNetworkManager : Node
         }
 
         long peerId = 0;
+        RemotePlayerState targetState = null;
         foreach (var state in _remotePlayers.Values)
         {
             if (state.Player == player)
             {
                 peerId = state.PeerId;
+                targetState = state;
                 break;
             }
         }
 
-        if (peerId <= 1 || player.IsDie || player.HurtArea == null)
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        var sourceFloor = dungeonManager?.CurrWorld is Dungeon ? dungeonManager.CurrentFloor : 0;
+        if (dungeonManager?.CurrWorld is not Dungeon || peerId <= 1 ||
+            targetState == null || targetState.Floor != sourceFloor ||
+            player.IsDie || player.HurtArea == null)
         {
             return;
         }
@@ -2074,15 +2081,18 @@ public partial class LanNetworkManager : Node
             abnormalPacket.Add(abnormal.Value);
         }
 
-        RpcId(peerId, nameof(ReceiveRemotePlayerDamage), _nextDamageSequence++, source.NetworkId,
-            damagePacket, abnormalPacket, angle);
+        RpcId(peerId, nameof(ReceiveRemotePlayerDamage), _nextDamageSequence++, sourceFloor,
+            source.NetworkId, damagePacket, abnormalPacket, angle);
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveRemotePlayerDamage(long damageSequence, long sourceNetworkId,
+    public void ReceiveRemotePlayerDamage(long damageSequence, int sourceFloor, long sourceNetworkId,
         Godot.Collections.Array<Variant> damagePacket, Godot.Collections.Array<Variant> abnormalPacket, float angle)
     {
-        if (IsHost || damagePacket == null || damageSequence <= _lastAppliedDamageSequence)
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        var localFloor = dungeonManager?.CurrWorld is Dungeon ? dungeonManager.CurrentFloor : 0;
+        if (IsHost || damagePacket == null || dungeonManager?.CurrWorld is not Dungeon ||
+            localFloor != sourceFloor || damageSequence <= _lastAppliedDamageSequence)
         {
             return;
         }

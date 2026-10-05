@@ -42,7 +42,7 @@ public partial class HurtArea : Area2D, IHurt
     {
         var network = LanNetworkManager.Instance;
         if (!forceLocal && network != null && network.IsLanConnected && !network.IsHost &&
-            Master.NetworkId != 0 && Master.IsAi)
+            !network.IsLocalDungeonAuthority && Master.NetworkId != 0 && Master.IsAi)
         {
             if (target is Player)
             {
