@@ -37,6 +37,18 @@ public partial class ActivityObject
         /// </summary>
         public const string Id_weapon0003 = "weapon0003";
         /// <summary>
+        /// 名称: 全站仪 <br/>
+        /// </summary>
+        public const string Id_weapon0048 = "weapon0048";
+        /// <summary>
+        /// 名称: 建筑十书 <br/>
+        /// </summary>
+        public const string Id_weapon0049 = "weapon0049";
+        /// <summary>
+        /// 名称: 轴测者 <br/>
+        /// </summary>
+        public const string Id_weapon0050 = "weapon0050";
+        /// <summary>
         /// 名称:  <br/>
         /// </summary>
         public const string Id_bullet0001 = "bullet0001";

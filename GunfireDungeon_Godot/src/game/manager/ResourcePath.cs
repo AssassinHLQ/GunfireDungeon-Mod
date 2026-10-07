@@ -137,6 +137,9 @@ public class ResourcePath
     public const string prefab_weapon_Weapon0014_tscn = "res://prefab/weapon/Weapon0014.tscn";
     public const string prefab_weapon_Weapon0016_tscn = "res://prefab/weapon/Weapon0016.tscn";
     public const string prefab_weapon_Weapon0047_tscn = "res://prefab/weapon/Weapon0047.tscn";
+    public const string prefab_weapon_Weapon0048_tscn = "res://prefab/weapon/Weapon0048.tscn";
+    public const string prefab_weapon_Weapon0049_tscn = "res://prefab/weapon/Weapon0049.tscn";
+    public const string prefab_weapon_Weapon0050_tscn = "res://prefab/weapon/Weapon0050.tscn";
     public const string prefab_weapon_WeaponTemplate_tscn = "res://prefab/weapon/WeaponTemplate.tscn";
     public const string resource_DungeonEnv_tres = "res://resource/DungeonEnv.tres";
     public const string resource_config_AbnormalStateConfig_json = "res://resource/config/AbnormalStateConfig.json";
@@ -760,6 +763,10 @@ public class ResourcePath
     public const string resource_sprite_weapon_weapon0003_Weapon0003_png = "res://resource/sprite/weapon/weapon0003/Weapon0003.png";
     public const string resource_sprite_weapon_weapon0004_KnifeHit1_png = "res://resource/sprite/weapon/weapon0004/KnifeHit1.png";
     public const string resource_sprite_weapon_weapon0004_Weapon0004_png = "res://resource/sprite/weapon/weapon0004/Weapon0004.png";
+    public const string resource_sprite_weapon_weapon0048_TotalStation_png = "res://resource/sprite/weapon/weapon0048/TotalStation.png";
+    public const string resource_sprite_weapon_weaponARCHITECTURETENBOOKS_ArchitectureTenBooks_png = "res://resource/sprite/weapon/weaponARCHITECTURETENBOOKS/ArchitectureTenBooks.png";
+    public const string resource_sprite_weapon_weaponARCHITECTURETENBOOKS_Vitruvius_png = "res://resource/sprite/weapon/weaponARCHITECTURETENBOOKS/Vitruvius.png";
+    public const string resource_sprite_weapon_weapon0050_Axonometric_png = "res://resource/sprite/weapon/weapon0050/Axonometric.png";
     public const string resource_sprite_weapon_weapon0005_Weapon0005_png = "res://resource/sprite/weapon/weapon0005/Weapon0005.png";
     public const string resource_sprite_weapon_weapon0006_Weapon0006_png = "res://resource/sprite/weapon/weapon0006/Weapon0006.png";
     public const string resource_sprite_weapon_weapon0007_Weapon0007_png = "res://resource/sprite/weapon/weapon0007/Weapon0007.png";
@@ -848,6 +855,9 @@ public class ResourcePath
     public const string resource_spriteFrames_weapon_Weapon0014_tres = "res://resource/spriteFrames/weapon/Weapon0014.tres";
     public const string resource_spriteFrames_weapon_Weapon0016_tres = "res://resource/spriteFrames/weapon/Weapon0016.tres";
     public const string resource_spriteFrames_weapon_Weapon0047_tres = "res://resource/spriteFrames/weapon/Weapon0047.tres";
+    public const string resource_spriteFrames_weapon_Weapon0048_tres = "res://resource/spriteFrames/weapon/Weapon0048.tres";
+    public const string resource_spriteFrames_weapon_Weapon0049_tres = "res://resource/spriteFrames/weapon/Weapon0049.tres";
+    public const string resource_spriteFrames_weapon_Weapon0050_tres = "res://resource/spriteFrames/weapon/Weapon0050.tres";
     public const string resource_theme_mainTheme_tres = "res://resource/theme/mainTheme.tres";
     public const string resource_theme_theme1_tres = "res://resource/theme/theme1.tres";
     public const string resource_tileset_HallTileset_tres = "res://resource/tileset/HallTileset.tres";

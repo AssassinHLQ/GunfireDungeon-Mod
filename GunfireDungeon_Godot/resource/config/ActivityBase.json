@@ -1385,5 +1385,62 @@
     "Icon": "res://resource/sprite/role/spirit0001/Spirit_Icon.png",
     "NotInRandomPool": true,
     "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0048",
+    "Name": "全站仪",
+    "Type": 5,
+    "Quality": 4,
+    "Price": 32,
+    "Intro": {
+      "Code": "近战武器: 使用全站仪进行近身攻击\n和刀相同的挥砍机制"
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0048.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0048/TotalStation.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0049",
+    "Name": "建筑十书",
+    "Type": 5,
+    "Quality": 5,
+    "Price": 40,
+    "Intro": {
+      "Code": "近战武器: 使用时在身后召唤维特鲁威人灵魂"
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0049.tscn",
+    "Icon": "res://resource/sprite/weapon/weaponARCHITECTURETENBOOKS/ArchitectureTenBooks.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0050",
+    "Name": "轴测者",
+    "Type": 5,
+    "Quality": 4,
+    "Price": 28,
+    "Intro": {
+      "Code": "近战武器: 轴测者"
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0050.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0050/Axonometric.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
   }
 ]
