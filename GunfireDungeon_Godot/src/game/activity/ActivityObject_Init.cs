@@ -49,6 +49,26 @@ public partial class ActivityObject
         /// </summary>
         public const string Id_weapon0050 = "weapon0050";
         /// <summary>
+        /// 名称: 平行尺 <br/>
+        /// </summary>
+        public const string Id_weapon0051 = "weapon0051";
+        /// <summary>
+        /// 名称: 硫酸纸 <br/>
+        /// </summary>
+        public const string Id_weapon0052 = "weapon0052";
+        /// <summary>
+        /// 名称: 棍-幕墙 <br/>
+        /// </summary>
+        public const string Id_weapon0053 = "weapon0053";
+        /// <summary>
+        /// 名称: 建筑空间组合论 <br/>
+        /// </summary>
+        public const string Id_weapon0054 = "weapon0054";
+        /// <summary>
+        /// 名称: 建构毁灭者 <br/>
+        /// </summary>
+        public const string Id_weapon0055 = "weapon0055";
+        /// <summary>
         /// 名称:  <br/>
         /// </summary>
         public const string Id_bullet0001 = "bullet0001";

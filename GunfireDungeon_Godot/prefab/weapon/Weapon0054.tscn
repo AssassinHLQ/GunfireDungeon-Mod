@@ -1,9 +1,9 @@
 [gd_scene load_steps=8 format=3]
 
 [ext_resource type="PackedScene" path="res://prefab/weapon/WeaponTemplate.tscn" id="1_template"]
-[ext_resource type="Script" path="res://src/game/activity/weapon/laser/AxisometricLaser.cs" id="2_axisometric"]
+[ext_resource type="Script" path="res://src/game/activity/weapon/architecture/ArchitectureSpaceComposition.cs" id="2_space"]
 [ext_resource type="Shader" path="res://resource/shader/Blend.gdshader" id="3_blend"]
-[ext_resource type="SpriteFrames" path="res://resource/spriteFrames/weapon/Weapon0050.tres" id="4_frames"]
+[ext_resource type="SpriteFrames" path="res://resource/spriteFrames/weapon/Weapon0054.tres" id="4_frames"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_shadow"]
 resource_local_to_scene = true
@@ -29,11 +29,11 @@ shader_parameter/outline_rainbow = false
 shader_parameter/outline_use_blend = true
 shader_parameter/grey = 0.0
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_axonometric"]
-size = Vector2(20, 14)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_space"]
+size = Vector2(18, 14)
 
-[node name="Weapon0050" node_paths=PackedStringArray("FirePoint", "ShellPoint", "AnimationPlayer", "ShadowSprite", "AnimatedSprite", "Collision") instance=ExtResource("1_template")]
-script = ExtResource("2_axisometric")
+[node name="Weapon0054" node_paths=PackedStringArray("FirePoint", "ShellPoint", "AnimationPlayer", "ShadowSprite", "AnimatedSprite", "Collision") instance=ExtResource("1_template")]
+script = ExtResource("2_space")
 FirePoint = NodePath("AnimatedSprite/FirePoint")
 ShellPoint = NodePath("AnimatedSprite/ShellPoint")
 AnimationPlayer = NodePath("AnimationPlayer")
@@ -58,8 +58,4 @@ position = Vector2(10, -1)
 [node name="Collision" parent="." index="2"]
 visible = true
 position = Vector2(5, 0)
-shape = SubResource("RectangleShape2D_axonometric")
-
-[node name="HitArea" type="Area2D" parent="." index="4"]
-monitoring = false
-monitorable = false
+shape = SubResource("RectangleShape2D_space")

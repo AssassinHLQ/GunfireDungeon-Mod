@@ -1442,5 +1442,100 @@
     "Icon": "res://resource/sprite/weapon/weapon0050/Axonometric.png",
     "NotInRandomPool": false,
     "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0051",
+    "Name": "平行尺",
+    "Type": 5,
+    "Quality": 4,
+    "Price": 32,
+    "Intro": {
+      "Code": "激光武器: 从角色上、下边缘发射完全平行的白色激光线"
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0051.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0051/ParallelRuler.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0052",
+    "Name": "硫酸纸",
+    "Type": 5,
+    "Quality": 4,
+    "Price": 28,
+    "Intro": {
+      "Code": "建筑工具主题近战武器"
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0052.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0052/SulfuricPaper.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0053",
+    "Name": "棍-幕墙",
+    "Type": 5,
+    "Quality": 4,
+    "Price": 28,
+    "Intro": {
+      "Code": "网络梗武器: 透明到看不见的幕墙棍"
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0053.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0053/CurtainWallStick.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0054",
+    "Name": "建筑空间组合论",
+    "Type": 5,
+    "Quality": 5,
+    "Price": 40,
+    "Intro": {
+      "Code": "特殊武器: 按住左键选择矩形区域, 松开后造成范围伤害"
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0054.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0054/ArchitectureSpaceComposition.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
+  },
+  {
+    "Id": "weapon0055",
+    "Name": "建构毁灭者",
+    "Type": 5,
+    "Quality": 5,
+    "Price": 40,
+    "Intro": {
+      "Code": "狙击枪: 与原有狙击枪使用相同的攻击机制"
+    },
+    "Details": {
+      "Code": ""
+    },
+    "IsStatic": false,
+    "__Material": "",
+    "Prefab": "res://prefab/weapon/Weapon0055.tscn",
+    "Icon": "res://resource/sprite/weapon/weapon0055/ConstructDestroyer.png",
+    "NotInRandomPool": false,
+    "ShowInMapEditor": true
   }
 ]

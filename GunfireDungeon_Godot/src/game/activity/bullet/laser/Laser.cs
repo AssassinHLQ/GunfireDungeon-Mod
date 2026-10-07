@@ -41,6 +41,8 @@ public partial class Laser : Area2D, IBullet
     }
 
     public bool IsDestroyed { get; private set; }
+
+    public bool NetworkVisualOnly { get; set; }
     
     public float Width { get; set; }
     
@@ -105,7 +107,9 @@ public partial class Laser : Area2D, IBullet
             distance = data.MaxDistance;
         }
         
-        Collision.SetDeferred(CollisionShape2D.PropertyName.Disabled, false);
+        Monitoring = !NetworkVisualOnly;
+        Monitorable = !NetworkVisualOnly;
+        Collision.SetDeferred(CollisionShape2D.PropertyName.Disabled, NetworkVisualOnly);
         Collision.Position = Vector2.Zero;
         Shape.Size = Vector2.Zero;
         LineSprite.Scale = new Vector2(0, width * _pixelScale);
@@ -258,6 +262,22 @@ public partial class Laser : Area2D, IBullet
             return;
         }
 
+        if (NetworkVisualOnly)
+        {
+            if (hurt.CanHurt(Camp))
+            {
+                var network = LanNetworkManager.Instance;
+                if (network != null && network.IsLanConnected && !network.IsHost &&
+                    BulletData.TriggerRole == GameApplication.Instance?.DungeonManager?.CurrWorld?.Player)
+                {
+                    network.RequestEnemyDamageFromBullet(hurt, BulletData.Damages,
+                        BulletData.Abnormals, Rotation);
+                }
+            }
+
+            return;
+        }
+
         if (hurt.CanHurt(Camp))
         {
             var network = LanNetworkManager.Instance;
@@ -338,6 +358,7 @@ public partial class Laser : Area2D, IBullet
     public virtual void OnReclaim()
     {
         State = BulletStateEnum.Normal;
+        NetworkVisualOnly = false;
         if (Particles2D != null)
         {
             foreach (var particles2D in Particles2D)
@@ -357,6 +378,7 @@ public partial class Laser : Area2D, IBullet
     public virtual void OnLeavePool()
     {
         IsDestroyed = false;
+        NetworkVisualOnly = false;
         _onLogicalFinishEventList.Clear();
         StopAllCoroutine();
     }

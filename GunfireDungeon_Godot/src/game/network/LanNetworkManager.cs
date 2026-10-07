@@ -2130,7 +2130,7 @@ public partial class LanNetworkManager : Node
         var dungeonManager = GameApplication.Instance?.DungeonManager;
         var localPlayer = dungeonManager?.CurrWorld?.Player;
         if (!IsLanConnected || shooter != localPlayer || bullet?.BulletData?.BulletBase == null ||
-            bullet.BulletData.BulletBase.Type != 1)
+            !IsNetworkVisualBullet(bullet.BulletData.BulletBase))
         {
             return;
         }
@@ -2161,7 +2161,8 @@ public partial class LanNetworkManager : Node
     public void RequestPlayerBulletVisual(int sourceFloor, string bulletId, float x, float y, float rotation,
         float altitude, float flySpeed, float verticalSpeed, float maxDistance, float lifeTime)
     {
-        if (!IsHost || !ExcelConfig.BulletBase_Map.TryGetValue(bulletId, out var bulletBase) || bulletBase.Type != 1)
+        if (!IsHost || !ExcelConfig.BulletBase_Map.TryGetValue(bulletId, out var bulletBase) ||
+            !IsNetworkVisualBullet(bulletBase))
         {
             return;
         }
@@ -2191,7 +2192,8 @@ public partial class LanNetworkManager : Node
         float rotation, float altitude, float flySpeed, float verticalSpeed, float maxDistance, float lifeTime)
     {
         if (IsHost || sourcePeerId == LocalPeerId ||
-            !ExcelConfig.BulletBase_Map.TryGetValue(bulletId, out var bulletBase) || bulletBase.Type != 1)
+            !ExcelConfig.BulletBase_Map.TryGetValue(bulletId, out var bulletBase) ||
+            !IsNetworkVisualBullet(bulletBase))
         {
             return;
         }
@@ -2234,8 +2236,6 @@ public partial class LanNetworkManager : Node
             return;
         }
 
-        var visualBullet = ObjectManager.GetBullet(bulletBase.Prefab);
-        visualBullet.NetworkVisualOnly = true;
         var data = new BulletData(world)
         {
             BulletBase = bulletBase,
@@ -2250,7 +2250,25 @@ public partial class LanNetworkManager : Node
             MaxDistance = maxDistance,
             LifeTime = lifeTime,
         };
-        visualBullet.InitData(data, shooter.Camp);
+
+        if (bulletBase.Type == 2)
+        {
+            var visualLaser = ObjectManager.GetLaser(bulletBase.Prefab);
+            visualLaser.NetworkVisualOnly = true;
+            visualLaser.AddToActivityRoot(RoomLayerEnum.YSortLayer);
+            visualLaser.InitData(data, shooter.Camp);
+        }
+        else
+        {
+            var visualBullet = ObjectManager.GetBullet(bulletBase.Prefab);
+            visualBullet.NetworkVisualOnly = true;
+            visualBullet.InitData(data, shooter.Camp);
+        }
+    }
+
+    private static bool IsNetworkVisualBullet(ExcelConfig.BulletBase bulletBase)
+    {
+        return bulletBase != null && (bulletBase.Type == 1 || bulletBase.Type == 2);
     }
 
     private void UpdateRemotePlayers(float delta)

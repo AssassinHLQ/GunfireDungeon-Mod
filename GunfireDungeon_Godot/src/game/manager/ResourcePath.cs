@@ -140,6 +140,11 @@ public class ResourcePath
     public const string prefab_weapon_Weapon0048_tscn = "res://prefab/weapon/Weapon0048.tscn";
     public const string prefab_weapon_Weapon0049_tscn = "res://prefab/weapon/Weapon0049.tscn";
     public const string prefab_weapon_Weapon0050_tscn = "res://prefab/weapon/Weapon0050.tscn";
+    public const string prefab_weapon_Weapon0051_tscn = "res://prefab/weapon/Weapon0051.tscn";
+    public const string prefab_weapon_Weapon0052_tscn = "res://prefab/weapon/Weapon0052.tscn";
+    public const string prefab_weapon_Weapon0053_tscn = "res://prefab/weapon/Weapon0053.tscn";
+    public const string prefab_weapon_Weapon0054_tscn = "res://prefab/weapon/Weapon0054.tscn";
+    public const string prefab_weapon_Weapon0055_tscn = "res://prefab/weapon/Weapon0055.tscn";
     public const string prefab_weapon_WeaponTemplate_tscn = "res://prefab/weapon/WeaponTemplate.tscn";
     public const string resource_DungeonEnv_tres = "res://resource/DungeonEnv.tres";
     public const string resource_config_AbnormalStateConfig_json = "res://resource/config/AbnormalStateConfig.json";
@@ -767,6 +772,11 @@ public class ResourcePath
     public const string resource_sprite_weapon_weaponARCHITECTURETENBOOKS_ArchitectureTenBooks_png = "res://resource/sprite/weapon/weaponARCHITECTURETENBOOKS/ArchitectureTenBooks.png";
     public const string resource_sprite_weapon_weaponARCHITECTURETENBOOKS_Vitruvius_png = "res://resource/sprite/weapon/weaponARCHITECTURETENBOOKS/Vitruvius.png";
     public const string resource_sprite_weapon_weapon0050_Axonometric_png = "res://resource/sprite/weapon/weapon0050/Axonometric.png";
+    public const string resource_sprite_weapon_weapon0051_ParallelRuler_png = "res://resource/sprite/weapon/weapon0051/ParallelRuler.png";
+    public const string resource_sprite_weapon_weapon0052_SulfuricPaper_png = "res://resource/sprite/weapon/weapon0052/SulfuricPaper.png";
+    public const string resource_sprite_weapon_weapon0053_CurtainWallStick_png = "res://resource/sprite/weapon/weapon0053/CurtainWallStick.png";
+    public const string resource_sprite_weapon_weapon0054_ArchitectureSpaceComposition_png = "res://resource/sprite/weapon/weapon0054/ArchitectureSpaceComposition.png";
+    public const string resource_sprite_weapon_weapon0055_ConstructDestroyer_png = "res://resource/sprite/weapon/weapon0055/ConstructDestroyer.png";
     public const string resource_sprite_weapon_weapon0005_Weapon0005_png = "res://resource/sprite/weapon/weapon0005/Weapon0005.png";
     public const string resource_sprite_weapon_weapon0006_Weapon0006_png = "res://resource/sprite/weapon/weapon0006/Weapon0006.png";
     public const string resource_sprite_weapon_weapon0007_Weapon0007_png = "res://resource/sprite/weapon/weapon0007/Weapon0007.png";
@@ -858,6 +868,11 @@ public class ResourcePath
     public const string resource_spriteFrames_weapon_Weapon0048_tres = "res://resource/spriteFrames/weapon/Weapon0048.tres";
     public const string resource_spriteFrames_weapon_Weapon0049_tres = "res://resource/spriteFrames/weapon/Weapon0049.tres";
     public const string resource_spriteFrames_weapon_Weapon0050_tres = "res://resource/spriteFrames/weapon/Weapon0050.tres";
+    public const string resource_spriteFrames_weapon_Weapon0051_tres = "res://resource/spriteFrames/weapon/Weapon0051.tres";
+    public const string resource_spriteFrames_weapon_Weapon0052_tres = "res://resource/spriteFrames/weapon/Weapon0052.tres";
+    public const string resource_spriteFrames_weapon_Weapon0053_tres = "res://resource/spriteFrames/weapon/Weapon0053.tres";
+    public const string resource_spriteFrames_weapon_Weapon0054_tres = "res://resource/spriteFrames/weapon/Weapon0054.tres";
+    public const string resource_spriteFrames_weapon_Weapon0055_tres = "res://resource/spriteFrames/weapon/Weapon0055.tres";
     public const string resource_theme_mainTheme_tres = "res://resource/theme/mainTheme.tres";
     public const string resource_theme_theme1_tres = "res://resource/theme/theme1.tres";
     public const string resource_tileset_HallTileset_tres = "res://resource/tileset/HallTileset.tres";

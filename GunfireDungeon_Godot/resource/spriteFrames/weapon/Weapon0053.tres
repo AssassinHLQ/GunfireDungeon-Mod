@@ -1,0 +1,11 @@
+[gd_resource type="SpriteFrames" load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://resource/sprite/weapon/weapon0053/CurtainWallStick.png" id="1_curtain_wall_stick"]
+
+[resource]
+animations = [{
+"frames": [{"duration": 1.0, "texture": ExtResource("1_curtain_wall_stick")}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
