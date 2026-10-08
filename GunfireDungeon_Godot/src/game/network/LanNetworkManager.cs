@@ -539,7 +539,7 @@ public partial class LanNetworkManager : Node
             return;
         }
 
-        if (IsLocalDungeonAuthority)
+        if (!IsHost && IsLocalDungeonAuthority)
         {
             var player = GameApplication.Instance?.DungeonManager?.CurrWorld?.Player;
             if (player != null && item.CheckInteractive(player).CanInteractive)
@@ -551,7 +551,19 @@ public partial class LanNetworkManager : Node
 
         if (item.NetworkId == 0)
         {
-            return;
+            if (IsHost)
+            {
+                item.NetworkId = AllocateDynamicNetworkId();
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(item.ActivityBase?.Id))
+                {
+                    RpcId(1, nameof(ReceiveSharedPickupFallbackRequest), item.ActivityBase.Id,
+                        item.GlobalPosition.X, item.GlobalPosition.Y);
+                }
+                return;
+            }
         }
 
         if (IsHost)
@@ -1718,6 +1730,78 @@ public partial class LanNetworkManager : Node
         ResolveSharedPickup(Multiplayer.GetRemoteSenderId(), networkId);
     }
 
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveSharedPickupFallbackRequest(string activityId, float x, float y)
+    {
+        if (!IsHost || string.IsNullOrEmpty(activityId))
+        {
+            return;
+        }
+
+        var peerId = Multiplayer.GetRemoteSenderId();
+        var position = new Vector2(x, y);
+        var currentFloor = GameApplication.Instance?.DungeonManager?.CurrentFloor ?? 0;
+        if (!_remotePlayers.TryGetValue(peerId, out var state) || state.Player == null ||
+            !GodotObject.IsInstanceValid(state.Player) || state.IsDead || state.Floor != currentFloor ||
+            state.TargetPosition.DistanceTo(position) > 96f)
+        {
+            return;
+        }
+
+        var item = FindSharedPickupCandidate(activityId, position, state.Player);
+        if (item == null)
+        {
+            return;
+        }
+
+        if (item.NetworkId == 0)
+        {
+            item.NetworkId = AllocateDynamicNetworkId();
+        }
+
+        ResolveSharedPickup(peerId, item.NetworkId);
+    }
+
+    private ActivityObject FindSharedPickupCandidate(string activityId, Vector2 position, Role player)
+    {
+        var root = GetTree()?.Root;
+        if (root == null || player == null)
+        {
+            return null;
+        }
+
+        var roomId = player.AffiliationArea?.RoomInfo?.Id ?? -1;
+        ActivityObject nearest = null;
+        var nearestDistanceSquared = 56f * 56f;
+        var pending = new Stack<Node>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var node = pending.Pop();
+            if (node is ActivityObject item && !item.IsDestroyed && item.World == World.Current &&
+                item.ActivityBase?.Id == activityId && !item.IsPerPlayerLoot &&
+                item is Weapon or PropActivity &&
+                (item is not PropActivity prop || prop.Master == null) &&
+                (item is not Weapon weapon || weapon.Master == null) &&
+                (roomId < 0 || item.AffiliationArea?.RoomInfo?.Id == roomId))
+            {
+                var distanceSquared = item.GlobalPosition.DistanceSquaredTo(position);
+                if (distanceSquared <= nearestDistanceSquared && item.CheckInteractive(player).CanInteractive)
+                {
+                    nearestDistanceSquared = distanceSquared;
+                    nearest = item;
+                }
+            }
+
+            foreach (var child in node.GetChildren())
+            {
+                pending.Push((Node)child);
+            }
+        }
+
+        return nearest;
+    }
+
     private void ResolveSharedPickup(long peerId, long networkId)
     {
         if (!IsHost || !IsLanConnected || networkId == 0)
@@ -1738,31 +1822,42 @@ public partial class LanNetworkManager : Node
 
         if (peerId == LocalPeerId)
         {
+            var activityId = item.ActivityBase?.Id ?? string.Empty;
+            var position = item.GlobalPosition;
             item.Interactive(player);
-            Rpc(nameof(ReceiveSharedPickupResult), networkId, peerId);
+            Rpc(nameof(ReceiveSharedPickupResult), networkId, peerId, activityId, position.X, position.Y);
             ApplySharedPickupResult(networkId, peerId);
         }
         else
         {
             // 访客在自己的进程执行拾取效果；房主只负责占用物品，避免代理玩家
             // 再执行一次拾取而重复丢出替换道具。
+            var activityId = item.ActivityBase?.Id ?? string.Empty;
+            var position = item.GlobalPosition;
             item.Destroy();
-            Rpc(nameof(ReceiveSharedPickupResult), networkId, peerId);
+            Rpc(nameof(ReceiveSharedPickupResult), networkId, peerId, activityId, position.X, position.Y);
         }
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveSharedPickupResult(long networkId, long winnerPeerId)
+    public void ReceiveSharedPickupResult(long networkId, long winnerPeerId, string activityId = "",
+        float x = 0, float y = 0)
     {
         if (!IsHost)
         {
-            ApplySharedPickupResult(networkId, winnerPeerId);
+            ApplySharedPickupResult(networkId, winnerPeerId, activityId, new Vector2(x, y));
         }
     }
 
-    private void ApplySharedPickupResult(long networkId, long winnerPeerId)
+    private void ApplySharedPickupResult(long networkId, long winnerPeerId, string activityId = "",
+        Vector2 position = default)
     {
         var item = FindActivityObject(networkId);
+        if (item == null && winnerPeerId != LocalPeerId && !string.IsNullOrEmpty(activityId))
+        {
+            item = FindUnnetworkedActivityDrop(activityId, position);
+        }
+
         if (item == null || item.IsDestroyed)
         {
             return;

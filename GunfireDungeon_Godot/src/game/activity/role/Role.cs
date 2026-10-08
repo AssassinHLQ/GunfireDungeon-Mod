@@ -1258,7 +1258,7 @@ public abstract partial class Role : ActivityObject
             if (this is Player && item is ActivityObject activityObject &&
                 (activityObject is Weapon || activityObject is PropActivity) &&
                 LanNetworkManager.Instance is { IsLanConnected: true } network &&
-                !network.IsLocalDungeonAuthority)
+                (network.IsHost || !network.IsLocalDungeonAuthority))
             {
                 network.RequestSharedPickup(activityObject);
                 return item;
