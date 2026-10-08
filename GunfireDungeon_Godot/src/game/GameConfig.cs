@@ -47,6 +47,8 @@ public static class GameConfig
     /// </summary>
     public const string DamageLiquidLayerId = "0002";
 
+    public const string SulfuricLiquidLayerId = "0003";
+
     /// <summary>
     /// 站在毒液里每次扣多少血 / 两次之间隔多久(秒)
     /// </summary>

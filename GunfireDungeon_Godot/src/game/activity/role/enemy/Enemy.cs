@@ -133,6 +133,8 @@ public partial class Enemy : AiRole
         {
             return;
         }
+
+        UpdateSulfuricLiquidDamage(delta);
         
         UpdateFace();
 
@@ -141,6 +143,39 @@ public partial class Enemy : AiRole
             //拾起武器操作
             DoPickUpWeapon();
         }
+    }
+
+    private float _sulfuricLiquidHurtTimer;
+
+    private void UpdateSulfuricLiquidDamage(float delta)
+    {
+        if (_sulfuricLiquidHurtTimer > 0f)
+        {
+            _sulfuricLiquidHurtTimer -= delta;
+            return;
+        }
+
+        var canvas = AffiliationArea?.RoomInfo?.LiquidCanvas;
+        if (canvas == null ||
+            (!IsStandingInSulfuricLiquid(canvas, Position) &&
+             !IsStandingInSulfuricLiquid(canvas, GetCenterPosition())))
+        {
+            return;
+        }
+
+        _sulfuricLiquidHurtTimer = GameConfig.LiquidHurtCooldown;
+        HurtArea.Hurt(null,
+            new System.Collections.Generic.List<AttackStats>
+            {
+                new(GameConfig.LiquidHurtDamage, DamageType.Physical)
+            }, null, 0f);
+    }
+
+    private static bool IsStandingInSulfuricLiquid(LiquidCanvas canvas, Vector2 worldPosition)
+    {
+        var cell = canvas.ToLiquidCanvasPosition(worldPosition);
+        var pixel = canvas.GetPixelData(cell.X, cell.Y);
+        return pixel?.Layer != null && pixel.Layer.Id == GameConfig.SulfuricLiquidLayerId;
     }
 
     public override bool IsAllWeaponTotalAmmoEmpty()

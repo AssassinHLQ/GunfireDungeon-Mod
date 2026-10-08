@@ -14,19 +14,12 @@ public partial class ArchitectureTenBooks : Knife
     {
         base.OnActive();
         EnsureVitruviusSoul();
-        if (_vitruviusSoul != null)
-        {
-            _vitruviusSoul.Visible = true;
-        }
     }
 
-    protected override void OnConceal()
+    protected override void OnPickUp(Role master)
     {
-        base.OnConceal();
-        if (_vitruviusSoul != null)
-        {
-            _vitruviusSoul.Visible = false;
-        }
+        base.OnPickUp(master);
+        EnsureVitruviusSoul();
     }
 
     protected override void OnRemove(Role master)
@@ -42,7 +35,7 @@ public partial class ArchitectureTenBooks : Knife
 
     private void EnsureVitruviusSoul()
     {
-        if (Master == null || Master.BackMountPoint == null)
+        if (Master == null)
         {
             return;
         }
@@ -54,8 +47,9 @@ public partial class ArchitectureTenBooks : Knife
                 Texture = ResourceManager.LoadTexture2D(VitruviusTexturePath),
                 Position = new Vector2(0, -3),
                 Scale = new Vector2(0.5f, 0.5f),
-                ZIndex = -1,
-                Visible = false
+                ZIndex = 0,
+                ShowBehindParent = true,
+                Visible = true
             };
         }
 
@@ -64,5 +58,7 @@ public partial class ArchitectureTenBooks : Knife
             _vitruviusSoul.GetParent()?.RemoveChild(_vitruviusSoul);
             Master.BackMountPoint.AddChild(_vitruviusSoul);
         }
+
+        _vitruviusSoul.Visible = true;
     }
 }

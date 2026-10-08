@@ -30,7 +30,7 @@ public partial class WeaponBarHandler : Control, IUiNodeScript
             // 【为什么不是"弹夹+备用"的总量】之前两个数字都是总量, 结果开一枪两个数一起掉,
             // 而且换弹时数字几乎不动, 看不出消耗。
             // 现在: 开枪只减前一个数, 换弹只从后一个数里扣, 两个数字各自只反映一件事。
-            SetWeaponAmmunition(weapon.CurrAmmo, weapon.CurrReserveAmmo);
+            SetWeaponAmmunition(weapon);
         }
         else
         {
@@ -62,14 +62,21 @@ public partial class WeaponBarHandler : Control, IUiNodeScript
     /// </summary>
     /// <param name="currAmmo">当前弹夹里的子弹数</param>
     /// <param name="totalAmmo">备用弹药量(不含弹夹)</param>
-    public void SetWeaponAmmunition(int currAmmo, int totalAmmo)
+    public void SetWeaponAmmunition(Weapon weapon)
     {
         // 法力缓冲条与法力图标已经没有对应数值了，保持隐藏
         _weaponBar.L_BufferManaProgress.Instance.Visible = false;
         _weaponBar.L_ManaIcon.Instance.Visible = false;
 
         // 显示成「弹夹 / 剩余总量」
-        _weaponBar.L_ManaProgress.Instance.NumberLabel.Text = currAmmo + "/" + totalAmmo;
+        if (weapon is FixedLaserWeapon || weapon?.ActivityBase?.Id == "weapon0008")
+        {
+            _weaponBar.L_ManaProgress.Instance.NumberLabel.Text = "∞";
+        }
+        else
+        {
+            _weaponBar.L_ManaProgress.Instance.NumberLabel.Text = weapon.CurrAmmo + "/" + weapon.CurrReserveAmmo;
+        }
     }
 
     public void OnDestroy()

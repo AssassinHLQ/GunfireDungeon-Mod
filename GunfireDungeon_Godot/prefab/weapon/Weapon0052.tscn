@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=3]
 
 [ext_resource type="PackedScene" path="res://prefab/weapon/WeaponTemplate.tscn" id="1_template"]
-[ext_resource type="Script" path="res://src/game/activity/weapon/knife/Knife.cs" id="2_knife"]
+[ext_resource type="Script" path="res://src/game/activity/weapon/architecture/SulfuricPaper.cs" id="2_sulfuric_paper"]
 [ext_resource type="Shader" path="res://resource/shader/Blend.gdshader" id="3_blend"]
 [ext_resource type="SpriteFrames" path="res://resource/spriteFrames/weapon/Weapon0052.tres" id="4_frames"]
 
@@ -33,7 +33,7 @@ shader_parameter/grey = 0.0
 size = Vector2(18, 12)
 
 [node name="Weapon0052" node_paths=PackedStringArray("FirePoint", "ShellPoint", "AnimationPlayer", "ShadowSprite", "AnimatedSprite", "Collision") instance=ExtResource("1_template")]
-script = ExtResource("2_knife")
+script = ExtResource("2_sulfuric_paper")
 FirePoint = NodePath("AnimatedSprite/FirePoint")
 ShellPoint = NodePath("AnimatedSprite/ShellPoint")
 AnimationPlayer = NodePath("AnimationPlayer")

@@ -239,10 +239,11 @@ public partial class WeaponRoulettePanel : WeaponRoulette
                 {
                     slotNode.L_SlotUi.L_WeaponUi.Instance.Visible = true;
                     slotNode.L_SlotUi.L_WeaponUi.L_WeaponIcon.Instance.Texture = weapon.GetDefaultTexture();
+                    slotNode.L_SlotUi.L_WeaponUi.L_WeaponIcon.Instance.Scale = GetWeaponIconScale(weapon);
                     // 显示「弹夹 / 备用弹药」，和右下角武器栏一致(后面那个数不含弹夹里的)。
                     // 原来是「法力 / 法力上限」—— 法力系统已经不限制射击了，改成弹药才有意义。
                     slotNode.L_SlotUi.L_WeaponUi.L_AmmoLabel.Instance.Text = 
-                        weapon.CurrAmmo + "/" + weapon.CurrReserveAmmo;
+                        GetAmmoText(weapon);
                     slotNode.Instance.SetWeapon(weapon);
                     slotNode.L_SlotAreaNode.Instance.Monitoring = true;
                 }
@@ -261,5 +262,36 @@ public partial class WeaponRoulettePanel : WeaponRoulette
                 slotNode.Instance.ClearWeapon();
             }
         }
+    }
+
+    private static Vector2 GetWeaponIconScale(Weapon weapon)
+    {
+        if (weapon?.ActivityBase?.Id == "weapon0055")
+        {
+            return new Vector2(0.5f, 0.5f);
+        }
+
+        if (weapon?.ActivityBase?.Id == "weapon0048")
+        {
+            return new Vector2(0.33333334f, 0.33333334f);
+        }
+
+        return Vector2.One;
+    }
+
+    private static string GetAmmoText(Weapon weapon)
+    {
+        if (IsInfiniteLaserWeapon(weapon))
+        {
+            return "∞";
+        }
+
+        return weapon.CurrAmmo + "/" + weapon.CurrReserveAmmo;
+    }
+
+    private static bool IsInfiniteLaserWeapon(Weapon weapon)
+    {
+        return weapon is FixedLaserWeapon ||
+            weapon?.ActivityBase?.Id == "weapon0008";
     }
 }

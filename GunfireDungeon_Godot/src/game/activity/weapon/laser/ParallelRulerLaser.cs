@@ -14,8 +14,9 @@ public partial class ParallelRulerLaser : FixedLaserWeapon
         }
 
         var origin = Master.GetCenterPosition();
-        var direction = Master.Face == FaceDirection.Right ? 0f : Mathf.Pi;
-        FireLaser(origin + new Vector2(0, -8), direction);
-        FireLaser(origin + new Vector2(0, 8), direction);
+        FireLaser(origin + new Vector2(0, -8), 0f);
+        FireLaser(origin + new Vector2(0, 8), 0f);
+        FireLaser(origin + new Vector2(0, -8), Mathf.Pi);
+        FireLaser(origin + new Vector2(0, 8), Mathf.Pi);
     }
 }

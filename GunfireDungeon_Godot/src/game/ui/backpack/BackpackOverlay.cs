@@ -229,11 +229,14 @@ public partial class BackpackOverlay : CanvasLayer
             var info = weapon.ActivityBase;
             var stat = weapon.Attribute;
             var active = package.ActiveItem == weapon ? "【当前使用】" : "【备用】";
+            var ammoText = IsInfiniteLaserWeapon(weapon)
+                ? "∞"
+                : weapon.CurrAmmo + "/" + (stat?.AmmoCapacity ?? 0);
             var lines = new List<string>
             {
                 $"{active}  槽位 {index + 1}/{package.Capacity}",
                 $"品质：{info?.Quality}    ID：{info?.Id}",
-                $"弹夹：{weapon.CurrAmmo}/{stat?.AmmoCapacity ?? 0}",
+                $"弹夹：{ammoText}",
                 $"射速：{Number(stat?.StartFiringSpeed)} → {Number(stat?.FinalFiringSpeed)} 发/分钟",
                 $"扳机间隔：{Number(stat?.TriggerInterval)} 秒    换弹：{Number(stat?.ReloadTime)} 秒",
                 $"散射：{Number(stat?.StartScatteringRange)} → {Number(stat?.FinalScatteringRange)}",
@@ -250,6 +253,11 @@ public partial class BackpackOverlay : CanvasLayer
         {
             AddEmpty(_weaponList, $"当前没有武器（容量 {package.Capacity}）。");
         }
+    }
+
+    private static bool IsInfiniteLaserWeapon(Weapon weapon)
+    {
+        return weapon is FixedLaserWeapon || weapon?.ActivityBase?.Id == "weapon0008";
     }
 
     private void RefreshProps(Role player)

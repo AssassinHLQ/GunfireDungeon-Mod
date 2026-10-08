@@ -6,6 +6,11 @@ using Godot;
 /// </summary>
 public partial class Gun : Weapon
 {
+    protected override int UseAmmoCount()
+    {
+        return ActivityBase?.Id == "weapon0008" ? 0 : base.UseAmmoCount();
+    }
+
     protected override void OnFire()
     {
         base.OnFire();
