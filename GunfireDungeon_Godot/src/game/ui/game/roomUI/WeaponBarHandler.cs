@@ -25,7 +25,9 @@ public partial class WeaponBarHandler : Control, IUiNodeScript
         if (weapon != null)
         {
             SetWeaponTexture(weapon.GetCurrentTexture());
-            _weaponBar.L_WeaponPanel.L_WeaponSprite.Instance.Scale = WeaponIconScale.GetScale(weapon);
+            var weaponSprite = _weaponBar.L_WeaponPanel.L_WeaponSprite.Instance;
+            weaponSprite.PivotOffset = weaponSprite.Size * 0.5f;
+            weaponSprite.Scale = WeaponIconScale.GetScale(weapon);
             // 显示「弹夹 / 备用弹药」—— 后面这个数字是【只算备用弹药】, 不含弹夹里那几发。
             // 总弹药 = 前面的数字 + 后面的数字, 玩家自己一眼能加出来。
             //

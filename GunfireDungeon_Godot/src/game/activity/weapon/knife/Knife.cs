@@ -20,6 +20,8 @@ public partial class Knife : Weapon
 
     private float UpliftAngle = -95;
     private float CameraShake = 7;
+
+    protected virtual float MeleeSlashEffectScale => 1f;
     
     private Area2D _hitArea;
     private int _attackIndex = 0;
@@ -91,7 +93,7 @@ public partial class Knife : Weapon
                 ResourcePath.resource_spriteFrames_weapon_Weapon0004_hit_tres, "default",
                 Master.MountPoint.Position,
                 Master.MountPoint.Rotation + Mathf.DegToRad(UpliftAngle + 60),
-                AnimatedSprite.Scale,
+                AnimatedSprite.Scale * MeleeSlashEffectScale,
                 new Vector2(17, 4), 1
             );
         }

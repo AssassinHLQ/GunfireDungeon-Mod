@@ -5,6 +5,8 @@ using Godot;
 /// </summary>
 public partial class ExpandedKnife : Knife
 {
+    protected override float MeleeSlashEffectScale => 3f;
+
     public override void OnInit()
     {
         AttackRange = 70;
