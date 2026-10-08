@@ -2058,8 +2058,16 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     {
         if (AffiliationArea != null)
         {
-            var pos = AffiliationArea.RoomInfo.LiquidCanvas.ToLiquidCanvasPosition(Position);
-            AffiliationArea.RoomInfo.LiquidCanvas.DrawBrush(brush, layer, BrushPrevPosition, pos, Rotation);
+            var roomInfo = AffiliationArea.RoomInfo;
+            var network = LanNetworkManager.Instance;
+            if (network != null && !network.ShouldDrawLiquidLocally(roomInfo.World, this))
+            {
+                BrushPrevPosition = null;
+                return;
+            }
+
+            var pos = roomInfo.LiquidCanvas.ToLiquidCanvasPosition(Position);
+            roomInfo.LiquidCanvas.DrawBrush(brush, layer, BrushPrevPosition, pos, Rotation, this);
             BrushPrevPosition = pos;
         }
     }
@@ -2084,8 +2092,16 @@ public partial class ActivityObject : CharacterBody2D, ICoroutine, IInteractive,
     {
         if (AffiliationArea != null)
         {
-            var pos = AffiliationArea.RoomInfo.LiquidCanvas.ToLiquidCanvasPosition(Position) + offset;
-            AffiliationArea.RoomInfo.LiquidCanvas.DrawBrush(brush, layer, BrushPrevPosition, pos, Rotation);
+            var roomInfo = AffiliationArea.RoomInfo;
+            var network = LanNetworkManager.Instance;
+            if (network != null && !network.ShouldDrawLiquidLocally(roomInfo.World, this))
+            {
+                BrushPrevPosition = null;
+                return;
+            }
+
+            var pos = roomInfo.LiquidCanvas.ToLiquidCanvasPosition(Position) + offset;
+            roomInfo.LiquidCanvas.DrawBrush(brush, layer, BrushPrevPosition, pos, Rotation, this);
             BrushPrevPosition = pos;
         }
     }

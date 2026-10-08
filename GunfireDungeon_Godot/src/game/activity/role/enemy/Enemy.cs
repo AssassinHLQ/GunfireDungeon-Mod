@@ -149,6 +149,12 @@ public partial class Enemy : AiRole
 
     private void UpdateSulfuricLiquidDamage(float delta)
     {
+        var network = LanNetworkManager.Instance;
+        if (network != null && network.IsLanConnected && !network.IsLocalDungeonAuthority)
+        {
+            return;
+        }
+
         if (_sulfuricLiquidHurtTimer > 0f)
         {
             _sulfuricLiquidHurtTimer -= delta;

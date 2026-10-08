@@ -116,6 +116,38 @@ public partial class LanNetworkManager : Node
     private readonly Dictionary<long, string> _openedTreasureBoxRewards = new();
     private readonly Dictionary<long, SharedShopState> _pendingSharedShopStates = new();
     private readonly Dictionary<long, PendingShopTransaction> _pendingShopTransactions = new();
+    private readonly Dictionary<(int Session, int Floor, int Room), List<NetworkLiquidStroke>> _liquidStrokeHistory = new();
+    private readonly HashSet<string> _seenLiquidStrokeIds = new();
+    private readonly Queue<string> _liquidStrokeIdOrder = new();
+    private readonly HashSet<string> _appliedLiquidStrokeIds = new();
+    private readonly Dictionary<string, LiquidStrokeThrottle> _liquidStrokeThrottles = new();
+    private long _nextLiquidStrokeSequence = 1;
+    private double _liquidReplayTimer;
+
+    private sealed class NetworkLiquidStroke
+    {
+        public int SessionRevision;
+        public int Floor;
+        public int RoomId;
+        public long SourcePeerId;
+        public long Sequence;
+        public string BrushId;
+        public string LayerId;
+        public bool HasPrevious;
+        public int PreviousX;
+        public int PreviousY;
+        public int X;
+        public int Y;
+        public float Rotation;
+        public ulong ReceivedAt;
+    }
+
+    private sealed class LiquidStrokeThrottle
+    {
+        public ulong SentAt;
+        public Vector2I Position;
+        public bool HasPosition;
+    }
 
     private sealed class RemotePlayerState
     {
@@ -135,6 +167,7 @@ public partial class LanNetworkManager : Node
         public int DeathFrame;
         public int Gold;
         public long GoldRevision = -1;
+        public string WeaponId = string.Empty;
     }
 
     private sealed class SharedShopState
@@ -193,6 +226,12 @@ public partial class LanNetworkManager : Node
         }
 
         TrackLocalWorld();
+        _liquidReplayTimer -= delta;
+        if (_liquidReplayTimer <= 0)
+        {
+            _liquidReplayTimer = 0.5;
+            ApplyCachedLiquidStrokesToLocalFloor();
+        }
         if (IsHost)
         {
             // 不只监听 world 类型, 还要检测楼层/种子变化。
@@ -252,6 +291,8 @@ public partial class LanNetworkManager : Node
         _openedTreasureBoxRewards.Clear();
         _pendingSharedShopStates.Clear();
         _pendingShopTransactions.Clear();
+        _appliedLiquidStrokeIds.Clear();
+        _liquidStrokeThrottles.Clear();
         _nextShopTransactionId = 1;
         _localGoldRevision = 0;
         StartHostDiscovery();
@@ -318,6 +359,11 @@ public partial class LanNetworkManager : Node
         _openedTreasureBoxRewards.Clear();
         _pendingSharedShopStates.Clear();
         _pendingShopTransactions.Clear();
+        _liquidStrokeHistory.Clear();
+        _seenLiquidStrokeIds.Clear();
+        _liquidStrokeIdOrder.Clear();
+        _appliedLiquidStrokeIds.Clear();
+        _liquidStrokeThrottles.Clear();
         _localGoldRevision = 0;
         _lastLocalWorld = null;
         _lastLocalWorldKind = string.Empty;
@@ -411,6 +457,7 @@ public partial class LanNetworkManager : Node
                 state.RoomId = roomId;
                 state.TargetPosition = entrantPosition;
                 dungeonManager.OnRemotePlayerEnterRoom(roomId, state.Player);
+                SendLiquidHistoryToPeer(state.PeerId, currentFloor, roomId);
                 continue;
             }
 
@@ -423,6 +470,7 @@ public partial class LanNetworkManager : Node
             }
 
             RpcId(state.PeerId, nameof(ReceiveForceRoomEntry), roomId, entrantPosition.X, entrantPosition.Y);
+            SendLiquidHistoryToPeer(state.PeerId, currentFloor, roomId);
         }
     }
 
@@ -532,6 +580,56 @@ public partial class LanNetworkManager : Node
             item.GlobalPosition.X, item.GlobalPosition.Y);
     }
 
+    public void RequestNetworkPickupSpawn(ActivityObject item)
+    {
+        if (!IsLanConnected || item == null || item.IsDestroyed || string.IsNullOrEmpty(item.ActivityBase?.Id))
+        {
+            return;
+        }
+
+        if (IsHost)
+        {
+            BroadcastNetworkPickupSpawn(item);
+            return;
+        }
+
+        if (!IsLocalDungeonAuthority)
+        {
+            RpcId(1, nameof(ReceiveNetworkPickupSpawnRequest), item.ActivityBase.Id,
+                item.GlobalPosition.X, item.GlobalPosition.Y);
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveNetworkPickupSpawnRequest(string activityId, float x, float y)
+    {
+        if (!IsHost || string.IsNullOrEmpty(activityId) ||
+            !ExcelConfig.ActivityBase_Map.TryGetValue(activityId, out var config) ||
+            config.Type is not (ActivityType.Weapon or ActivityType.Prop or ActivityType.Enemy or ActivityType.Boss or ActivityType.Treasure))
+        {
+            return;
+        }
+
+        var senderId = Multiplayer.GetRemoteSenderId();
+        var position = new Vector2(x, y);
+        var currentFloor = GameApplication.Instance?.DungeonManager?.CurrentFloor ?? 0;
+        if (!_remotePlayers.TryGetValue(senderId, out var state) || state.Player == null ||
+            !GodotObject.IsInstanceValid(state.Player) || state.IsDead || state.Floor != currentFloor ||
+            state.TargetPosition.DistanceTo(position) > 128f)
+        {
+            return;
+        }
+
+        var item = ActivityObject.Create(activityId);
+        if (item == null)
+        {
+            return;
+        }
+
+        item.PutDown(position, RoomLayerEnum.YSortLayer, false);
+        BroadcastNetworkPickupSpawn(item);
+    }
+
     public void RequestNetworkPropDrop(PropActivity prop)
     {
         if (!IsLanConnected || prop == null || prop.IsDestroyed || string.IsNullOrEmpty(prop.ActivityBase?.Id))
@@ -542,6 +640,11 @@ public partial class LanNetworkManager : Node
         if (IsHost)
         {
             BroadcastNetworkPickupSpawn(prop);
+            return;
+        }
+
+        if (IsLocalDungeonAuthority)
+        {
             return;
         }
 
@@ -561,7 +664,8 @@ public partial class LanNetworkManager : Node
         var position = new Vector2(x, y);
         if (!_remotePlayers.TryGetValue(senderId, out var state) || state.Player == null ||
             !GodotObject.IsInstanceValid(state.Player) || state.Player.IsDie ||
-            state.Player.GlobalPosition.DistanceTo(position) > 96f)
+            state.Floor != (GameApplication.Instance?.DungeonManager?.CurrentFloor ?? 0) ||
+            state.TargetPosition.DistanceTo(position) > 96f)
         {
             return;
         }
@@ -589,11 +693,43 @@ public partial class LanNetworkManager : Node
             weapon.GlobalPosition.X, weapon.GlobalPosition.Y);
     }
 
-    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void ReceiveNetworkWeaponDrop(long networkId, string activityId, float x, float y)
+    public void RequestNetworkWeaponDrop(Weapon weapon)
     {
-        if (IsHost || IsLocalDungeonAuthority || networkId == 0 || string.IsNullOrEmpty(activityId) ||
-            FindActivityObject(networkId) != null)
+        if (!IsLanConnected || weapon == null || weapon.IsDestroyed ||
+            string.IsNullOrEmpty(weapon.ActivityBase?.Id))
+        {
+            return;
+        }
+
+        if (IsHost)
+        {
+            BroadcastNetworkWeaponDrop(weapon);
+            return;
+        }
+
+        if (IsLocalDungeonAuthority)
+        {
+            return;
+        }
+
+        RpcId(1, nameof(ReceiveNetworkWeaponDropRequest), weapon.ActivityBase.Id,
+            weapon.GlobalPosition.X, weapon.GlobalPosition.Y);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveNetworkWeaponDropRequest(string activityId, float x, float y)
+    {
+        if (!IsHost || string.IsNullOrEmpty(activityId))
+        {
+            return;
+        }
+
+        var senderId = Multiplayer.GetRemoteSenderId();
+        var position = new Vector2(x, y);
+        if (!_remotePlayers.TryGetValue(senderId, out var state) || state.Player == null ||
+            !GodotObject.IsInstanceValid(state.Player) || state.Player.IsDie ||
+            state.Floor != (GameApplication.Instance?.DungeonManager?.CurrentFloor ?? 0) ||
+            state.TargetPosition.DistanceTo(position) > 96f)
         {
             return;
         }
@@ -603,8 +739,75 @@ public partial class LanNetworkManager : Node
         {
             return;
         }
+
+        weapon.PutDown(position, RoomLayerEnum.YSortLayer, false);
+        BroadcastNetworkWeaponDrop(weapon);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveNetworkWeaponDrop(long networkId, string activityId, float x, float y)
+    {
+        if (IsHost || IsLocalDungeonAuthority || networkId == 0 || string.IsNullOrEmpty(activityId) ||
+            FindActivityObject(networkId) != null)
+        {
+            return;
+        }
+
+        var position = new Vector2(x, y);
+        var weapon = FindUnnetworkedWeaponDrop(activityId, position);
+        if (weapon == null)
+        {
+            weapon = ActivityObject.Create<Weapon>(activityId);
+        }
+        if (weapon == null)
+        {
+            return;
+        }
+
+        if (weapon.GetParentOrNull<Node>() == null)
+        {
+            weapon.PutDown(position, RoomLayerEnum.YSortLayer, false);
+        }
+        else
+        {
+            weapon.GlobalPosition = position;
+        }
         weapon.NetworkId = networkId;
-        weapon.PutDown(new Vector2(x, y), RoomLayerEnum.YSortLayer, false);
+    }
+
+    private Weapon FindUnnetworkedWeaponDrop(string activityId, Vector2 position)
+    {
+        var root = GetTree()?.Root;
+        if (root == null)
+        {
+            return null;
+        }
+
+        Weapon nearest = null;
+        var nearestDistanceSquared = 96f * 96f;
+        var pending = new Stack<Node>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var node = pending.Pop();
+            if (node is Weapon weapon && !weapon.IsDestroyed && weapon.Master == null &&
+                weapon.NetworkId == 0 && weapon.ActivityBase?.Id == activityId)
+            {
+                var distanceSquared = weapon.GlobalPosition.DistanceSquaredTo(position);
+                if (distanceSquared <= nearestDistanceSquared)
+                {
+                    nearestDistanceSquared = distanceSquared;
+                    nearest = weapon;
+                }
+            }
+
+            foreach (var child in node.GetChildren())
+            {
+                pending.Push((Node)child);
+            }
+        }
+
+        return nearest;
     }
 
     public void BroadcastNetworkGoldSpawn(Gold gold)
@@ -641,6 +844,315 @@ public partial class LanNetworkManager : Node
             _localGoldRevision++;
         }
     }
+
+    public bool ShouldDrawLiquidLocally(World roomWorld, ActivityObject source)
+    {
+        if (!IsLanConnected)
+        {
+            return true;
+        }
+
+        var world = GameApplication.Instance?.DungeonManager?.CurrWorld;
+        if (world is not Dungeon || roomWorld != world)
+        {
+            return false;
+        }
+
+        var localPlayer = world.Player;
+        if (source == localPlayer ||
+            source is Weapon weapon && weapon.Master == localPlayer ||
+            source is Bullet bullet && bullet.BulletData?.TriggerRole == localPlayer)
+        {
+            return true;
+        }
+
+        return IsHost || IsLocalDungeonAuthority;
+    }
+
+    public void OnLocalLiquidBrushDrawn(RoomInfo room, BrushImageData brush,
+        ExcelConfig.LiquidLayer layer, Vector2I? previousPosition, Vector2I position,
+        float rotation, ActivityObject source)
+    {
+        if (!IsLanConnected || room == null || brush?.Brush == null || layer == null || source == null ||
+            !ShouldDrawLiquidLocally(room.World, source))
+        {
+            return;
+        }
+
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        if (dungeonManager?.CurrWorld is not Dungeon || room.LiquidCanvas == null)
+        {
+            return;
+        }
+
+        var floor = dungeonManager.CurrentFloor;
+        var throttleKey = $"{LocalPeerId}:{floor}:{room.Id}:{source.GetInstanceId()}:{layer.Id}:{brush.Brush.Id}";
+        var now = Time.GetTicksMsec();
+        if (!_liquidStrokeThrottles.TryGetValue(throttleKey, out var throttle))
+        {
+            throttle = new LiquidStrokeThrottle();
+            _liquidStrokeThrottles.Add(throttleKey, throttle);
+        }
+
+        if (now - throttle.SentAt < 100 && throttle.HasPosition && throttle.Position == position)
+        {
+            return;
+        }
+
+        if (now - throttle.SentAt < 80)
+        {
+            return;
+        }
+
+        var stroke = new NetworkLiquidStroke
+        {
+            SessionRevision = _sessionRevision,
+            Floor = floor,
+            RoomId = room.Id,
+            SourcePeerId = LocalPeerId,
+            Sequence = _nextLiquidStrokeSequence++,
+            BrushId = brush.Brush.Id,
+            LayerId = layer.Id,
+            HasPrevious = throttle.HasPosition,
+            PreviousX = throttle.Position.X,
+            PreviousY = throttle.Position.Y,
+            X = position.X,
+            Y = position.Y,
+            Rotation = rotation,
+            ReceivedAt = now,
+        };
+        throttle.SentAt = now;
+        throttle.Position = position;
+        throttle.HasPosition = true;
+
+        var strokeId = GetLiquidStrokeId(stroke);
+        if (!RememberLiquidStroke(strokeId))
+        {
+            return;
+        }
+
+        StoreLiquidStroke(stroke);
+        _appliedLiquidStrokeIds.Add(strokeId);
+        if (IsHost)
+        {
+            Rpc(nameof(ReceiveNetworkLiquidStroke), stroke.SessionRevision, stroke.Floor, stroke.RoomId,
+                stroke.SourcePeerId, stroke.Sequence, stroke.BrushId, stroke.LayerId, stroke.HasPrevious,
+                stroke.PreviousX, stroke.PreviousY, stroke.X, stroke.Y, stroke.Rotation);
+        }
+        else
+        {
+            RpcId(1, nameof(ReceiveNetworkLiquidStrokeRequest), stroke.SessionRevision, stroke.Floor,
+                stroke.RoomId, stroke.Sequence, stroke.BrushId, stroke.LayerId, stroke.HasPrevious,
+                stroke.PreviousX, stroke.PreviousY, stroke.X, stroke.Y, stroke.Rotation);
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveNetworkLiquidStrokeRequest(int sessionRevision, int floor, int roomId, long sequence,
+        string brushId, string layerId, bool hasPrevious, int previousX, int previousY, int x, int y, float rotation)
+    {
+        if (!IsHost || sessionRevision != _sessionRevision || floor <= 0 || roomId < 0 || sequence <= 0 ||
+            !ExcelConfig.LiquidBrush_Map.ContainsKey(brushId) || !ExcelConfig.LiquidLayer_Map.ContainsKey(layerId))
+        {
+            return;
+        }
+
+        var senderId = Multiplayer.GetRemoteSenderId();
+        if (senderId <= 1 || !_remotePlayers.TryGetValue(senderId, out var state) ||
+            state.Floor != floor || state.RoomId != roomId)
+        {
+            return;
+        }
+
+        AcceptAndRelayLiquidStroke(new NetworkLiquidStroke
+        {
+            SessionRevision = sessionRevision,
+            Floor = floor,
+            RoomId = roomId,
+            SourcePeerId = senderId,
+            Sequence = sequence,
+            BrushId = brushId,
+            LayerId = layerId,
+            HasPrevious = hasPrevious,
+            PreviousX = previousX,
+            PreviousY = previousY,
+            X = x,
+            Y = y,
+            Rotation = rotation,
+            ReceivedAt = Time.GetTicksMsec(),
+        });
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveNetworkLiquidStroke(int sessionRevision, int floor, int roomId, long sourcePeerId,
+        long sequence, string brushId, string layerId, bool hasPrevious, int previousX, int previousY,
+        int x, int y, float rotation)
+    {
+        if (IsHost || sessionRevision != _sessionRevision || floor <= 0 || roomId < 0 || sequence <= 0 ||
+            !ExcelConfig.LiquidBrush_Map.ContainsKey(brushId) || !ExcelConfig.LiquidLayer_Map.ContainsKey(layerId))
+        {
+            return;
+        }
+
+        AcceptAndApplyLiquidStroke(new NetworkLiquidStroke
+        {
+            SessionRevision = sessionRevision,
+            Floor = floor,
+            RoomId = roomId,
+            SourcePeerId = sourcePeerId,
+            Sequence = sequence,
+            BrushId = brushId,
+            LayerId = layerId,
+            HasPrevious = hasPrevious,
+            PreviousX = previousX,
+            PreviousY = previousY,
+            X = x,
+            Y = y,
+            Rotation = rotation,
+            ReceivedAt = Time.GetTicksMsec(),
+        });
+    }
+
+    private void AcceptAndRelayLiquidStroke(NetworkLiquidStroke stroke)
+    {
+        if (!AcceptAndApplyLiquidStroke(stroke))
+        {
+            return;
+        }
+
+        Rpc(nameof(ReceiveNetworkLiquidStroke), stroke.SessionRevision, stroke.Floor, stroke.RoomId,
+            stroke.SourcePeerId, stroke.Sequence, stroke.BrushId, stroke.LayerId, stroke.HasPrevious,
+            stroke.PreviousX, stroke.PreviousY, stroke.X, stroke.Y, stroke.Rotation);
+    }
+
+    private bool AcceptAndApplyLiquidStroke(NetworkLiquidStroke stroke)
+    {
+        if (!RememberLiquidStroke(GetLiquidStrokeId(stroke)))
+        {
+            return false;
+        }
+
+        StoreLiquidStroke(stroke);
+        ApplyLiquidStrokeToLocalWorld(stroke);
+        return true;
+    }
+
+    private void ApplyLiquidStrokeToLocalWorld(NetworkLiquidStroke stroke)
+    {
+        var manager = GameApplication.Instance?.DungeonManager;
+        if (manager?.CurrWorld is not Dungeon || manager.CurrentFloor != stroke.Floor)
+        {
+            return;
+        }
+
+        var strokeId = GetLiquidStrokeId(stroke);
+        if (!_appliedLiquidStrokeIds.Add(strokeId))
+        {
+            return;
+        }
+
+        var room = manager.RoomInfosForNetwork.FirstOrDefault(item => item.Id == stroke.RoomId);
+        if (room?.LiquidCanvas == null)
+        {
+            _appliedLiquidStrokeIds.Remove(strokeId);
+            return;
+        }
+
+        var brush = LiquidBrushManager.GetBrush(stroke.BrushId);
+        var layer = ExcelConfig.LiquidLayer_Map[stroke.LayerId];
+        Vector2I? previous = stroke.HasPrevious
+            ? new Vector2I(stroke.PreviousX, stroke.PreviousY)
+            : null;
+        room.LiquidCanvas.DrawBrush(brush, layer, previous,
+            new Vector2I(stroke.X, stroke.Y), stroke.Rotation, null, false);
+    }
+
+    private void ApplyCachedLiquidStrokesToLocalFloor()
+    {
+        var manager = GameApplication.Instance?.DungeonManager;
+        if (manager?.CurrWorld is not Dungeon)
+        {
+            return;
+        }
+
+        var floor = manager.CurrentFloor;
+        var now = Time.GetTicksMsec();
+        foreach (var pair in _liquidStrokeHistory)
+        {
+            if (pair.Key.Session != _sessionRevision || pair.Key.Floor != floor)
+            {
+                continue;
+            }
+
+            foreach (var stroke in pair.Value)
+            {
+                if (now - stroke.ReceivedAt <= 10000)
+                {
+                    ApplyLiquidStrokeToLocalWorld(stroke);
+                }
+            }
+        }
+    }
+
+    private void SendLiquidHistoryToPeer(long peerId, int floor, int roomId)
+    {
+        if (!IsHost || peerId <= 1 ||
+            !_liquidStrokeHistory.TryGetValue((_sessionRevision, floor, roomId), out var strokes))
+        {
+            return;
+        }
+
+        var now = Time.GetTicksMsec();
+        foreach (var stroke in strokes)
+        {
+            if (now - stroke.ReceivedAt <= 10000)
+            {
+                RpcId(peerId, nameof(ReceiveNetworkLiquidStroke), stroke.SessionRevision, stroke.Floor,
+                    stroke.RoomId, stroke.SourcePeerId, stroke.Sequence, stroke.BrushId, stroke.LayerId,
+                    stroke.HasPrevious, stroke.PreviousX, stroke.PreviousY, stroke.X, stroke.Y, stroke.Rotation);
+            }
+        }
+    }
+
+    private void StoreLiquidStroke(NetworkLiquidStroke stroke)
+    {
+        var key = (stroke.SessionRevision, stroke.Floor, stroke.RoomId);
+        if (!_liquidStrokeHistory.TryGetValue(key, out var strokes))
+        {
+            strokes = new List<NetworkLiquidStroke>();
+            _liquidStrokeHistory.Add(key, strokes);
+        }
+
+        var now = Time.GetTicksMsec();
+        strokes.RemoveAll(item => now - item.ReceivedAt > 10000);
+        strokes.Add(stroke);
+        if (strokes.Count > 256)
+        {
+            strokes.RemoveRange(0, strokes.Count - 256);
+        }
+    }
+
+    private bool RememberLiquidStroke(string strokeId)
+    {
+        if (!_seenLiquidStrokeIds.Add(strokeId))
+        {
+            return false;
+        }
+
+        _liquidStrokeIdOrder.Enqueue(strokeId);
+        while (_liquidStrokeIdOrder.Count > 32768)
+        {
+            _seenLiquidStrokeIds.Remove(_liquidStrokeIdOrder.Dequeue());
+        }
+
+        return true;
+    }
+
+    private static string GetLiquidStrokeId(NetworkLiquidStroke stroke)
+    {
+        return $"{stroke.SessionRevision}:{stroke.Floor}:{stroke.RoomId}:{stroke.SourcePeerId}:{stroke.Sequence}";
+    }
+
 
     public void BroadcastSharedShopState(ShopBoss shop)
     {
@@ -1136,7 +1648,7 @@ public partial class LanNetworkManager : Node
         }
 
         var position = new Vector2(x, y);
-        ActivityObject item = FindUnnetworkedPropDrop(activityId, position);
+        ActivityObject item = FindUnnetworkedActivityDrop(activityId, position);
         if (item == null)
         {
             item = ActivityObject.Create(activityId);
@@ -1157,7 +1669,7 @@ public partial class LanNetworkManager : Node
         item.NetworkId = networkId;
     }
 
-    private PropActivity FindUnnetworkedPropDrop(string activityId, Vector2 position)
+    private ActivityObject FindUnnetworkedActivityDrop(string activityId, Vector2 position)
     {
         var root = GetTree()?.Root;
         if (root == null)
@@ -1165,21 +1677,24 @@ public partial class LanNetworkManager : Node
             return null;
         }
 
-        PropActivity nearest = null;
+        ActivityObject nearest = null;
         var nearestDistanceSquared = 96f * 96f;
         var pending = new Stack<Node>();
         pending.Push(root);
         while (pending.Count > 0)
         {
             var node = pending.Pop();
-            if (node is PropActivity prop && !prop.IsDestroyed && prop.NetworkId == 0 &&
-                prop.ActivityBase?.Id == activityId)
+            if (node is ActivityObject item && !item.IsDestroyed && item.World == World.Current &&
+                item.NetworkId == 0 &&
+                item.ActivityBase?.Id == activityId &&
+                (item is not PropActivity prop || prop.Master == null) &&
+                (item is not Weapon weapon || weapon.Master == null))
             {
-                var distanceSquared = prop.GlobalPosition.DistanceSquaredTo(position);
+                var distanceSquared = item.GlobalPosition.DistanceSquaredTo(position);
                 if (distanceSquared <= nearestDistanceSquared)
                 {
                     nearestDistanceSquared = distanceSquared;
-                    nearest = prop;
+                    nearest = item;
                 }
             }
 
@@ -1325,6 +1840,11 @@ public partial class LanNetworkManager : Node
         if (IsHost && IsLanConnected)
         {
             ClearRemotePlayers();
+            _liquidStrokeHistory.Clear();
+            _seenLiquidStrokeIds.Clear();
+            _liquidStrokeIdOrder.Clear();
+            _appliedLiquidStrokeIds.Clear();
+            _liquidStrokeThrottles.Clear();
             _broadcastClearedRooms.Clear();
             _hostClearedRooms.Clear();
             _openedTreasureBoxRewards.Clear();
@@ -1569,6 +2089,7 @@ public partial class LanNetworkManager : Node
         _openedTreasureBoxRewards.Clear();
         _pendingSharedShopStates.Clear();
         _pendingShopTransactions.Clear();
+        _appliedLiquidStrokeIds.Clear();
 
         if (!string.IsNullOrEmpty(worldKind))
         {
@@ -1608,6 +2129,7 @@ public partial class LanNetworkManager : Node
         var floor = dungeonManager.CurrWorld is Dungeon ? dungeonManager.CurrentFloor : 0;
         var animation = player.AnimatedSprite?.Animation.ToString() ?? string.Empty;
         var frame = player.AnimatedSprite?.Frame ?? 0;
+        var weaponId = player.WeaponPack?.ActiveItem?.ActivityBase?.Id ?? string.Empty;
 
         var now = Time.GetTicksMsec();
         var elapsed = _lastSnapshotSentAt == 0 ? 0.05f : Mathf.Max(0.001f, (float)(now - _lastSnapshotSentAt) / 1000f);
@@ -1630,6 +2152,7 @@ public partial class LanNetworkManager : Node
             frame,
             player.RoleState.Gold,
             _localGoldRevision,
+            weaponId,
         };
         Rpc(nameof(ReceivePlayerSnapshot), args);
     }
@@ -2341,6 +2864,43 @@ public partial class LanNetworkManager : Node
         state.Player = remote;
     }
 
+    private void SyncRemotePlayerWeapon(RemotePlayerState state)
+    {
+        if (state.Player == null || !GodotObject.IsInstanceValid(state.Player) ||
+            state.Player.WeaponPack == null)
+        {
+            return;
+        }
+
+        var currentId = state.Player.WeaponPack.ActiveItem?.ActivityBase?.Id ?? string.Empty;
+        if (currentId == state.WeaponId)
+        {
+            return;
+        }
+
+        var previousWeapons = state.Player.WeaponPack.GetAndClearItem();
+        state.Player.WeaponPack.ActiveItem = null;
+        foreach (var previousWeapon in previousWeapons)
+        {
+            previousWeapon.Destroy();
+        }
+
+        if (string.IsNullOrEmpty(state.WeaponId))
+        {
+            return;
+        }
+
+        var weapon = ActivityObject.Create<Weapon>(state.WeaponId);
+        if (weapon == null)
+        {
+            GD.PushWarning($"联机远程武器同步失败: {state.WeaponId}");
+            return;
+        }
+
+        weapon.Collision.Disabled = true;
+        state.Player.WeaponPack.PickupItem(weapon, true);
+    }
+
     private void ClearRemotePlayers()
     {
         foreach (var state in _remotePlayers.Values)
@@ -2538,7 +3098,7 @@ public partial class LanNetworkManager : Node
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
     public void ReceivePlayerSnapshot(long peerId, float x, float y, int faceValue, float aimRotationDegrees, float elapsed,
         bool isRolling, bool isMeleeAttacking, long meleeAttackSequence, int roomId, int floor,
-        bool isDead, string animation, int frame, int gold, long goldRevision)
+        bool isDead, string animation, int frame, int gold, long goldRevision, string weaponId = "")
     {
         var senderId = Multiplayer.GetRemoteSenderId();
         if (senderId > 1)
@@ -2580,12 +3140,14 @@ public partial class LanNetworkManager : Node
         state.TargetPosition = newPosition;
         state.Face = (FaceDirection)Mathf.Clamp(faceValue, (int)FaceDirection.Left, (int)FaceDirection.Right);
         state.AimRotationDegrees = aimRotationDegrees;
+        state.WeaponId = weaponId ?? string.Empty;
         if (goldRevision >= state.GoldRevision)
         {
             state.Gold = Math.Max(0, gold);
             state.GoldRevision = goldRevision;
         }
         EnsureRemotePlayer(state);
+        SyncRemotePlayerWeapon(state);
         if (state.Player != null && state.GoldRevision == goldRevision)
         {
             state.Player.RoleState.Gold = state.Gold;
@@ -2623,6 +3185,12 @@ public partial class LanNetworkManager : Node
         }
         state.RoomId = roomId;
 
+        if (IsHost && senderId > 1 && roomId >= 0 &&
+            (previousFloor != floor || previousRoomId != roomId))
+        {
+            SendLiquidHistoryToPeer(senderId, floor, roomId);
+        }
+
         // ENet 的快照先发到房主, 再由房主转发给其他客户端。
         if (IsHost && senderId > 1)
         {
@@ -2631,6 +3199,7 @@ public partial class LanNetworkManager : Node
                 peerId, x, y, faceValue, aimRotationDegrees, elapsed, isRolling, isMeleeAttacking,
                 meleeAttackSequence, roomId, floor, isDead, animation ?? string.Empty, frame,
                 state.Gold, state.GoldRevision,
+                state.WeaponId,
             });
         }
     }

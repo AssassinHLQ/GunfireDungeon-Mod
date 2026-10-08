@@ -119,7 +119,8 @@ public partial class LiquidCanvas : Node2D, IDestroy
     /// <param name="prevPosition">上一帧坐标, 相对于画布坐标, 改参数用于两点距离较大时执行补间操作, 如果传 null, 则不会进行补间</param>
     /// <param name="position">绘制坐标, 相对于画布坐标</param>
     /// <param name="rotation">旋转角度, 弧度制</param>
-    public void DrawBrush(BrushImageData brush, ExcelConfig.LiquidLayer layer, Vector2I? prevPosition, Vector2I position, float rotation)
+    public void DrawBrush(BrushImageData brush, ExcelConfig.LiquidLayer layer, Vector2I? prevPosition,
+        Vector2I position, float rotation, ActivityObject source = null, bool syncNetwork = true)
     {
         if (!_liquidLayer.TryGetValue(layer.Id, out var liquidLayer))
         {
@@ -149,6 +150,12 @@ public partial class LiquidCanvas : Node2D, IDestroy
             }
 
             temp.Pixel = item;
+        }
+
+        if (syncNetwork && source != null)
+        {
+            LanNetworkManager.Instance?.OnLocalLiquidBrushDrawn(
+                _roomInfo, brush, layer, prevPosition, position, rotation, source);
         }
     }
 

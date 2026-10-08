@@ -21,14 +21,22 @@ public partial class SulfuricPaper : Knife
     protected override void Process(float delta)
     {
         base.Process(delta);
-        if (Master != null && IsActive)
+        if (Master != null && IsActive && Master == World?.Player)
         {
             var canvas = Master.AffiliationArea?.RoomInfo?.LiquidCanvas;
-            if (canvas != null)
+            var roomInfo = Master.AffiliationArea?.RoomInfo;
+            var network = LanNetworkManager.Instance;
+            if (canvas != null && roomInfo != null &&
+                (network == null || network.ShouldDrawLiquidLocally(roomInfo.World, this)))
             {
                 var position = canvas.ToLiquidCanvasPosition(Master.Position);
-                canvas.DrawBrush(_brushData, _sulfuricLayer, _previousLiquidPosition, position, Master.Rotation);
+                canvas.DrawBrush(_brushData, _sulfuricLayer, _previousLiquidPosition,
+                    position, Master.Rotation, this);
                 _previousLiquidPosition = position;
+            }
+            else
+            {
+                _previousLiquidPosition = null;
             }
         }
         else
