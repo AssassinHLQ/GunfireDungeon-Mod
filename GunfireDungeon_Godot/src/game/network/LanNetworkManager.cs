@@ -1826,7 +1826,6 @@ public partial class LanNetworkManager : Node
             var position = item.GlobalPosition;
             item.Interactive(player);
             Rpc(nameof(ReceiveSharedPickupResult), networkId, peerId, activityId, position.X, position.Y);
-            ApplySharedPickupResult(networkId, peerId);
         }
         else
         {

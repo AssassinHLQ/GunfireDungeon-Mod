@@ -519,6 +519,8 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
         return 1;
     }
 
+    protected virtual bool UseFireParts => true;
+
     public override void _EnterTree()
     {
         //收集落在地上的武器
@@ -1227,7 +1229,9 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
         }
 
         //执行零件
-        var result = FirePartList.Execute(fireRotation);
+        var result = UseFireParts
+            ? FirePartList.Execute(fireRotation)
+            : new PlanningParam(fireRotation, null) { HasBullet = true };
         if (!result.HasBullet) //没有发射子弹零件
         {
             Debug.Log("没有成功发射子弹零件!!!");

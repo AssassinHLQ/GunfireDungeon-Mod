@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Godot;
 
 using DsUi;
+using UI.game;
 
 namespace UI.game.WeaponRoulette;
 
@@ -239,7 +240,7 @@ public partial class WeaponRoulettePanel : WeaponRoulette
                 {
                     slotNode.L_SlotUi.L_WeaponUi.Instance.Visible = true;
                     slotNode.L_SlotUi.L_WeaponUi.L_WeaponIcon.Instance.Texture = weapon.GetDefaultTexture();
-                    slotNode.L_SlotUi.L_WeaponUi.L_WeaponIcon.Instance.Scale = GetWeaponIconScale(weapon);
+                    slotNode.L_SlotUi.L_WeaponUi.L_WeaponIcon.Instance.Scale = WeaponIconScale.GetScale(weapon);
                     // 显示「弹夹 / 备用弹药」，和右下角武器栏一致(后面那个数不含弹夹里的)。
                     // 原来是「法力 / 法力上限」—— 法力系统已经不限制射击了，改成弹药才有意义。
                     slotNode.L_SlotUi.L_WeaponUi.L_AmmoLabel.Instance.Text = 
@@ -262,21 +263,6 @@ public partial class WeaponRoulettePanel : WeaponRoulette
                 slotNode.Instance.ClearWeapon();
             }
         }
-    }
-
-    private static Vector2 GetWeaponIconScale(Weapon weapon)
-    {
-        if (weapon?.ActivityBase?.Id == "weapon0055")
-        {
-            return new Vector2(0.5f, 0.5f);
-        }
-
-        if (weapon?.ActivityBase?.Id == "weapon0048")
-        {
-            return new Vector2(0.33333334f, 0.33333334f);
-        }
-
-        return Vector2.One;
     }
 
     private static string GetAmmoText(Weapon weapon)
