@@ -449,6 +449,11 @@ public abstract partial class AiRole : Role
         var position = Position;
         foreach (var weapon in World.Weapon_UnclaimedList)
         {
+            if (!weapon.CanBeUsedByAi)
+            {
+                continue;
+            }
+
             //判断是否能拾起武器, 条件: 相同的房间, 或者当前房间目前没有战斗, 或者不在战斗房间
             if (weapon.AffiliationArea == AffiliationArea)
             {

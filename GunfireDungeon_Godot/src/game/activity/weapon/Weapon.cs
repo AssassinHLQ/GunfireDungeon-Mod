@@ -121,6 +121,18 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
     public bool IsActive => Master != null && Master.WeaponPack.ActiveItem == this;
 
     public virtual bool IsSpecialWeapon => false;
+
+    public bool CanBeUsedByAi => IsActivityAllowedForAi(ActivityBase?.Id);
+
+    public static bool IsActivityAllowedForAi(string activityId)
+    {
+        return activityId switch
+        {
+            "weapon0048" or "weapon0049" or "weapon0050" or "weapon0051" or
+                "weapon0052" or "weapon0053" or "weapon0054" or "weapon0055" => false,
+            _ => true
+        };
+    }
     
     /// <summary>
     /// 动画播放器
@@ -518,7 +530,7 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
     /// </summary>
     protected virtual int UseAmmoCount()
     {
-        return 1;
+        return Attribute?.IsMelee == true ? 0 : 1;
     }
 
     protected virtual bool UseFireParts => true;
@@ -1908,6 +1920,11 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
     public override CheckInteractiveResult CheckInteractive(ActivityObject master)
     {
         var result = new CheckInteractiveResult(this);
+
+        if (master is AiRole && !CanBeUsedByAi)
+        {
+            return result;
+        }
 
         if (master is Role roleMaster) //碰到角色
         {

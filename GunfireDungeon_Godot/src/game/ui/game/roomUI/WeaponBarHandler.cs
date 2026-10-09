@@ -73,7 +73,8 @@ public partial class WeaponBarHandler : Control, IUiNodeScript
         _weaponBar.L_ManaIcon.Instance.Visible = false;
 
         // 显示成「弹夹 / 剩余总量」
-        if (weapon is FixedLaserWeapon || weapon?.ActivityBase?.Id == "weapon0008")
+        if (weapon is FixedLaserWeapon || weapon?.ActivityBase?.Id == "weapon0008" ||
+            weapon?.Attribute?.IsMelee == true)
         {
             _weaponBar.L_ManaProgress.Instance.NumberLabel.Text = "∞";
         }

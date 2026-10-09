@@ -2034,6 +2034,11 @@ public abstract partial class Role : ActivityObject
     /// <param name="exchange">是否立即切换到该武器, 默认 true </param>
     public bool PickUpWeapon(Weapon weapon, bool exchange = true)
     {
+        if (weapon == null || IsAi && !weapon.CanBeUsedByAi)
+        {
+            return false;
+        }
+
         if (WeaponPack.PickupItem(weapon, exchange) != -1)
         {
             //从可互动队列中移除

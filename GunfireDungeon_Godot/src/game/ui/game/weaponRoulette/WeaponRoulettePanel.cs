@@ -267,7 +267,7 @@ public partial class WeaponRoulettePanel : WeaponRoulette
 
     private static string GetAmmoText(Weapon weapon)
     {
-        if (IsInfiniteLaserWeapon(weapon))
+        if (IsInfiniteAmmoWeapon(weapon))
         {
             return "∞";
         }
@@ -275,9 +275,9 @@ public partial class WeaponRoulettePanel : WeaponRoulette
         return weapon.CurrAmmo + "/" + weapon.CurrReserveAmmo;
     }
 
-    private static bool IsInfiniteLaserWeapon(Weapon weapon)
+    private static bool IsInfiniteAmmoWeapon(Weapon weapon)
     {
         return weapon is FixedLaserWeapon ||
-            weapon?.ActivityBase?.Id == "weapon0008";
+            weapon?.ActivityBase?.Id == "weapon0008" || weapon?.Attribute?.IsMelee == true;
     }
 }

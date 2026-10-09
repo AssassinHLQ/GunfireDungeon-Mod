@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Config;
 using Godot;
 
@@ -48,6 +49,14 @@ public class RandomPool
     public ExcelConfig.ActivityBase GetRandomWeapon()
     {
         return Random.RandomChoose(PreinstallMarkManager.GetMarkConfigsByType(ActivityType.Weapon));
+    }
+
+    public ExcelConfig.ActivityBase GetRandomEnemyWeapon()
+    {
+        var weapons = PreinstallMarkManager.GetMarkConfigsByType(ActivityType.Weapon)
+            .Where(activity => Weapon.IsActivityAllowedForAi(activity.Id))
+            .ToArray();
+        return weapons.Length == 0 ? null : Random.RandomChoose(weapons);
     }
 
     /// <summary>
@@ -143,7 +152,12 @@ public class RandomPool
                 // 小怪一律手持武器。
                 // 原来这里是 `if (World.Random.RandomBoolean(0.8f))`, 也就是有 20% 的小怪光着手出生 ——
                 // 空手的小怪既打不到人、死了也掉不出武器, 实测看上去就是"这个小怪出生没有武器"。
-                var weapon = GetRandomWeapon();
+                var weapon = GetRandomEnemyWeapon();
+                if (weapon == null)
+                {
+                    tempWave.Add(mark);
+                    continue;
+                }
                 var weaponAttribute = Weapon.GetWeaponAttribute(weapon.Id);
                 mark.Attr.Add("Weapon", weapon.Id); //武器id
                 mark.Attr.Add("CurrAmmon", weaponAttribute.AmmoCapacity.ToString()); //弹夹弹药量

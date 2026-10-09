@@ -763,14 +763,20 @@ public class RoomPreinstall : IDestroy
                 if (!string.IsNullOrEmpty(weaponId))
                 {
                     var weapon = ActivityObject.Create<Weapon>(weaponId);
-                    enemy.PickUpWeapon(weapon);
-                    if (activityMark.Attr.TryGetValue("CurrAmmon", out var currAmmon)) //当前弹夹弹药
+                    if (weapon != null && enemy.PickUpWeapon(weapon))
                     {
-                        weapon.SetCurrAmmo(int.Parse(currAmmon));
+                        if (activityMark.Attr.TryGetValue("CurrAmmon", out var currAmmon)) //当前弹夹弹药
+                        {
+                            weapon.SetCurrAmmo(int.Parse(currAmmon));
+                        }
+                        if (activityMark.Attr.TryGetValue("ResidueMana", out var residueMana)) //剩余弹药量
+                        {
+                            weapon.SetCurrReserveAmmo(int.Parse(residueMana));
+                        }
                     }
-                    if (activityMark.Attr.TryGetValue("ResidueMana", out var residueMana)) //剩余弹药量
+                    else
                     {
-                        weapon.SetCurrReserveAmmo(int.Parse(residueMana));
+                        weapon?.Destroy();
                     }
                 }
             }
