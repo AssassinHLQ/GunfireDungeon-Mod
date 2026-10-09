@@ -144,6 +144,8 @@ public partial class MainPanel : Main
     //点击开始游戏
     private void OnStartGameClick()
     {
+        LanNetworkManager.Instance?.Disconnect();
+
         //先淡出主菜单 BGM, 再进大厅(大厅自己的 BGM 由地牢组 SoundId 决定)
         StopMenuBgm();
 

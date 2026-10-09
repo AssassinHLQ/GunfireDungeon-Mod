@@ -1,5 +1,6 @@
 
 using System;
+using System.Linq;
 using Config;
 using Godot;
 
@@ -370,9 +371,13 @@ public partial class ShopItemSlot : Area2D, IInteractive, IOutline
 
     public static bool IsSupportedShopItem(string activityId)
     {
-        return !string.IsNullOrEmpty(activityId) &&
-               (ExcelConfig.BuffPropBase_Map.ContainsKey(activityId) ||
-                ExcelConfig.ActivePropBase_Map.ContainsKey(activityId));
+        if (string.IsNullOrEmpty(activityId))
+        {
+            return false;
+        }
+
+        return ExcelConfig.BuffPropBase_Map?.Values.Any(item => item?.Activity?.Id == activityId) == true ||
+               ExcelConfig.ActivePropBase_Map?.Values.Any(item => item?.Activity?.Id == activityId) == true;
     }
     
     public virtual void OnTargetEnterd(ActivityObject target)

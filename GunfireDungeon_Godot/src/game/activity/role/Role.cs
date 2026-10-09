@@ -2206,7 +2206,7 @@ public abstract partial class Role : ActivityObject
 
     public virtual void MeleeAttack(bool useFixedRange)
     {
-        if (IsAttack)
+        if (_meleeAttackPlaying || MeleeAttackTimer > 0)
         {
             return;
         }
