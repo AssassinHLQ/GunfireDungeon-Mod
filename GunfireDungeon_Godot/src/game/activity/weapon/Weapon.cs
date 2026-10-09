@@ -122,6 +122,9 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
 
     public virtual bool IsSpecialWeapon => false;
 
+    private bool UsesClickDrivenMeleeCadence =>
+        Attribute?.IsMelee == true && !IsSpecialWeapon && TriggerRole != null && !TriggerRole.IsAi;
+
     public bool CanBeUsedByAi => IsActivityAllowedForAi(ActivityBase?.Id);
 
     public static bool IsActivityAllowedForAi(string activityId)
@@ -991,7 +994,8 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
                 }
                 else //半自动
                 {
-                    if (justDown && _triggerTimer <= 0 && _attackTimer <= 0)
+                    if (justDown && (UsesClickDrivenMeleeCadence || _triggerTimer <= 0) &&
+                        (UsesClickDrivenMeleeCadence || _attackTimer <= 0))
                     {
                         flag = true;
                     }
@@ -1035,7 +1039,7 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
                         }
 
                         //扳机按下间隔
-                        _triggerTimer = Attribute.TriggerInterval;
+                        _triggerTimer = UsesClickDrivenMeleeCadence ? 0 : Attribute.TriggerInterval;
                         //连发数量
                         if (!Attribute.ContinuousShoot)
                         {
@@ -1043,7 +1047,7 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
                         }
                     }
 
-                    if (_delayedTime <= 0 && _attackTimer <= 0)
+                    if (_delayedTime <= 0 && (UsesClickDrivenMeleeCadence || _attackTimer <= 0))
                     {
                         if (Attribute.LooseShoot) //松发开火
                         {
@@ -1265,10 +1269,18 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
 
         CurrAmmo -= UseAmmoCount();
         
-        //开火间隙, 这里的60指的是60秒
-        _fireInterval = 60 / CurrFiringSpeed;
-        //攻击冷却
-        _attackTimer += _fireInterval;
+        if (UsesClickDrivenMeleeCadence)
+        {
+            _fireInterval = 0;
+            _attackTimer = 0;
+        }
+        else
+        {
+            //开火间隙, 这里的60指的是60秒
+            _fireInterval = 60 / CurrFiringSpeed;
+            //攻击冷却
+            _attackTimer += _fireInterval;
+        }
 
         //播放开火动画
         if (IsAutoPlaySpriteFrames)
