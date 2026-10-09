@@ -9,6 +9,8 @@ public abstract partial class FixedLaserWeapon : Weapon
 {
     protected const string LaserBulletId = "1001";
 
+    public override bool IsSpecialWeapon => true;
+
     protected override bool UseFireParts => false;
 
     public override void OnInit()

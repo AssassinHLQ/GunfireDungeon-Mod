@@ -207,10 +207,10 @@ public partial class Player : Role
             //【翻滚期间也能打】原来这里有一道 StateController.CurrState != Roll 的判断,
             //翻滚时近战和开火都被禁掉。现在解除了。
             //另外这里改用 CanMeleeAttack —— 它把"空手"也算成可以近战(见 Role.CanMeleeAttack)。
-            if (CanMeleeAttack)
+            if (InputManager.MeleeAttackFromWheel ? CanWheelMeleeAttack : CanMeleeAttack)
             {
                 meleeAttackFlag = true;
-                MeleeAttack();
+                MeleeAttack(InputManager.MeleeAttackFromWheel);
             }
         }
 
@@ -636,6 +636,7 @@ public partial class Player : Role
         StateController.Enable = false;
         BasisVelocity = Vector2.Zero;
         MoveController.ClearForce();
+        RestoreBaseVisualScale();
 
         if (IsNetworkReplica)
         {
@@ -644,8 +645,14 @@ public partial class Player : Role
             return;
         }
 
-        GameCamera.Main.SetFollowTarget(null);
+        var network = LanNetworkManager.Instance;
+        GameCamera.Main.SetFollowTarget(network?.FindLivingCoopPartner(this));
         Visible = false;
+
+        if (network?.IsLanConnected == true)
+        {
+            return;
+        }
 
         World.CallDelay(0.5f, () =>
         {

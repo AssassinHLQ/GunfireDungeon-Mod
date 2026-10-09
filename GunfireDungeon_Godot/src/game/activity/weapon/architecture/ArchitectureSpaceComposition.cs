@@ -8,6 +8,9 @@ using Godot;
 public partial class ArchitectureSpaceComposition : Weapon
 {
     private const int AreaDamage = 20;
+
+    public override bool IsSpecialWeapon => true;
+
     private AreaSelectionPreview _preview;
     private Vector2 _selectionStart;
     private Vector2 _selectionEnd;

@@ -126,11 +126,11 @@ public class AiFindAmmoState : StateBase<AiRole, AIStateEnum>
 
     private void RunNextState()
     {
-        if (_attackTarget != null)
+        if (_attackTarget is { IsDie: false, IsDestroyed: false })
         {
             ChangeState(AIStateEnum.AiTailAfter, _attackTarget);
         }
-        else if (Master.LookTarget != null)
+        else if (Master.LookTarget is Role { IsDie: false, IsDestroyed: false })
         {
             ChangeState(_tailAfterTimer > 10 ? AIStateEnum.AiNormal : AIStateEnum.AiTailAfter);
         }

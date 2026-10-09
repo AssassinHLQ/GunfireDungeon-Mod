@@ -116,6 +116,9 @@ public partial class LanNetworkManager : Node
     private readonly Dictionary<long, string> _openedTreasureBoxRewards = new();
     private readonly Dictionary<long, SharedShopState> _pendingSharedShopStates = new();
     private readonly Dictionary<long, PendingShopTransaction> _pendingShopTransactions = new();
+    private Player _defeatSettlementPlayer;
+    private double _coopDefeatTimer = -1;
+    private bool _coopDefeatSettlementShown;
     private readonly Dictionary<(int Session, int Floor, int Room), List<NetworkLiquidStroke>> _liquidStrokeHistory = new();
     private readonly HashSet<string> _seenLiquidStrokeIds = new();
     private readonly Queue<string> _liquidStrokeIdOrder = new();
@@ -226,6 +229,7 @@ public partial class LanNetworkManager : Node
         }
 
         TrackLocalWorld();
+        UpdateCoopDefeatSettlement(delta);
         _liquidReplayTimer -= delta;
         if (_liquidReplayTimer <= 0)
         {
@@ -2621,8 +2625,9 @@ public partial class LanNetworkManager : Node
 
         foreach (var state in _remotePlayers.Values)
         {
-            if (state.Floor != currentFloor || state.Player == null || !GodotObject.IsInstanceValid(state.Player) ||
-                state.Player.IsDie || state.Player.AffiliationArea != area)
+            if (state.Floor != currentFloor || state.IsDead || state.Player == null ||
+                !GodotObject.IsInstanceValid(state.Player) || state.Player.IsDie ||
+                state.Player.AffiliationArea != area)
             {
                 continue;
             }
@@ -2636,6 +2641,125 @@ public partial class LanNetworkManager : Node
         }
 
         return result;
+    }
+
+    public bool HasLivingCoopPartner(Player player)
+    {
+        if (!IsLanConnected || player == null)
+        {
+            return false;
+        }
+
+        var floor = GameApplication.Instance?.DungeonManager?.CurrWorld is Dungeon
+            ? GameApplication.Instance.DungeonManager.CurrentFloor
+            : 0;
+        return _remotePlayers.Values.Any(state => state.Floor == floor && !state.IsDead &&
+            state.Player != null && GodotObject.IsInstanceValid(state.Player) && !state.Player.IsDie);
+    }
+
+    public Player FindLivingCoopPartner(Player player)
+    {
+        if (!IsLanConnected || player == null)
+        {
+            return null;
+        }
+
+        var dungeonManager = GameApplication.Instance?.DungeonManager;
+        var floor = dungeonManager?.CurrWorld is Dungeon ? dungeonManager.CurrentFloor : 0;
+        Player nearest = null;
+        var nearestDistanceSquared = float.MaxValue;
+        if (dungeonManager?.CurrWorld?.Player is Player localPlayer && localPlayer != player &&
+            !localPlayer.IsDie && !localPlayer.IsDestroyed &&
+            localPlayer.AffiliationArea == player.AffiliationArea)
+        {
+            nearest = localPlayer;
+            nearestDistanceSquared = player.GlobalPosition.DistanceSquaredTo(localPlayer.GlobalPosition);
+        }
+
+        foreach (var state in _remotePlayers.Values)
+        {
+            if (state.Player == null || !GodotObject.IsInstanceValid(state.Player) || state.IsDead ||
+                state.Player.IsDie || state.Floor != floor || state.Player.AffiliationArea != player.AffiliationArea)
+            {
+                continue;
+            }
+
+            var distanceSquared = player.GlobalPosition.DistanceSquaredTo(state.Player.GlobalPosition);
+            if (distanceSquared < nearestDistanceSquared)
+            {
+                nearest = state.Player;
+                nearestDistanceSquared = distanceSquared;
+            }
+        }
+
+        if (nearest != null)
+        {
+            return nearest;
+        }
+
+        foreach (var state in _remotePlayers.Values)
+        {
+            if (state.Floor != floor || state.IsDead || state.Player == null ||
+                !GodotObject.IsInstanceValid(state.Player) || state.Player.IsDie)
+            {
+                continue;
+            }
+
+            var distanceSquared = player.GlobalPosition.DistanceSquaredTo(state.Player.GlobalPosition);
+            if (distanceSquared < nearestDistanceSquared)
+            {
+                nearest = state.Player;
+                nearestDistanceSquared = distanceSquared;
+            }
+        }
+
+        return nearest;
+    }
+
+    private void UpdateCoopDefeatSettlement(double delta)
+    {
+        var world = GameApplication.Instance?.DungeonManager?.CurrWorld;
+        var player = world?.Player as Player;
+        if (world is not Dungeon || player == null || !player.IsDie)
+        {
+            _defeatSettlementPlayer = null;
+            _coopDefeatTimer = -1;
+            _coopDefeatSettlementShown = false;
+            return;
+        }
+
+        if (!player.HasCompletedDeathSequence || _remotePlayers.Values.Any(state =>
+                state.Floor == GameApplication.Instance.DungeonManager.CurrentFloor && state.IsDead &&
+                state.Player != null && GodotObject.IsInstanceValid(state.Player) &&
+                !state.Player.HasCompletedDeathSequence))
+        {
+            _defeatSettlementPlayer = player;
+            _coopDefeatTimer = 0;
+            return;
+        }
+
+        if (HasLivingCoopPartner(player))
+        {
+            _defeatSettlementPlayer = player;
+            _coopDefeatTimer = 0;
+            return;
+        }
+
+        if (_defeatSettlementPlayer != player)
+        {
+            _defeatSettlementPlayer = player;
+            _coopDefeatTimer = 0;
+        }
+
+        _coopDefeatTimer += delta;
+        if (_coopDefeatTimer < 0.5 || _coopDefeatSettlementShown)
+        {
+            return;
+        }
+
+        _coopDefeatSettlementShown = true;
+        world.Pause = true;
+        UiManager.Open_Game_Settlement();
     }
 
     public void RequestEnemyDamageFromBullet(IHurt hurt, List<AttackStats> damages,

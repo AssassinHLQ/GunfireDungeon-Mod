@@ -11,6 +11,7 @@ public partial class Role
 	private const float MeleeAttackWindupTime = 0.0125f;
 	private const float MeleeAttackHoldTime = 0.0125f;
 	private const float MeleeAttackReturnTime = 0.025f;
+	private const float MeleeAttackEffectForwardOffset = 16f;
 
 	/// <summary>
 	/// 手持【非近战武器(枪类)】时, 挥击动画的时长倍率。1 = 不加速。
@@ -95,7 +96,7 @@ public partial class Role
 			var sprite = (Node2D)effect;
 			//空手时没有枪口位置可量, 特效就落在 MountPoint 上(偏移 0)
 			var localFirePosition = activeItem != null
-				? (activeItem.GetLocalFirePosition() - activeItem.Position) * 0.9f
+				? new Vector2(MeleeAttackEffectForwardOffset, 0)
 				: Vector2.Zero;
 			sprite.Position = p1 + localFirePosition.Rotated(Mathf.DegToRad(r));
 			sprite.RotationDegrees = r;

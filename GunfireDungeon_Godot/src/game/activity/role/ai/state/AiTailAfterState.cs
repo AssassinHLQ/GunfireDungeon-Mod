@@ -55,7 +55,8 @@ public class AiTailAfterState : StateBase<AiRole, AIStateEnum>
         //这个状态下不会有攻击事件, 所以没必要每一帧检查是否弹药耗尽
 
         //更改攻击状态：目标丢失、销毁、或者阵营转变
-        if (Master.LookTarget == null || Master.LookTarget.IsDestroyed || (Master.LookTarget is Role role && !Master.IsEnemy(role)))
+        if (Master.LookTarget == null || Master.LookTarget.IsDestroyed ||
+            (Master.LookTarget is Role role && (role.IsDie || !Master.IsEnemy(role))))
         {
             ChangeState(AIStateEnum.AiNormal);
             return;

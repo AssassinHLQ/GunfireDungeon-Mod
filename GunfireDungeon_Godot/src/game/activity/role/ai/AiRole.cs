@@ -180,6 +180,11 @@ public abstract partial class AiRole : Role
         UpdateDormant(delta);
         ProcessContactDamage(delta);
 
+        if (LookTarget is Role { IsDie: true })
+        {
+            LookTarget = LanNetworkManager.Instance?.FindCoopTarget(AffiliationArea, GlobalPosition);
+        }
+
         if (LookTarget != null)
         {
             if (LookTarget.IsDestroyed)
@@ -335,9 +340,10 @@ public abstract partial class AiRole : Role
         }
 
         var target = LookTarget as Role;
-        if (target == null || target.IsDestroyed)
+        if (target == null || target.IsDestroyed || target.IsDie)
         {
-            target = LanNetworkManager.Instance?.FindCoopTarget(AffiliationArea, GlobalPosition) ?? World?.Player;
+            target = LanNetworkManager.Instance?.FindCoopTarget(AffiliationArea, GlobalPosition) ??
+                     (World?.Player is { IsDie: false } localPlayer ? localPlayer : null);
         }
 
         if (target == null || target.IsDie || !IsEnemy(target))
@@ -370,7 +376,7 @@ public abstract partial class AiRole : Role
     public Role CalcAttackTarget()
     {
         var enemyItems = AffiliationArea?.FindEnterItems(
-            o => o is Role role && !role.IsDestroyed && IsEnemy(role));
+            o => o is Role role && !role.IsDestroyed && !role.IsDie && IsEnemy(role));
         if (enemyItems == null || enemyItems.Length == 0) return null;
 
         try

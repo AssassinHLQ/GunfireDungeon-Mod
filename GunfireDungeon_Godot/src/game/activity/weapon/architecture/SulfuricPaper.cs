@@ -7,6 +7,8 @@ using Vector2I = Godot.Vector2I;
 /// </summary>
 public partial class SulfuricPaper : Knife
 {
+    public override bool IsSpecialWeapon => true;
+
     private BrushImageData _brushData;
     private ExcelConfig.LiquidLayer _sulfuricLayer;
     private Vector2I? _previousLiquidPosition;

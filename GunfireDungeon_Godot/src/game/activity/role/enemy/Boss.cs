@@ -130,7 +130,8 @@ public partial class Boss : AiRole
             return;
         }
         base.Process(delta);
-        LookTarget = LanNetworkManager.Instance?.FindCoopTarget(AffiliationArea, GlobalPosition) ?? World.Player;
+        LookTarget = LanNetworkManager.Instance?.FindCoopTarget(AffiliationArea, GlobalPosition) ??
+                     (World.Player is { IsDie: false } localPlayer ? localPlayer : null);
         //UpdateFace();
 
         var lean = MoveLeanDegrees;
@@ -404,7 +405,8 @@ public partial class Boss : AiRole
         for (var i = 0; i < count; i++)
         {
             var summons = Create<Summons>(Ids.Id_summons0001);
-            summons.InitTarget(World.Player);
+            summons.InitTarget(LanNetworkManager.Instance?.FindCoopTarget(AffiliationArea, Position) ??
+                               (World.Player is { IsDie: false } localPlayer ? localPlayer : null));
             summons.ThrowToPosition(Position, 40, 0, AffiliationArea.RoomInfo.ToGlobalPosition(positionArray[i]), 150);
             summons.PutDown(RoomLayerEnum.YSortLayer);
             yield return new WaitForSeconds(0.5f);

@@ -11,6 +11,8 @@ using Godot;
 /// </summary>
 public abstract partial class Role : ActivityObject
 {
+    private const int ReplicatedPlayerCorpseFrame = 1;
+
     public delegate void ShootBulletCallback(Role role, Weapon weapon, float fireRotation, IBullet bullet);
     
     /// <summary>
@@ -214,6 +216,21 @@ public abstract partial class Role : ActivityObject
             }
 
             return !weapon.Reloading && weapon.Attribute != null && weapon.Attribute.CanMeleeAttack;
+        }
+    }
+
+    public bool CanWheelMeleeAttack
+    {
+        get
+        {
+            var weapon = WeaponPack.ActiveItem;
+            if (weapon == null)
+            {
+                return true;
+            }
+
+            return !weapon.Reloading && weapon.Attribute != null && weapon.Attribute.CanMeleeAttack &&
+                   !weapon.Attribute.IsMelee && !weapon.IsSpecialWeapon;
         }
     }
 
@@ -539,6 +556,7 @@ public abstract partial class Role : ActivityObject
     
     //初始缩放
     private Vector2 _startScale;
+    private Vector2 _startAnimatedSpriteScale;
     //当前可互动的物体
     private CheckInteractiveResult _currentResultData;
     //闪烁计时器
@@ -836,6 +854,7 @@ public abstract partial class Role : ActivityObject
         
         TipRoot.Role = this;
         _startScale = Scale;
+        _startAnimatedSpriteScale = AnimatedSprite.Scale;
         HurtArea.InitRole(this);
         Face = FaceDirection.Right;
         
@@ -1491,6 +1510,7 @@ public abstract partial class Role : ActivityObject
             }
 
             ApplyReplicatedAnimation(animation, frame);
+            ApplyReplicatedDeathScale();
             return;
         }
 
@@ -1507,6 +1527,12 @@ public abstract partial class Role : ActivityObject
         if (GodotObject.IsInstanceValid(AnimatedSprite) && AnimatedSprite.SpriteFrames != null &&
             !string.IsNullOrEmpty(animation) && AnimatedSprite.SpriteFrames.HasAnimation(animation))
         {
+            if (this is Player && IsNetworkReplica && animation == AnimatorNames.Die)
+            {
+                frame = Mathf.Min(frame, ReplicatedPlayerCorpseFrame);
+                ApplyReplicatedDeathScale();
+            }
+
             if (AnimatedSprite.Animation != animation)
             {
                 AnimatedSprite.Play(animation);
@@ -1597,9 +1623,12 @@ public abstract partial class Role : ActivityObject
             {
                 var speed = Mathf.Max(0.01f,
                     AnimatedSprite.SpriteFrames.GetAnimationSpeed(AnimatorNames.Die));
-                yield return new WaitForSeconds((float)(frameCount / speed + 0.05));
+                var finalFrame = this is Player ?
+                    Mathf.Min(frameCount - 1, ReplicatedPlayerCorpseFrame) : frameCount - 1;
+                var duration = this is Player ? (finalFrame + 1f) / speed : frameCount / speed;
+                yield return new WaitForSeconds((float)duration + 0.05f);
                 AnimatedSprite.Stop();
-                AnimatedSprite.Frame = frameCount - 1;
+                AnimatedSprite.Frame = finalFrame;
             }
         }
 
@@ -2167,6 +2196,11 @@ public abstract partial class Role : ActivityObject
     /// </summary>
     public virtual void MeleeAttack()
     {
+        MeleeAttack(false);
+    }
+
+    public virtual void MeleeAttack(bool useFixedRange)
+    {
         if (IsAttack)
         {
             return;
@@ -2176,6 +2210,11 @@ public abstract partial class Role : ActivityObject
         //伤害取 BareHandMeleeDamageRange, 见 CanMeleeAttack / HandlerCollision。
         if (WeaponPack.ActiveItem == null || CanMeleeAttack)
         {
+            if (useFixedRange)
+            {
+                SetMeleeAttackRange(BareMeleeRadius);
+            }
+
             MeleeAttackSequence++;
             _meleeAttackPlaying = true;
             MeleeAttackTimer = 0;
@@ -2186,6 +2225,7 @@ public abstract partial class Role : ActivityObject
             PlayAnimation_MeleeAttack(() =>
             {
                 _meleeAttackPlaying = false;
+                OnChangeActiveItem(WeaponPack.ActiveItem);
                 //【不要写死 true】翻滚途中也能挥拳了(见 Player.Process),
                 //这一行如果无脑恢复成 true, 翻滚还没结束枪口就会开始跟鼠标。
                 MountLookTarget = _meleeMountLookTargetBefore;
@@ -2216,14 +2256,15 @@ public abstract partial class Role : ActivityObject
     /// </summary>
     private void OnChangeActiveItem(Weapon weapon)
     {
-        //这里处理近战区域。
-        //【空手也要设】weapon 为 null 代表"武器全扔了", 这时近战是空手挥拳,
-        //判定扇形用一个固定半径(BareHandMeleeRadius)。原来这里 if (weapon != null) 直接跳过,
-        //结果就是空手时判定多边形还停在上一次武器的形状上 —— 甚至根本没初始化过。
         var radius = weapon != null
             ? (weapon.GetLocalFirePosition() + weapon.GetGripPosition()).Length() * 1.1f
             : BareMeleeRadius;
 
+        SetMeleeAttackRange(radius);
+    }
+
+    private void SetMeleeAttackRange(float radius)
+    {
         MeleeAttackCollision.Polygon = Utils.CreateSectorPolygon(
             Utils.ConvertAngle(-MeleeAttackAngle / 2f),
             radius,
@@ -2231,6 +2272,22 @@ public abstract partial class Role : ActivityObject
             6
         );
         MeleeAttackArea.CollisionMask = AttackLayer | PhysicsLayer.Bullet;
+    }
+
+    protected void RestoreBaseVisualScale()
+    {
+        Scale = Face == FaceDirection.Left
+            ? new Vector2(_startScale.X, -_startScale.Y)
+            : _startScale;
+        if (GodotObject.IsInstanceValid(AnimatedSprite))
+        {
+            AnimatedSprite.Scale = _startAnimatedSpriteScale;
+        }
+    }
+
+    public void ApplyReplicatedDeathScale()
+    {
+        RestoreBaseVisualScale();
     }
 
     private void OnMeleeAttackAreaEntered(Area2D area)

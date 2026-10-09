@@ -119,6 +119,8 @@ public abstract partial class Weapon : ActivityObject, IPackageItem<Role>
     /// 返回是否真正使用该武器
     /// </summary>
     public bool IsActive => Master != null && Master.WeaponPack.ActiveItem == this;
+
+    public virtual bool IsSpecialWeapon => false;
     
     /// <summary>
     /// 动画播放器

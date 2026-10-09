@@ -48,7 +48,8 @@ public class AiFollowUpState : StateBase<AiRole, AIStateEnum>
         }
         
         //更改攻击状态：目标丢失、销毁、或者阵营转变
-        if (Master.LookTarget == null || Master.LookTarget.IsDestroyed || (Master.LookTarget is Role role && !Master.IsEnemy(role)))
+        if (Master.LookTarget == null || Master.LookTarget.IsDestroyed ||
+            (Master.LookTarget is Role role && (role.IsDie || !Master.IsEnemy(role))))
         {
             ChangeState(AIStateEnum.AiNormal);
             return;

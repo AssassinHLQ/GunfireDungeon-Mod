@@ -79,6 +79,7 @@ public static class InputManager
     /// 是否按钮近战攻击按钮 (使用远程武器发起的近战攻击), 键鼠: 键盘Space，手柄：RT键
     /// </summary>
     public static bool MeleeAttack { get; private set; }
+    public static bool MeleeAttackFromWheel { get; private set; }
     
     /// <summary>
     /// 是否按下翻滚按钮, 键鼠: 鼠标右键，手柄：LB键
@@ -119,6 +120,8 @@ public static class InputManager
     /// Ui下的鼠标位置
     /// </summary>
     public static Vector2 UiMousePosition { get; private set; }
+
+    private static bool _meleeAttackWheelPressedThisFrame;
     
     /// <summary>
     /// 鼠标是否有Ui遮挡
@@ -203,6 +206,7 @@ public static class InputManager
             Interactive = Input.IsActionJustPressed(InputAction.Interactive);
             Reload = Input.IsActionJustPressed(InputAction.Reload);
             MeleeAttack = Input.IsActionJustPressed(InputAction.MeleeAttack);
+            MeleeAttackFromWheel = MeleeAttack && _meleeAttackWheelPressedThisFrame;
             Roll = Input.IsActionJustPressed(InputAction.Roll);
             UseActiveProp = Input.IsActionJustPressed(InputAction.UseActiveProp);
             RemoveProp = Input.IsActionJustPressed(InputAction.RemoveProp);
@@ -216,11 +220,14 @@ public static class InputManager
             Interactive = false;
             Reload = false;
             MeleeAttack = false;
+            MeleeAttackFromWheel = false;
             Roll = false;
             UseActiveProp = false;
             RemoveProp = false;
             ExchangeProp = false;
         }
+
+        _meleeAttackWheelPressedThisFrame = false;
 
         Map = Input.IsActionPressed(InputAction.Map);
         MapJustPressed = Input.IsActionJustPressed(InputAction.Map);
@@ -238,6 +245,21 @@ public static class InputManager
     /// </summary>
     public static void GlobalInputHandler(InputEvent @event)
     {
+        if (!HasUiBlockage && @event is InputEventMouseButton mouseButton &&
+            mouseButton.Pressed &&
+            mouseButton.ButtonIndex is MouseButton.WheelUp or MouseButton.WheelDown)
+        {
+            foreach (var binding in InputMap.ActionGetEvents(InputAction.MeleeAttack))
+            {
+                if (binding is InputEventMouseButton mouseBinding &&
+                    mouseBinding.ButtonIndex == mouseButton.ButtonIndex)
+                {
+                    _meleeAttackWheelPressedThisFrame = true;
+                    break;
+                }
+            }
+        }
+
         if (@event is InputEventMouseMotion mouseMotion)
         {
             // 只有当相对移动超过阈值才认为是鼠标输入
