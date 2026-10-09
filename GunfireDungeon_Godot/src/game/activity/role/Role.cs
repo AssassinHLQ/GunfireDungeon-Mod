@@ -165,6 +165,8 @@ public abstract partial class Role : ActivityObject
     /// </summary>
     public static readonly float[] BareHandMeleeRepelRange = { 6f, 10f };
 
+    private static readonly float[] RangedWeaponMeleeRepelRange = { 20f };
+
     /// <summary>
     /// 【空手近战】判定扇形的半径(像素)。
     /// 有武器时这个半径是按"握把到枪口"算出来的(见 <see cref="OnChangeActiveItem"/>),
@@ -2459,7 +2461,9 @@ public abstract partial class Role : ActivityObject
                 else
                 {
                     var attr = IsAi ? activeWeapon.AiUseAttribute : activeWeapon.PlayerUseAttribute;
-                    repelRange = attr?.MeleeAttackRepelRange ?? BareHandMeleeRepelRange;
+                    repelRange = !IsAi && attr?.IsMelee == false && !activeWeapon.IsSpecialWeapon
+                        ? RangedWeaponMeleeRepelRange
+                        : attr?.MeleeAttackRepelRange ?? BareHandMeleeRepelRange;
                 }
 
                 var repel = Utils.Random.RandomConfigRange(repelRange);
