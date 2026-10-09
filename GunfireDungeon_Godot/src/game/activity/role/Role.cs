@@ -2206,36 +2206,40 @@ public abstract partial class Role : ActivityObject
 
     public virtual void MeleeAttack(bool useFixedRange)
     {
-        if (_meleeAttackPlaying || MeleeAttackTimer > 0)
+        if (WeaponPack.ActiveItem != null && !CanMeleeAttack)
         {
             return;
         }
 
-        //【空手也能近战】没有武器(全扔了 / 子弹打光扔枪)时走空手挥拳,
-        //伤害取 BareHandMeleeDamageRange, 见 CanMeleeAttack / HandlerCollision。
-        if (WeaponPack.ActiveItem == null || CanMeleeAttack)
+        if (useFixedRange)
         {
-            if (useFixedRange)
-            {
-                SetMeleeAttackRange(BareMeleeRadius);
-            }
-
-            MeleeAttackSequence++;
-            _meleeAttackPlaying = true;
-            MeleeAttackTimer = 0;
-            _meleeMountLookTargetBefore = MountLookTarget;
-            MountLookTarget = false;
-            
-            //播放近战动画
-            PlayAnimation_MeleeAttack(() =>
-            {
-                _meleeAttackPlaying = false;
-                OnChangeActiveItem(WeaponPack.ActiveItem);
-                //【不要写死 true】翻滚途中也能挥拳了(见 Player.Process),
-                //这一行如果无脑恢复成 true, 翻滚还没结束枪口就会开始跟鼠标。
-                MountLookTarget = _meleeMountLookTargetBefore;
-            });
+            SetMeleeAttackRange(BareMeleeRadius);
         }
+        else
+        {
+            OnChangeActiveItem(WeaponPack.ActiveItem);
+        }
+
+        MeleeAttackSequence++;
+        MeleeAttackTimer = 0;
+        BeginMeleeHitWindow(MeleeAttackTotalTime + 0.02f);
+        _meleeActiveQuery = true;
+
+        if (_meleeAttackPlaying)
+        {
+            return;
+        }
+
+        _meleeAttackPlaying = true;
+        _meleeMountLookTargetBefore = MountLookTarget;
+        MountLookTarget = false;
+
+        PlayAnimation_MeleeAttack(() =>
+        {
+            _meleeAttackPlaying = false;
+            OnChangeActiveItem(WeaponPack.ActiveItem);
+            MountLookTarget = _meleeMountLookTargetBefore;
+        });
     }
     
     /// <summary>
