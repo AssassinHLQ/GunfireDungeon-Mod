@@ -2730,10 +2730,7 @@ public partial class LanNetworkManager : Node
             return;
         }
 
-        if (!player.HasCompletedDeathSequence || _remotePlayers.Values.Any(state =>
-                state.Floor == GameApplication.Instance.DungeonManager.CurrentFloor && state.IsDead &&
-                state.Player != null && GodotObject.IsInstanceValid(state.Player) &&
-                !state.Player.HasCompletedDeathSequence))
+        if (!player.HasCompletedDeathSequence)
         {
             _defeatSettlementPlayer = player;
             _coopDefeatTimer = 0;
