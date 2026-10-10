@@ -2288,6 +2288,7 @@ public partial class LanNetworkManager : Node
                 role.AnimatedSprite.Animation.ToString(),
                 role.AnimatedSprite.Frame,
                 role.ReplicatedHitSequence,
+                role.WeaponPack?.ActiveItem?.ActivityBase?.Id ?? string.Empty,
             });
         }
 
@@ -2316,6 +2317,7 @@ public partial class LanNetworkManager : Node
             AnimatorNames.Die.ToString(),
             0,
             role.ReplicatedHitSequence,
+            role.WeaponPack?.ActiveItem?.ActivityBase?.Id ?? string.Empty,
         });
     }
 
@@ -3424,7 +3426,7 @@ public partial class LanNetworkManager : Node
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void ReceiveEnemySnapshot(long networkId, int floor, string activityId, float x, float y, int faceValue, int hp,
-        int maxHp, int gold, bool isDead, string animation, int frame, long hitSequence)
+        int maxHp, int gold, bool isDead, string animation, int frame, long hitSequence, string weaponId)
     {
         if (IsHost)
         {
@@ -3497,7 +3499,49 @@ public partial class LanNetworkManager : Node
 
         role.GlobalPosition = new Vector2(x, y);
         role.Face = (FaceDirection)Mathf.Clamp(faceValue, (int)FaceDirection.Left, (int)FaceDirection.Right);
+        SyncReplicatedEnemyWeapon(role, weaponId);
         role.ApplyReplicatedEnemyState(hp, maxHp, gold, isDead, animation, frame, hitSequence);
+    }
+
+    private void SyncReplicatedEnemyWeapon(Role role, string weaponId)
+    {
+        if (role?.IsAi != true || role.WeaponPack == null)
+        {
+            return;
+        }
+
+        weaponId ??= string.Empty;
+        var currentWeaponId = role.WeaponPack.ActiveItem?.ActivityBase?.Id ?? string.Empty;
+        if (currentWeaponId == weaponId)
+        {
+            return;
+        }
+
+        var previousWeapons = role.WeaponPack.GetAndClearItem();
+        role.WeaponPack.ActiveItem = null;
+        foreach (var previousWeapon in previousWeapons)
+        {
+            previousWeapon.Destroy();
+        }
+
+        if (string.IsNullOrEmpty(weaponId))
+        {
+            return;
+        }
+
+        var weapon = ActivityObject.Create<Weapon>(weaponId);
+        if (weapon == null)
+        {
+            GD.PushWarning($"联机敌人武器同步失败: {weaponId}");
+            return;
+        }
+
+        weapon.Collision.Disabled = true;
+        if (role.WeaponPack.PickupItem(weapon, true) < 0)
+        {
+            weapon.Destroy();
+            GD.PushWarning($"联机敌人无法装备武器: {weaponId}");
+        }
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
