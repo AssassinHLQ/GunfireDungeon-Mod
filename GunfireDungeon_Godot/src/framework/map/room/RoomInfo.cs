@@ -157,6 +157,9 @@ public class RoomInfo : IDestroy
     public bool IsDestroyed { get; private set; }
 
     private bool _openDoorFlag = true;
+    private bool _hasPendingNetworkRoomState;
+    private bool _pendingNetworkRoomExplored;
+    private bool[] _pendingNetworkAisleExploration = System.Array.Empty<bool>();
     
     // private bool _beReady = false;
     // private bool _waveStart = false;
@@ -557,7 +560,7 @@ public class RoomInfo : IDestroy
         var exploredAisles = new Godot.Collections.Array<Variant>();
         foreach (var doorInfo in Doors)
         {
-            exploredAisles.Add(doorInfo.AisleFogMask?.IsExplored == true);
+            exploredAisles.Add(doorInfo?.AisleFogMask?.IsExplored == true);
         }
 
         ApplyNetworkRoomState(hasFirstEntered, isSeclusion,
@@ -567,8 +570,28 @@ public class RoomInfo : IDestroy
     public void ApplyNetworkRoomState(bool hasFirstEntered, bool isSeclusion,
         bool roomExplored, Godot.Collections.Array<Variant> exploredAisles)
     {
+        if (IsDestroyed)
+        {
+            return;
+        }
+
         HasFirstEntered = hasFirstEntered;
         IsSeclusion = hasFirstEntered && isSeclusion;
+
+        if (!AreNetworkRoomStateNodesReady())
+        {
+            _hasPendingNetworkRoomState = true;
+            _pendingNetworkRoomExplored = roomExplored;
+            _pendingNetworkAisleExploration = new bool[exploredAisles?.Count ?? 0];
+            for (var i = 0; i < _pendingNetworkAisleExploration.Length; i++)
+            {
+                _pendingNetworkAisleExploration[i] = exploredAisles[i].AsBool();
+            }
+
+            return;
+        }
+
+        _hasPendingNetworkRoomState = false;
 
         var explorationChanged = RoomFogMask != null && RoomFogMask.IsExplored != roomExplored;
         if (RoomFogMask != null)
@@ -629,6 +652,49 @@ public class RoomInfo : IDestroy
         {
             EventManager.EmitEvent(EventEnum.OnNetworkMapExplorationChanged, this);
         }
+    }
+
+    public void ApplyPendingNetworkRoomState()
+    {
+        if (!_hasPendingNetworkRoomState || !AreNetworkRoomStateNodesReady())
+        {
+            return;
+        }
+
+        var exploredAisles = new Godot.Collections.Array<Variant>();
+        foreach (var isExplored in _pendingNetworkAisleExploration)
+        {
+            exploredAisles.Add(isExplored);
+        }
+
+        ApplyNetworkRoomState(HasFirstEntered, IsSeclusion,
+            _pendingNetworkRoomExplored, exploredAisles);
+    }
+
+    private bool AreNetworkRoomStateNodesReady()
+    {
+        if (!GodotObject.IsInstanceValid(AffiliationArea) ||
+            !GodotObject.IsInstanceValid(RoomFogMask) ||
+            !GodotObject.IsInstanceValid(PreviewSprite))
+        {
+            return false;
+        }
+
+        foreach (var doorInfo in Doors)
+        {
+            if (doorInfo == null ||
+                !GodotObject.IsInstanceValid(doorInfo.Door) ||
+                !GodotObject.IsInstanceValid(doorInfo.AisleFogMask) ||
+                !GodotObject.IsInstanceValid(doorInfo.AisleFogArea) ||
+                !GodotObject.IsInstanceValid(doorInfo.AislePreviewSprite) ||
+                !GodotObject.IsInstanceValid(doorInfo.PreviewRoomFogMask) ||
+                !GodotObject.IsInstanceValid(doorInfo.PreviewAisleFogMask))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

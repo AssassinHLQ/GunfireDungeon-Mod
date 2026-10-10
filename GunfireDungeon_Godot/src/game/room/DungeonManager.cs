@@ -971,6 +971,7 @@ public partial class DungeonManager : Node2D
         CreateRoomFogMask(roomInfo);
         //创建房间/过道预览sprite
         CreatePreviewSprite(roomInfo);
+        roomInfo.ApplyPendingNetworkRoomState();
     }
 
     //创建门
