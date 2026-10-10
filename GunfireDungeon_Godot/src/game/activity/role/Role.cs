@@ -217,7 +217,7 @@ public abstract partial class Role : ActivityObject
                 return true; //空手
             }
 
-            return !weapon.Reloading && weapon.Attribute != null && weapon.Attribute.CanMeleeAttack;
+            return weapon.Attribute != null && weapon.Attribute.CanMeleeAttack;
         }
     }
 
@@ -231,7 +231,7 @@ public abstract partial class Role : ActivityObject
                 return true;
             }
 
-            return !weapon.Reloading && weapon.Attribute != null && weapon.Attribute.CanMeleeAttack &&
+            return weapon.Attribute != null && weapon.Attribute.CanMeleeAttack &&
                    !weapon.Attribute.IsMelee && !weapon.IsSpecialWeapon;
         }
     }
