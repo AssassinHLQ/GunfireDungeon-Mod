@@ -119,6 +119,8 @@ public partial class LanNetworkManager : Node
     private Player _defeatSettlementPlayer;
     private double _coopDefeatTimer = -1;
     private bool _coopDefeatSettlementShown;
+    private bool _pendingCoopDefeatSettlement;
+    private int _pendingCoopDefeatSessionRevision = -1;
     private readonly Dictionary<(int Session, int Floor, int Room), List<NetworkLiquidStroke>> _liquidStrokeHistory = new();
     private readonly HashSet<string> _seenLiquidStrokeIds = new();
     private readonly Queue<string> _liquidStrokeIdOrder = new();
@@ -1948,6 +1950,11 @@ public partial class LanNetworkManager : Node
             _openedTreasureBoxRewards.Clear();
             _lastBroadcastStateKey = string.Empty;
             _sessionRevision++;
+            _defeatSettlementPlayer = null;
+            _coopDefeatTimer = -1;
+            _coopDefeatSettlementShown = false;
+            _pendingCoopDefeatSettlement = false;
+            _pendingCoopDefeatSessionRevision = -1;
         }
     }
 
@@ -2180,6 +2187,11 @@ public partial class LanNetworkManager : Node
         _lastLocalMapKnowledgeKey = string.Empty;
         ClearRemotePlayers();
         _deadEnemyNetworkIds.Clear();
+        _defeatSettlementPlayer = null;
+        _coopDefeatTimer = -1;
+        _coopDefeatSettlementShown = false;
+        _pendingCoopDefeatSettlement = false;
+        _pendingCoopDefeatSessionRevision = -1;
         //房间 ID 每层都会从 0 开始, 清除上层的"已广播清房"记录,
         //避免新楼层同 ID 房间永远无法再同步开门。
         _broadcastClearedRooms.Clear();
@@ -2251,6 +2263,7 @@ public partial class LanNetworkManager : Node
             player.RoleState.Gold,
             _localGoldRevision,
             weaponId,
+            _sessionRevision,
         };
         Rpc(nameof(ReceivePlayerSnapshot), args);
     }
@@ -2722,7 +2735,17 @@ public partial class LanNetworkManager : Node
     {
         var world = GameApplication.Instance?.DungeonManager?.CurrWorld;
         var player = world?.Player as Player;
-        if (world is not Dungeon || player == null || !player.IsDie)
+        if (world is not Dungeon || player == null)
+        {
+            _defeatSettlementPlayer = null;
+            _coopDefeatTimer = -1;
+            _coopDefeatSettlementShown = false;
+            _pendingCoopDefeatSettlement = false;
+            _pendingCoopDefeatSessionRevision = -1;
+            return;
+        }
+
+        if (!player.IsDie)
         {
             _defeatSettlementPlayer = null;
             _coopDefeatTimer = -1;
@@ -2734,6 +2757,18 @@ public partial class LanNetworkManager : Node
         {
             _defeatSettlementPlayer = player;
             _coopDefeatTimer = 0;
+            return;
+        }
+
+        if (!IsHost)
+        {
+            if (_pendingCoopDefeatSettlement &&
+                _pendingCoopDefeatSessionRevision == _sessionRevision &&
+                !_coopDefeatSettlementShown)
+            {
+                ShowCoopDefeatSettlement(world, false);
+            }
+
             return;
         }
 
@@ -2756,9 +2791,133 @@ public partial class LanNetworkManager : Node
             return;
         }
 
+        ShowCoopDefeatSettlement(world, true);
+    }
+
+    private void ShowCoopDefeatSettlement(World world, bool broadcast)
+    {
+        if (world == null || _coopDefeatSettlementShown)
+        {
+            return;
+        }
+
         _coopDefeatSettlementShown = true;
+        _pendingCoopDefeatSettlement = false;
+        _pendingCoopDefeatSessionRevision = -1;
         world.Pause = true;
         UiManager.Open_Game_Settlement();
+        if (broadcast && IsHost && IsLanConnected)
+        {
+            Rpc(nameof(ReceiveCoopDefeatSettlement), _sessionRevision);
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceiveCoopDefeatSettlement(int sessionRevision)
+    {
+        if (IsHost || sessionRevision != _sessionRevision)
+        {
+            return;
+        }
+
+        _pendingCoopDefeatSettlement = true;
+        _pendingCoopDefeatSessionRevision = sessionRevision;
+    }
+
+    public void ReportLocalPlayerDeath(Player player)
+    {
+        if (!IsLanConnected || player == null || player.IsNetworkReplica ||
+            GameApplication.Instance?.DungeonManager?.CurrWorld is not Dungeon)
+        {
+            return;
+        }
+
+        var dungeonManager = GameApplication.Instance.DungeonManager;
+        var args = new Variant[]
+        {
+            LocalPeerId,
+            dungeonManager.CurrentFloor,
+            player.AffiliationArea?.RoomInfo?.Id ?? -1,
+            player.GlobalPosition.X,
+            player.GlobalPosition.Y,
+            (int)player.Face,
+            player.MountPoint?.RealRotationDegrees ?? 0f,
+            player.AnimatedSprite?.Animation.ToString() ?? string.Empty,
+            player.AnimatedSprite?.Frame ?? 0,
+            _sessionRevision,
+        };
+
+        if (IsHost)
+        {
+            Rpc(nameof(ReceivePlayerDeath), args);
+        }
+        else
+        {
+            RpcId(1, nameof(ReceivePlayerDeath), args);
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ReceivePlayerDeath(long peerId, int floor, int roomId, float x, float y, int faceValue,
+        float aimRotationDegrees, string animation, int frame, int sessionRevision)
+    {
+        var senderId = Multiplayer.GetRemoteSenderId();
+        if (IsHost)
+        {
+            if (senderId <= 1 || senderId != peerId)
+            {
+                return;
+            }
+        }
+        else if (senderId != 1 || peerId == LocalPeerId)
+        {
+            return;
+        }
+
+        if (sessionRevision != _sessionRevision || floor <= 0 ||
+            GameApplication.Instance?.DungeonManager?.CurrWorld is not Dungeon)
+        {
+            return;
+        }
+
+        if (!_remotePlayers.TryGetValue(peerId, out var state))
+        {
+            state = new RemotePlayerState { PeerId = peerId };
+            _remotePlayers.Add(peerId, state);
+        }
+
+        state.Floor = floor;
+        state.RoomId = roomId;
+        state.TargetPosition = new Vector2(x, y);
+        state.Face = (FaceDirection)Mathf.Clamp(faceValue, (int)FaceDirection.Left, (int)FaceDirection.Right);
+        state.AimRotationDegrees = aimRotationDegrees;
+        state.IsMoving = false;
+        state.IsRolling = false;
+        state.IsMeleeAttacking = false;
+        state.IsDead = true;
+        state.DeathAnimation = animation ?? string.Empty;
+        state.DeathFrame = frame;
+
+        EnsureRemotePlayer(state);
+        if (state.Player != null)
+        {
+            var dungeonManager = GameApplication.Instance.DungeonManager;
+            var localFloor = dungeonManager.CurrWorld is Dungeon ? dungeonManager.CurrentFloor : 0;
+            state.Player.Visible = floor == localFloor;
+            if (state.Player.Visible)
+            {
+                state.Player.GlobalPosition = state.TargetPosition;
+                state.Player.Face = state.Face;
+                state.Player.MountPoint?.ApplyNetworkRotation(state.AimRotationDegrees);
+                state.Player.ApplyReplicatedPlayerState(true, state.DeathAnimation, state.DeathFrame);
+            }
+        }
+
+        if (IsHost)
+        {
+            Rpc(nameof(ReceivePlayerDeath), peerId, floor, roomId, x, y, faceValue,
+                aimRotationDegrees, animation ?? string.Empty, frame, sessionRevision);
+        }
     }
 
     public void RequestEnemyDamageFromBullet(IHurt hurt, List<AttackStats> damages,
@@ -3229,6 +3388,15 @@ public partial class LanNetworkManager : Node
             return;
         }
 
+        if (_sessionRevision != sessionRevision)
+        {
+            _pendingCoopDefeatSettlement = false;
+            _pendingCoopDefeatSessionRevision = -1;
+            _coopDefeatSettlementShown = false;
+            _defeatSettlementPlayer = null;
+            _coopDefeatTimer = -1;
+        }
+
         var previousSessionRevision = _sessionRevision;
         var dungeonManager = GameApplication.Instance?.DungeonManager;
         var preserveLocalFloor = worldKind == "dungeon" &&
@@ -3315,9 +3483,14 @@ public partial class LanNetworkManager : Node
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.UnreliableOrdered)]
     public void ReceivePlayerSnapshot(long peerId, float x, float y, int faceValue, float aimRotationDegrees, float elapsed,
         bool isRolling, bool isMeleeAttacking, long meleeAttackSequence, int roomId, int floor,
-        bool isDead, string animation, int frame, int gold, long goldRevision, string weaponId = "")
+        bool isDead, string animation, int frame, int gold, long goldRevision, string weaponId, int sessionRevision)
     {
         var senderId = Multiplayer.GetRemoteSenderId();
+        if (sessionRevision != _sessionRevision)
+        {
+            return;
+        }
+
         if (senderId > 1)
         {
             peerId = senderId;
@@ -3346,7 +3519,7 @@ public partial class LanNetworkManager : Node
         state.IsRolling = isRolling;
         state.IsMeleeAttacking = isMeleeAttacking;
         state.Floor = floor;
-        state.IsDead = isDead;
+        state.IsDead = isDead || (state.IsDead && previousFloor == floor);
         state.DeathAnimation = animation ?? string.Empty;
         state.DeathFrame = frame;
         if (state.MeleeAttackSequence != meleeAttackSequence)
@@ -3417,6 +3590,7 @@ public partial class LanNetworkManager : Node
                 meleeAttackSequence, roomId, floor, isDead, animation ?? string.Empty, frame,
                 state.Gold, state.GoldRevision,
                 state.WeaponId,
+                sessionRevision,
             });
         }
     }

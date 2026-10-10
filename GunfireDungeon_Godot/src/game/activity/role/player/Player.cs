@@ -646,6 +646,7 @@ public partial class Player : Role
         }
 
         var network = LanNetworkManager.Instance;
+        network?.ReportLocalPlayerDeath(this);
         GameCamera.Main.SetFollowTarget(network?.FindLivingCoopPartner(this));
         Visible = false;
 

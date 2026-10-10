@@ -46,10 +46,10 @@ public partial class SettlementPanel : Settlement
             //用它重启会把魔王模式悄悄变回普通模式。
             var dungeonManager = GameApplication.Instance.DungeonManager;
             var config = dungeonManager.CurrConfig ?? GameApplication.Instance.FirstDungeonConfig;
-            LanNetworkManager.Instance?.MarkSessionRestarted();
             dungeonManager.RestartDungeon(false, config, () =>
             {
                 UiManager.Destroy_Game_Loading();
+                LanNetworkManager.Instance?.MarkSessionRestarted();
             });
         }
     }

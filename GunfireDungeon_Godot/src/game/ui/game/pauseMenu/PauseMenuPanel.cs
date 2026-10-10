@@ -84,10 +84,10 @@ public partial class PauseMenuPanel : PauseMenu
             //和 SettlementPanel 一样: 必须用 CurrConfig, 否则魔王模式重启后变回普通模式
             var dungeonManager = GameApplication.Instance.DungeonManager;
             var config = dungeonManager.CurrConfig ?? GameApplication.Instance.FirstDungeonConfig;
-            LanNetworkManager.Instance?.MarkSessionRestarted();
             dungeonManager.RestartDungeon(false, config, () =>
             {
                 UiManager.Destroy_Game_Loading();
+                LanNetworkManager.Instance?.MarkSessionRestarted();
             });
         }
     }

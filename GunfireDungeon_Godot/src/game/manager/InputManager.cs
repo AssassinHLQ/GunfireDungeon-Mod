@@ -121,7 +121,8 @@ public static class InputManager
     /// </summary>
     public static Vector2 UiMousePosition { get; private set; }
 
-    private static bool _meleeAttackWheelPressedThisFrame;
+    private const int MaxPendingMeleeAttackPresses = 8;
+    private static readonly Queue<bool> PendingMeleeAttackPresses = new();
     
     /// <summary>
     /// 鼠标是否有Ui遮挡
@@ -205,8 +206,8 @@ public static class InputManager
             ThrowWeapon = Input.IsActionJustPressed(InputAction.ThrowWeapon);
             Interactive = Input.IsActionJustPressed(InputAction.Interactive);
             Reload = Input.IsActionJustPressed(InputAction.Reload);
-            MeleeAttack = Input.IsActionJustPressed(InputAction.MeleeAttack);
-            MeleeAttackFromWheel = MeleeAttack && _meleeAttackWheelPressedThisFrame;
+            MeleeAttack = PendingMeleeAttackPresses.Count > 0;
+            MeleeAttackFromWheel = MeleeAttack && PendingMeleeAttackPresses.Dequeue();
             Roll = Input.IsActionJustPressed(InputAction.Roll);
             UseActiveProp = Input.IsActionJustPressed(InputAction.UseActiveProp);
             RemoveProp = Input.IsActionJustPressed(InputAction.RemoveProp);
@@ -219,6 +220,7 @@ public static class InputManager
             ThrowWeapon = false;
             Interactive = false;
             Reload = false;
+            PendingMeleeAttackPresses.Clear();
             MeleeAttack = false;
             MeleeAttackFromWheel = false;
             Roll = false;
@@ -226,8 +228,6 @@ public static class InputManager
             RemoveProp = false;
             ExchangeProp = false;
         }
-
-        _meleeAttackWheelPressedThisFrame = false;
 
         Map = Input.IsActionPressed(InputAction.Map);
         MapJustPressed = Input.IsActionJustPressed(InputAction.Map);
@@ -245,6 +245,7 @@ public static class InputManager
     /// </summary>
     public static void GlobalInputHandler(InputEvent @event)
     {
+        var meleeAttackFromWheel = false;
         if (!HasUiBlockage && @event is InputEventMouseButton mouseButton &&
             mouseButton.Pressed &&
             mouseButton.ButtonIndex is MouseButton.WheelUp or MouseButton.WheelDown)
@@ -254,10 +255,17 @@ public static class InputManager
                 if (binding is InputEventMouseButton mouseBinding &&
                     mouseBinding.ButtonIndex == mouseButton.ButtonIndex)
                 {
-                    _meleeAttackWheelPressedThisFrame = true;
+                    meleeAttackFromWheel = true;
                     break;
                 }
             }
+        }
+
+        if (!HasUiBlockage && @event is not InputEventKey { Echo: true } &&
+            @event.IsActionPressed(InputAction.MeleeAttack) &&
+            PendingMeleeAttackPresses.Count < MaxPendingMeleeAttackPresses)
+        {
+            PendingMeleeAttackPresses.Enqueue(meleeAttackFromWheel);
         }
 
         if (@event is InputEventMouseMotion mouseMotion)
